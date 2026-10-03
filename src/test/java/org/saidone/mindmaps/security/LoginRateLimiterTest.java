@@ -18,6 +18,7 @@
 
 package org.saidone.mindmaps.security;
 
+import lombok.val;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,9 +27,9 @@ class LoginRateLimiterTest {
 
     @Test
     void blocksAfterFiveFailedAttemptsForTheSameUserAndAddress() {
-        var limiter = new LoginRateLimiter();
+        val limiter = new LoginRateLimiter();
 
-        for (var attempt = 0; attempt < 5; attempt++) {
+        for (int attempt = 0; attempt < 5; attempt++) {
             assertThat(limiter.isBlocked("Alice", "127.0.0.1")).isFalse();
             limiter.recordFailure("Alice", "127.0.0.1");
         }
@@ -40,13 +41,14 @@ class LoginRateLimiterTest {
 
     @Test
     void successfulLoginClearsFailedAttempts() {
-        var limiter = new LoginRateLimiter();
+        val limiter = new LoginRateLimiter();
 
-        for (var attempt = 0; attempt < 5; attempt++) {
+        for (int attempt = 0; attempt < 5; attempt++) {
             limiter.recordFailure("Alice", "127.0.0.1");
         }
-        limiter.recordSuccess("Alice", "127.0.0.1");
 
+        limiter.recordSuccess("Alice", "127.0.0.1");
         assertThat(limiter.isBlocked("Alice", "127.0.0.1")).isFalse();
     }
+
 }
