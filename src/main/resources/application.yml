@@ -14,7 +14,7 @@ server:
 app:
   openai:
     api-key: ${OPENAI_API_KEY:}
-    model: ${OPENAI_MODEL:gpt-5.4-nano}
+    model: ${OPENAI_MODEL:gpt-6-luna}
   security:
     initial-user:
       username: ${INITIAL_USER_LOGIN:}
