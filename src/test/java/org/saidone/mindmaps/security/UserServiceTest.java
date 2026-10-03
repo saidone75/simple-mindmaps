@@ -64,7 +64,7 @@ class UserServiceTest {
         userService.createUser("alice", "secret-password");
         assertThatIllegalArgumentException()
                 .isThrownBy(() -> userService.createUser("ALICE", "other-password"))
-                .withMessage("Username already in use");
+                .withMessage("Username già esistente");
     }
 
     @TestConfiguration
