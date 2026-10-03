@@ -173,7 +173,6 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                 Map.of("role", "system", "content", "Sei un assistente che crea mindmap didattiche accurate in italiano."),
                 Map.of("role", "user", "content", userPrompt)
         ));
-        payload.put("temperature", 0.2);
         return payload;
     }
 
