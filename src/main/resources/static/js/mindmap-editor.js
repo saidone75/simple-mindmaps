@@ -916,17 +916,20 @@ function captureInteractionViewport() {
 }
 
 
-function focusCanvasOnContent() {
+function focusCanvasOnContent(node) {
     if (!canvasPanel) return;
-    const zoomPercent = Number(zoomInput?.value) || 100;
-    const zoomFactor = Math.min(MAX_ZOOM_PERCENT, Math.max(MIN_ZOOM_PERCENT, zoomPercent)) / 100;
-    const { x, y, width, height } = getCanvasBounds();
+    const viewport = getViewportForRender();
+    const size = node ? getLayoutNodeSize(node) : null;
+    const point = svg.createSVGPoint();
+    point.x = node ? node.x + size.width / 2 : viewport.x + viewport.width / 2;
+    point.y = node ? node.y + size.height / 2 : viewport.y + viewport.height / 2;
+    const matrix = svg.getScreenCTM();
+    if (!matrix) return;
+    const center = point.matrixTransform(matrix);
+    const panelRect = canvasPanel.getBoundingClientRect();
 
-    const centerX = (x + width / 2) * zoomFactor;
-    const centerY = (y + height / 2) * zoomFactor;
-
-    canvasPanel.scrollLeft = Math.max(0, Math.round(centerX - (canvasPanel.clientWidth / 2)));
-    canvasPanel.scrollTop = Math.max(0, Math.round(centerY - (canvasPanel.clientHeight / 2)));
+    canvasPanel.scrollLeft += center.x - panelRect.left - canvasPanel.clientLeft - canvasPanel.clientWidth / 2;
+    canvasPanel.scrollTop += center.y - panelRect.top - canvasPanel.clientTop - canvasPanel.clientHeight / 2;
 }
 
 function renderNodeImage(group, node, width) {
@@ -1789,9 +1792,9 @@ if (canvasPanel) {
 
 autoLayoutBtn.addEventListener("click", async () => {
     pushUndoSnapshot();
-    applyOrganicLayout();
+    const root = applyOrganicLayout();
     render();
-    focusCanvasOnContent();
+    focusCanvasOnContent(root);
     await persistAllNodePositions();
 });
 
@@ -1960,9 +1963,8 @@ function applyOrganicLayout() {
         root.x = Math.round(MAP_CENTER_X - rootSize.width / 2);
         root.y = Math.round(MAP_CENTER_Y - rootSize.height / 2);
         placeChildren(root, -Math.PI + 0.2, Math.PI - 0.2, 1);
-        resolveNodeOverlaps(nodes);
-        keepRootCentered(root, nodes);
-        return;
+        resolveNodeOverlaps(nodes, root);
+        return root;
     }
 
     const [centerRoot, ...otherRoots] = roots;
@@ -1982,52 +1984,39 @@ function applyOrganicLayout() {
         });
     }
 
-    resolveNodeOverlaps(nodes);
-    keepRootCentered(centerRoot, nodes);
-}
-
-function keepRootCentered(root, nodes) {
-    const rootSize = getLayoutNodeSize(root);
-    const targetX = Math.round(MAP_CENTER_X - rootSize.width / 2);
-    const targetY = Math.round(MAP_CENTER_Y - rootSize.height / 2);
-    const deltaX = targetX - root.x;
-    const deltaY = targetY - root.y;
-    if (!deltaX && !deltaY) return;
-    for (const node of nodes) {
-        node.x += deltaX;
-        node.y += deltaY;
-    }
+    resolveNodeOverlaps(nodes, centerRoot);
+    return centerRoot;
 }
 
 function getLayoutNodeSize(node) {
     return isSketchPreset() ? getSketchNodeSize(node) : getNodeSize(node);
 }
 
-function resolveNodeOverlaps(nodes) {
+function resolveNodeOverlaps(nodes, fixedNode) {
     const padding = 28;
-    for (let iteration = 0; iteration < 80; iteration += 1) {
-        if (!resolveOverlapIteration(nodes, padding)) break;
+    for (let iteration = 0; iteration < 240; iteration += 1) {
+        if (!resolveOverlapIteration(nodes, padding, fixedNode)) break;
     }
 }
 
-function resolveOverlapIteration(nodes, padding) {
+function resolveOverlapIteration(nodes, padding, fixedNode) {
     let moved = false;
     for (let i = 0; i < nodes.length; i += 1) {
         for (let j = i + 1; j < nodes.length; j += 1) {
-            moved = resolveNodePairOverlap(nodes[i], nodes[j], padding) || moved;
+            moved = resolveNodePairOverlap(nodes[i], nodes[j], padding, fixedNode) || moved;
         }
     }
     return moved;
 }
 
-function resolveNodePairOverlap(first, second, padding) {
+function resolveNodePairOverlap(first, second, padding, fixedNode) {
     const firstBox = getNodeLayoutBox(first);
     const secondBox = getNodeLayoutBox(second);
     const overlap = getNodeBoxOverlap(firstBox, secondBox, padding);
     if (!overlap) return false;
 
     const shift = getOverlapShift(first, second, firstBox, secondBox, overlap);
-    applyOverlapShift(first, second, shift);
+    applyOverlapShift(first, second, shift, fixedNode);
     return true;
 }
 
@@ -2060,14 +2049,16 @@ function getOverlapFallback(first, second, firstMultiplier, secondMultiplier) {
 
 function getAxisOverlapShift(overlap, delta, fallback) {
     const direction = Math.abs(delta) < 0.001 ? fallback : Math.sign(delta);
-    return Math.max(1, Math.round((overlap / 2) * direction));
+    return Math.max(1, Math.ceil(overlap / 2)) * direction;
 }
 
-function applyOverlapShift(first, second, shift) {
-    first.x -= shift.x;
-    second.x += shift.x;
-    first.y -= shift.y;
-    second.y += shift.y;
+function applyOverlapShift(first, second, shift, fixedNode) {
+    const firstFactor = first === fixedNode ? 0 : second === fixedNode ? 2 : 1;
+    const secondFactor = second === fixedNode ? 0 : first === fixedNode ? 2 : 1;
+    first.x -= shift.x * firstFactor;
+    second.x += shift.x * secondFactor;
+    first.y -= shift.y * firstFactor;
+    second.y += shift.y * secondFactor;
 }
 
 async function persistAllNodePositions() {
