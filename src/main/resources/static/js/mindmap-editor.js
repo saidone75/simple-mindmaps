@@ -1810,7 +1810,7 @@ function applyOrganicLayout() {
     const childrenMap = buildChildrenMap(nodes);
     const sizes = new Map(nodes.map(node => [node.id, getLayoutNodeSize(node)]));
     const weights = new Map();
-    const padding = 48;
+    const padding = 16;
     const diameter = node => {
         const size = sizes.get(node.id);
         return Math.hypot(size.width, size.height) + padding;
@@ -1844,7 +1844,7 @@ function applyOrganicLayout() {
     placeBranches(branches, -Math.PI / 2, Math.PI * 2, 1);
     for (let depth = 1; depth < ringSizes.length; depth += 1) {
         ringRadii[depth] = Math.max(ringRadii[depth],
-            ringRadii[depth - 1] + (ringSizes[depth - 1] + ringSizes[depth]) / 2 + 100);
+            ringRadii[depth - 1] + (ringSizes[depth - 1] + ringSizes[depth]) / 2);
     }
 
     // Expand radially to resolve collisions without moving the center or turning
