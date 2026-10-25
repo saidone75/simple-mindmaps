@@ -25,7 +25,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Table(name = "mind_map")
+@Table(name = "mind_map", indexes = @Index(name = "idx_mind_map_public_token", columnList = "public_token", unique = true))
 public class MindMap {
 
     @Id
@@ -47,6 +47,13 @@ public class MindMap {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id")
     private AppUser owner;
+
+    @Column(name = "public_token")
+    private String publicToken;
+
+    @Lob
+    @Column(columnDefinition = "CLOB")
+    private String publishedSnapshot;
 
     @PrePersist
     public void prePersist() {
