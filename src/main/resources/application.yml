@@ -1,4 +1,9 @@
 spring:
+  application:
+    name: simple-mindmaps
+    output:
+      ansi:
+        enabled: always
   datasource:
     url: jdbc:sqlite:./data/mindmaps.db
     driver-class-name: org.sqlite.JDBC

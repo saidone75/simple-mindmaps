@@ -1,0 +1,17 @@
+${AnsiColor.BRIGHT_CYAN}
+${AnsiColor.BRIGHT_CYAN}       _    _     ___ ____ _____
+${AnsiColor.BRIGHT_CYAN}      / \  | |   |_ _/ ___| ____|          ${AnsiColor.BRIGHT_MAGENTA}(\_/)
+${AnsiColor.BRIGHT_CYAN}     / _ \ | |    | | |   |  _|            ${AnsiColor.BRIGHT_MAGENTA}(${AnsiColor.BRIGHT_WHITE}o${AnsiColor.BRIGHT_MAGENTA}.${AnsiColor.BRIGHT_WHITE}o${AnsiColor.BRIGHT_MAGENTA})
+${AnsiColor.BRIGHT_CYAN}    / ___ \| |___ | | |___| |___          ${AnsiColor.BRIGHT_MAGENTA}/ >${AnsiColor.BRIGHT_YELLOW}*${AnsiColor.BRIGHT_MAGENTA}< \
+${AnsiColor.BRIGHT_CYAN}   /_/   \_\_____|___\____|_____|            ${AnsiColor.BRIGHT_YELLOW}|
+${AnsiColor.BRIGHT_YELLOW}                                        .----+----.
+${AnsiColor.BRIGHT_GREEN}      ${AnsiColor.BRIGHT_YELLOW}Alice's${AnsiColor.BRIGHT_GREEN} Simple Mind Maps          ${AnsiColor.BRIGHT_YELLOW}|         |
+                                    ${AnsiColor.BRIGHT_CYAN}[ Mappe ] ${AnsiColor.BRIGHT_MAGENTA}[ Giochi ]
+${AnsiColor.BRIGHT_BLACK}
+   ----------------------------------------------------
+   ${AnsiColor.BRIGHT_GREEN}${application.title} v.${application.version}
+   ${AnsiColor.BRIGHT_CYAN}Powered by Spring Boot ${spring-boot.version}
+   ${AnsiColor.BRIGHT_YELLOW}Active profiles: ${spring.profiles.active}
+   ${AnsiColor.BRIGHT_WHITE}Java Version: ${java.version}
+   Java Vendor: ${java.vendor}
+${AnsiColor.DEFAULT}
