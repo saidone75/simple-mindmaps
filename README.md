@@ -1,162 +1,140 @@
 # 🧠✨ Alice's Simple Mind Maps
 
-Benvenuto in **Alice's Simple Mind Maps**, una web app leggera e immediata per creare mappe mentali in pochi click.
-Pensata per essere intuitiva anche per chi non è tecnico e costruita con uno stack solido e moderno.
+Un'applicazione per creare mappe mentali e trasformarle in giochi delle immagini per la scuola primaria.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-![Java CI](https://github.com/saidone75/simple-mindmaps/actions/workflows/build.yml/badge.svg)
+[![Java CI](https://github.com/saidone75/simple-mindmap/actions/workflows/build.yml/badge.svg)](https://github.com/saidone75/simple-mindmap/actions/workflows/build.yml)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
-[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?saidone75_alice-s-simple-mind-maps)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 
-## 🚀 Cos'è
+Versione **0.1.0**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
-Simple MindMaps è un'applicazione Java/Spring Boot con interfaccia Thymeleaf che permette di:
+## Funzionalità
 
-- creare una nuova mappa,
-- aggiungere rami e sotto-rami,
-- personalizzare testo e stile,
-- esportare il risultato.
+- Mappe create da zero, da template o generate con AI.
+- Editor SVG con trascinamento dei nodi, disposizione automatica, zoom e salvataggio automatico.
+- Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
+- Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI.
+- Duplicazione ed eliminazione delle mappe.
+- Esportazione in PNG e PDF nei formati A4 e A3.
+- Accesso con account e mappe private per ciascun proprietario.
+- Pubblicazione di giochi delle immagini tramite link pubblico revocabile.
+- Interfacce adattate a computer, tablet e dispositivi mobili.
 
-Obiettivo: **trasformare idee in una struttura visiva chiara**.
+## Requisiti
 
----
+- **JDK 21**.
+- **Maven 3.6.3 o successivo**; consigliato Maven 3.9+.
+- Un browser moderno.
+- Connessione a Internet al primo avvio per scaricare il modello di embedding e le librerie native richieste da DJL/PyTorch. La generazione AI e la ricerca Wikimedia richiedono inoltre accesso ai rispettivi servizi.
 
-## 🌟 Caratteristiche principali
+Lo stack comprende **Spring Boot 4.1.1**, Spring Security, Spring Data JPA, Thymeleaf, SQLite e JavaScript senza framework frontend.
 
-- ✅ Creazione mappa rapida
-- ✅ Template pronti
-- ✅ Generazione mappe con AI
-- ✅ Drag & drop dei nodi
-- ✅ Modifica testo, colore e dimensione font
-- ✅ Autosave dei nodi
-- ✅ Export PNG
-- ✅ Export PDF stampabile
-- ✅ Login multiutente con mappe isolate per utente
-- ✅ Eliminazione mappe e nodi
-- ✅ Pubblicazione di giochi delle immagini con link pubblico revocabile
+## Avvio locale
 
----
-
-## 🧱 Stack tecnologico
-
-### Backend
-- **Java 21**
-- **Spring Boot 4.0.7**
-- **Spring Data JPA**
-- **Spring Security**
-- **SQLite** (persistito su file)
-
-### Frontend
-- **Thymeleaf**
-- **JavaScript vanilla**
-- **SVG** per rendering visuale della mappa
-
-### Build & Tooling
-- **Maven**
-
----
-
-## 📋 Prerequisiti
-
-Prima di avviare il progetto assicurati di avere:
-
-- **JDK 21** installato
-- **Maven 3.9+** disponibile da terminale
-- Un browser moderno (Chrome, Edge, Firefox)
-
-Verifica veloce:
+Clona il repository e crea la directory dei dati:
 
 ```bash
-java -version
-mvn -version
+git clone https://github.com/saidone75/simple-mindmap.git
+cd simple-mindmap
+mkdir -p data
 ```
 
----
-
-## 🛠️ Avvio locale
-
-1. Clona il repository
-2. Avvia l'app:
+Configura l'account iniziale e avvia l'applicazione con il profilo `dev`:
 
 ```bash
-INITIAL_USER_LOGIN=alice INITIAL_USER_PASSWORD=password-segreta mvn spring-boot:run
+export INITIAL_USER_LOGIN=alice
+read -rsp 'Password iniziale: ' INITIAL_USER_PASSWORD; echo
+export INITIAL_USER_PASSWORD
+export SPRING_PROFILES_ACTIVE=dev
+mvn spring-boot:run
 ```
 
-Se le variabili `INITIAL_USER_LOGIN` e `INITIAL_USER_PASSWORD` sono valorizzate, l'app crea automaticamente l'utente iniziale se non esiste già.
+Apri **http://localhost:9080/maps** ed effettua l'accesso. L'utente iniziale viene creato solo se entrambe le variabili sono valorizzate e l'account non esiste già. Cambiare le variabili non modifica la password di un account esistente.
 
-3. Apri nel browser:
+In alternativa, dopo avere configurato le credenziali, `bash run.sh` avvia il profilo `dev` con il debugger Java sulla porta `9000`.
 
-```text
-http://localhost:8080/maps
+### Configurazione
+
+| Variabile                | Uso                                          | Valore predefinito            |
+|--------------------------|----------------------------------------------|-------------------------------|
+| `INITIAL_USER_LOGIN`     | Nome dell'utente da creare al primo avvio    | Vuoto                         |
+| `INITIAL_USER_PASSWORD`  | Password dell'utente iniziale                | Vuoto                         |
+| `OPENAI_API_KEY`         | Chiave per la generazione delle mappe con AI | Vuoto                         |
+| `OPENAI_MODEL`           | Modello usato per la generazione             | `gpt-6-luna`                  |
+| `SPRING_PROFILES_ACTIVE` | Profilo di esecuzione                        | Nessun profilo esplicito      |
+| `SERVER_PORT`            | Porta HTTP                                   | `9080`                        |
+| `WIKIMEDIA_USER_AGENT`   | Identificazione delle richieste a Wikimedia  | Definita in `application.yml` |
+
+La chiave OpenAI serve alla generazione AI; la creazione manuale delle mappe non la richiede.
+
+### Build e avvio del JAR
+
+Per compilare e verificare la release con i test già presenti:
+
+```bash
+mvn -B clean verify
 ```
 
----
+L'artefatto eseguibile è `target/mindmaps-0.1.0.jar`. Con credenziali e directory dei dati già configurate:
 
-## 🔌 API / Endpoints principali
+```bash
+java -jar target/mindmaps-0.1.0.jar --spring.profiles.active=prod
+```
 
-> Nota: l'app usa pagine server-side Thymeleaf + chiamate AJAX per i nodi.
+Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `./log/mindmaps.log`. I profili sono di Spring: non occorre un profilo Maven `-Pprod`.
 
-### UI routes
-- `GET /maps` → elenco mappe
-- `GET /maps/{id}` → editor della mappa
-
-### Operazioni mappe (backend)
-- Creazione nuova mappa
-- Eliminazione mappa
-- Export PNG da canvas SVG
-- Export PDF stampabile in formato A4/A3
-
-### Operazioni nodi (backend/API interne)
-- Creazione nodo (principale/figlio)
-- Aggiornamento nodo (testo, colore, font, posizione)
-- Eliminazione nodo
-- Salvataggio automatico modifiche
-
----
-
-## 💾 Persistenza dati
-
-- Database locale SQLite persistito su file in:
-  - `./data/mindmapdb.sqlite`
-- Nessuna dipendenza da DB esterno per lo sviluppo iniziale.
-- Gli utenti sono salvati nella tabella `users` con password cifrate.
-- Ogni mappa è collegata all’utente proprietario e l’app mostra/modifica solo le mappe dell’utente autenticato.
-
----
-
-## 📤 Export
-
-- **PNG**: il browser invia l'SVG corrente al backend, che lo renderizza e restituisce un file PNG scaricabile.
-- **PDF**: il browser invia l'SVG corrente al backend, che genera un PDF stampabile in formato A4 o A3.
-
----
-
-## 🧪 Idee per evoluzioni future
-
-- Export PDF server-side
-- Undo/Redo completo
-- Libreria icone e sticker
-- Condivisione mappe via link
-
----
-
-## 🤝 Contributi
-
-Hai idee per rendere l'app ancora più utile o divertente?
-Apri una issue o proponi una PR: ogni contributo è il benvenuto. 🚀
-
+Per costruire il JAR saltando l'esecuzione dei test è disponibile `bash build.sh`.
 
 ## Gioco delle immagini
 
-Nell’editor, aggiungi almeno un’immagine e premi **Pubblica come gioco**. Copia il link pubblico mostrato: i ragazzi possono aprirlo senza account. La pubblicazione conserva una copia della mappa, con gli stessi testi, collegamenti, colori e dimensioni dei nodi. Le immagini vengono mescolate in un pannello laterale: si possono trascinare oppure selezionare e poi inserire toccando una casella (anche con Invio o Spazio da tastiera).
+### Pubblicare una mappa
 
-Ogni risposta errata mostra la descrizione del nodo corretto come suggerimento; quando manca, viene indicato il titolo. Il server conta tentativi, errori e tempo. Il punteggio premia il completamento della mappa fino a **1.000 punti**: i primi **3 errori sono gratuiti**, poi si perdono solo **5 punti per errore**, con una riduzione massima di **100 punti**. Chi completa la mappa ottiene quindi almeno **900 punti**. Il tempo non comporta penalità: viene registrato dall’inizio alla fine e mostrato solo a partita conclusa. Durante il gioco si vedono i progressi, senza cronometro o conteggio degli errori, e ogni risposta riceve un messaggio incoraggiante. **Ricomincia** avvia una nuova partita; ogni sessione del browser mantiene una sola partita attiva. I risultati sono mostrati a fine partita e non vengono archiviati.
+1. Nell'editor, aggiungi almeno un'immagine ai nodi.
+2. Premi **Pubblica come gioco**.
+3. Copia il link pubblico e condividilo con i bambini: non occorre un account per giocare.
 
-**Aggiorna gioco pubblicato** crea una nuova copia e un nuovo link, disattivando il precedente. **Ritira pubblicazione** disabilita il link e le partite in corso. Le modifiche alla mappa privata non cambiano la copia pubblicata finché non viene aggiornata.
+La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti, colori, disposizione e dimensioni dei nodi. Le modifiche successive nell'editor non cambiano il gioco già pubblicato.
 
-I test dell’interazione e della geometria condivisa si eseguono con Node.js:
+**Aggiorna gioco pubblicato** crea una nuova copia e un nuovo link, disattivando quello precedente. **Ritira pubblicazione** disabilita il link e impedisce ulteriori tentativi nelle partite già avviate.
 
-```bash
-node --test src/test/js/map-game.test.cjs
-```
+### Giocare
+
+Premi **Giochiamo!** e prendi un'immagine dallo zainetto. Trascinala nella casella corretta, oppure selezionala e poi tocca la casella; da tastiera puoi usare Invio o Spazio sui controlli. Dopo un tentativo sbagliato compare un indizio tratto dalla descrizione del nodo corretto o, se manca, dal suo titolo.
+
+I pulsanti **− / +** e il cursore regolano lo zoom dal **10% al 250%**. **Vedi tutta la mappa** adatta la vista alla finestra. Trascina lo sfondo con la manina per esplorare la mappa ingrandita, anche con il tocco.
+
+Durante il gioco si vedono i progressi, senza cronometro o conteggio degli errori. **Giochiamo ancora ↻** avvia una nuova partita. Ogni sessione del browser mantiene una sola partita attiva; i risultati vengono mostrati alla fine e non sono archiviati in una classifica.
+
+## Persistenza ed esportazione
+
+Il database SQLite è salvato in **`./data/mindmaps.db`**, rispetto alla directory da cui viene avviata l'applicazione. Non è richiesto un server database esterno. Conserva la directory `data` tra gli avvii: contiene utenti, mappe e copie pubblicate.
+
+Le password degli utenti sono memorizzate come hash BCrypt. Le mappe private sono accessibili solo al proprietario; i link pubblici consentono di giocare senza accedere all'editor.
+
+Per esportare una mappa, il browser invia l'SVG corrente al backend, che produce il file PNG o PDF scaricabile. Il PDF supporta A4 e A3.
+
+## Endpoint principali
+
+Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint di gestione richiedono l'autenticazione.
+
+| Metodo | Percorso                    | Funzione                      |
+|--------|-----------------------------|-------------------------------|
+| `GET`  | `/login`                    | Accesso                       |
+| `GET`  | `/maps`                     | Elenco delle proprie mappe    |
+| `GET`  | `/maps/{id}`                | Editor                        |
+| `GET`  | `/api/maps/{id}`            | Dati della mappa privata      |
+| `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco       |
+| `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione    |
+| `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG     |
+| `POST` | `/api/maps/{id}/export/pdf` | Esportazione PDF dall'SVG     |
+| `GET`  | `/play/{token}`             | Pagina pubblica del gioco     |
+| `POST` | `/play/{token}/start`       | Avvio di una partita pubblica |
+| `POST` | `/play/{token}/attempt`     | Verifica di un abbinamento    |
+
+## Contributi e licenza
+
+Per proporre miglioramenti, apri una issue o una pull request nel repository.
+
+Il progetto è distribuito con licenza **GNU GPL v3 o successiva**.

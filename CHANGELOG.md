@@ -7,8 +7,11 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-25
+
 ### Added
 
+- Banner di avvio a tema coniglietto e mappe, con colori e informazioni su applicazione, profili attivi e runtime Java.
 - Creazione di mappe mentali da zero, da template e tramite generazione AI.
 - Editor visuale con nodi e collegamenti personalizzabili, immagini, emoji e descrizioni.
 - Salvataggio automatico, duplicazione delle mappe e disposizione automatica dei nodi.
@@ -53,4 +56,5 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
-[Unreleased]: https://github.com/saidone75/simple-mindmap/commits/HEAD/
+[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/saidone75/simple-mindmap/releases/tag/v0.1.0
