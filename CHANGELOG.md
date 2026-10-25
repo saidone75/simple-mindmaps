@@ -25,6 +25,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Controllo di convergenza Maven Enforcer vincolante: la build si interrompe in caso di dipendenze con versioni incompatibili.
 - Interfaccia dell'editor riorganizzata con strumenti raggruppati e una scheda dedicata alla pubblicazione.
 - Grafica del gioco pensata per la scuola primaria, con zainetto delle immagini, istruzioni semplici e messaggi incoraggianti.
 - Punteggio indulgente: primi tre errori senza penalità, poi cinque punti in meno per errore, con almeno 900 punti completando la mappa.
@@ -37,6 +38,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Conflitti di convergenza delle dipendenze Batik, Commons Compress, Commons IO ed Error Prone, con versioni allineate nel POM.
 - Allineamento e presenza di immagini e testi nelle esportazioni PNG e PDF.
 - Risoluzione dei colori CSS e rimozione dei controlli di ridimensionamento nelle esportazioni.
 - Gestione delle sovrapposizioni tra nodi durante la disposizione automatica.
