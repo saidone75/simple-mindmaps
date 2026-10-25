@@ -722,12 +722,14 @@ function getCanvasBounds() {
         maxX = Math.max(maxX, node.x + nodeSize.width);
         maxY = Math.max(maxY, node.y + nodeSize.height);
     }
-    const viewportX = Math.floor(minX - CANVAS_PADDING);
-    const viewportY = Math.floor(minY - CANVAS_PADDING);
-    const width = Math.max(BASE_CANVAS_WIDTH, Math.ceil(maxX - minX + (CANVAS_PADDING * 2)));
-    const height = Math.max(BASE_CANVAS_HEIGHT, Math.ceil(maxY - minY + (CANVAS_PADDING * 2)));
+    const root = state.map.nodes.find(node => node.parentId == null);
+    const rootSize = root ? getLayoutNodeSize(root) : null;
+    const centerX = root ? root.x + rootSize.width / 2 : MAP_CENTER_X;
+    const centerY = root ? root.y + rootSize.height / 2 : MAP_CENTER_Y;
+    const halfWidth = Math.max(BASE_CANVAS_WIDTH / 2, centerX - minX + CANVAS_PADDING, maxX - centerX + CANVAS_PADDING);
+    const halfHeight = Math.max(BASE_CANVAS_HEIGHT / 2, centerY - minY + CANVAS_PADDING, maxY - centerY + CANVAS_PADDING);
 
-    return { x: viewportX, y: viewportY, width, height };
+    return { x: centerX - halfWidth, y: centerY - halfHeight, width: halfWidth * 2, height: halfHeight * 2 };
 }
 
 function applyCanvasViewport() {
@@ -1729,143 +1731,83 @@ function buildChildrenMap(nodes) {
     return children;
 }
 
-function getSubtreeWeight(nodeId, childrenMap) {
-    const children = childrenMap.get(nodeId) || [];
-    if (!children.length) return 1;
-    return children.reduce((sum, child) => sum + getSubtreeWeight(child.id, childrenMap), 0);
-}
-
 function applyOrganicLayout() {
     const nodes = state.map.nodes;
-    if (!nodes.length) return;
-    const roots = nodes
-        .filter(node => node.parentId == null)
+    const roots = nodes.filter(node => node.parentId == null)
         .sort((a, b) => String(a.id).localeCompare(String(b.id), undefined, { numeric: true }));
     if (!roots.length) return;
+    const root = roots[0];
     const childrenMap = buildChildrenMap(nodes);
-
-    const placeChildren = (node, startAngle, endAngle, depth) => {
+    const sizes = new Map(nodes.map(node => [node.id, getLayoutNodeSize(node)]));
+    const weights = new Map();
+    const padding = 48;
+    const diameter = node => {
+        const size = sizes.get(node.id);
+        return Math.hypot(size.width, size.height) + padding;
+    };
+    const measure = node => {
         const children = childrenMap.get(node.id) || [];
-        if (!children.length) return;
-        const totalWeight = children.reduce((sum, child) => sum + getSubtreeWeight(child.id, childrenMap), 0);
-        let cursor = startAngle;
-        const radius = 150 + (depth * 145);
+        const weight = Math.max(diameter(node), children.reduce((sum, child) => sum + measure(child), 0));
+        weights.set(node.id, weight);
+        return weight;
+    };
+    roots.forEach(measure);
 
+    // Extra roots occupy their own sectors alongside the main root's branches.
+    const branches = [...(childrenMap.get(root.id) || []), ...roots.slice(1)];
+    const placements = [{ node: root, depth: 0, angle: 0 }];
+    const ringSizes = [diameter(root)];
+    const ringRadii = [0];
+    const placeBranches = (children, startAngle, span, depth) => {
+        const totalWeight = children.reduce((sum, child) => sum + weights.get(child.id), 0);
+        let cursor = startAngle;
         for (const child of children) {
-            const share = getSubtreeWeight(child.id, childrenMap) / Math.max(totalWeight, 1);
-            const span = (endAngle - startAngle) * share;
-            const angle = cursor + span / 2;
-            const size = getLayoutNodeSize(child);
-            const jitter = isSketchPreset() ? (Math.sin(child.id * 11.13) * 12) : 0;
-            child.x = Math.round(MAP_CENTER_X + (Math.cos(angle) * radius) + jitter - (size.width / 2));
-            child.y = Math.round(MAP_CENTER_Y + (Math.sin(angle) * radius) + jitter - (size.height / 2));
-            placeChildren(child, cursor + 0.06, cursor + span - 0.06, depth + 1);
-            cursor += span;
+            const childSpan = span * weights.get(child.id) / totalWeight;
+            placements.push({ node: child, depth, angle: cursor + childSpan / 2 });
+            ringSizes[depth] = Math.max(ringSizes[depth] || 0, diameter(child));
+            // Reserve enough arc length even for large images and dense subtrees.
+            ringRadii[depth] = Math.max(ringRadii[depth] || 0, diameter(child) / Math.min(childSpan, Math.PI));
+            placeBranches(childrenMap.get(child.id) || [], cursor, childSpan, depth + 1);
+            cursor += childSpan;
         }
     };
-
-    if (roots.length === 1) {
-        const root = roots[0];
-        const rootSize = getLayoutNodeSize(root);
-        root.x = Math.round(MAP_CENTER_X - rootSize.width / 2);
-        root.y = Math.round(MAP_CENTER_Y - rootSize.height / 2);
-        placeChildren(root, -Math.PI + 0.2, Math.PI - 0.2, 1);
-        resolveNodeOverlaps(nodes, root);
-        return root;
+    placeBranches(branches, -Math.PI / 2, Math.PI * 2, 1);
+    for (let depth = 1; depth < ringSizes.length; depth += 1) {
+        ringRadii[depth] = Math.max(ringRadii[depth],
+            ringRadii[depth - 1] + (ringSizes[depth - 1] + ringSizes[depth]) / 2 + 100);
     }
 
-    const [centerRoot, ...otherRoots] = roots;
-    const centerRootSize = getLayoutNodeSize(centerRoot);
-    centerRoot.x = Math.round(MAP_CENTER_X - centerRootSize.width / 2);
-    centerRoot.y = Math.round(MAP_CENTER_Y - centerRootSize.height / 2);
-    placeChildren(centerRoot, -Math.PI + 0.2, Math.PI - 0.2, 1);
-
-    if (otherRoots.length) {
-        const step = (Math.PI * 2) / otherRoots.length;
-        otherRoots.forEach((root, index) => {
-            const angle = (index * step) - Math.PI / 2;
-            const rootSize = getLayoutNodeSize(root);
-            root.x = Math.round(MAP_CENTER_X + (Math.cos(angle) * 280) - rootSize.width / 2);
-            root.y = Math.round(MAP_CENTER_Y + (Math.sin(angle) * 280) - rootSize.height / 2);
-            placeChildren(root, angle - step / 2, angle + step / 2, 1);
-        });
+    // Expand radially to resolve collisions without moving the center or turning
+    // outer nodes back towards their parents. Angles and level order stay fixed.
+    let expansion = 1;
+    for (let iteration = 0; iteration < 2; iteration += 1) {
+        for (const { node, depth, angle } of placements) {
+            const size = sizes.get(node.id);
+            const radius = ringRadii[depth] * expansion;
+            node.x = MAP_CENTER_X + Math.cos(angle) * radius - size.width / 2;
+            node.y = MAP_CENTER_Y + Math.sin(angle) * radius - size.height / 2;
+        }
+        let requiredExpansion = 1;
+        for (let i = 0; i < placements.length; i += 1) {
+            for (let j = i + 1; j < placements.length; j += 1) {
+                const first = placements[i].node;
+                const second = placements[j].node;
+                const firstSize = sizes.get(first.id);
+                const secondSize = sizes.get(second.id);
+                const dx = Math.abs(first.x + firstSize.width / 2 - second.x - secondSize.width / 2);
+                const dy = Math.abs(first.y + firstSize.height / 2 - second.y - secondSize.height / 2);
+                const scaleX = ((firstSize.width + secondSize.width) / 2 + padding) / Math.max(dx, 0.001);
+                const scaleY = ((firstSize.height + secondSize.height) / 2 + padding) / Math.max(dy, 0.001);
+                requiredExpansion = Math.max(requiredExpansion, Math.min(scaleX, scaleY));
+            }
+        }
+        expansion *= requiredExpansion;
     }
-
-    resolveNodeOverlaps(nodes, centerRoot);
-    return centerRoot;
+    return root;
 }
 
 function getLayoutNodeSize(node) {
     return isSketchPreset() ? getSketchNodeSize(node) : getNodeSize(node);
-}
-
-function resolveNodeOverlaps(nodes, fixedNode) {
-    const padding = 28;
-    for (let iteration = 0; iteration < 240; iteration += 1) {
-        if (!resolveOverlapIteration(nodes, padding, fixedNode)) break;
-    }
-}
-
-function resolveOverlapIteration(nodes, padding, fixedNode) {
-    let moved = false;
-    for (let i = 0; i < nodes.length; i += 1) {
-        for (let j = i + 1; j < nodes.length; j += 1) {
-            moved = resolveNodePairOverlap(nodes[i], nodes[j], padding, fixedNode) || moved;
-        }
-    }
-    return moved;
-}
-
-function resolveNodePairOverlap(first, second, padding, fixedNode) {
-    const firstBox = getNodeLayoutBox(first);
-    const secondBox = getNodeLayoutBox(second);
-    const overlap = getNodeBoxOverlap(firstBox, secondBox, padding);
-    if (!overlap) return false;
-
-    const shift = getOverlapShift(first, second, firstBox, secondBox, overlap);
-    applyOverlapShift(first, second, shift, fixedNode);
-    return true;
-}
-
-function getNodeLayoutBox(node) {
-    const size = getLayoutNodeSize(node);
-    return {
-        centerX: node.x + (size.width / 2),
-        centerY: node.y + (size.height / 2),
-        height: size.height,
-        width: size.width
-    };
-}
-
-function getNodeBoxOverlap(firstBox, secondBox, padding) {
-    const overlapX = ((firstBox.width + secondBox.width) / 2) + padding - Math.abs(firstBox.centerX - secondBox.centerX);
-    const overlapY = ((firstBox.height + secondBox.height) / 2) + padding - Math.abs(firstBox.centerY - secondBox.centerY);
-    return overlapX > 0 && overlapY > 0 ? { x: overlapX, y: overlapY } : null;
-}
-
-function getOverlapShift(first, second, firstBox, secondBox, overlap) {
-    return {
-        x: getAxisOverlapShift(overlap.x, secondBox.centerX - firstBox.centerX, getOverlapFallback(first, second, 37, 19)),
-        y: getAxisOverlapShift(overlap.y, secondBox.centerY - firstBox.centerY, getOverlapFallback(first, second, 13, 17))
-    };
-}
-
-function getOverlapFallback(first, second, firstMultiplier, secondMultiplier) {
-    return ((first.id * firstMultiplier + second.id * secondMultiplier) % 2 === 0) ? 1 : -1;
-}
-
-function getAxisOverlapShift(overlap, delta, fallback) {
-    const direction = Math.abs(delta) < 0.001 ? fallback : Math.sign(delta);
-    return Math.max(1, Math.ceil(overlap / 2)) * direction;
-}
-
-function applyOverlapShift(first, second, shift, fixedNode) {
-    const firstFactor = first === fixedNode ? 0 : second === fixedNode ? 2 : 1;
-    const secondFactor = second === fixedNode ? 0 : first === fixedNode ? 2 : 1;
-    first.x -= shift.x * firstFactor;
-    second.x += shift.x * secondFactor;
-    first.y -= shift.y * firstFactor;
-    second.y += shift.y * secondFactor;
 }
 
 async function persistAllNodePositions() {
