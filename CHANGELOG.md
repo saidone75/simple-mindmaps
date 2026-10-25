@@ -11,11 +11,11 @@ Modifiche previste per la versione **0.1.1**.
 
 ### Added
 
-- Campo «Indizio per il gioco» nei nodi, con salvataggio automatico nell’editor e generazione per le nuove mappe AI.
+- Tre campi «Indizio per il gioco» per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.
 
 ### Changed
 
-- Dopo gli errori il gioco usa esclusivamente l’indizio dedicato o un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
+- Dopo ogni errore il gioco sceglie casualmente uno degli indizi dedicati compilati, ignorando i duplicati, oppure mostra un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
 - CSS semplificato eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
 
 ### Fixed

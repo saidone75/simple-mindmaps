@@ -26,6 +26,8 @@ public class CreateNodeRequest {
     private String text;
     private String description;
     private String hint;
+    private String hint2;
+    private String hint3;
     private String emoji;
     private String branchText;
     private Integer x;

@@ -189,6 +189,8 @@ public class MindMapService {
                     nodeDto.getColor() != null ? nodeDto.getColor() : DEFAULT_NODE_COLOR
             );
             node.setHint(normalizeNodeHint(nodeDto.getHint()));
+            node.setHint2(normalizeNodeHint(nodeDto.getHint2()));
+            node.setHint3(normalizeNodeHint(nodeDto.getHint3()));
             node.setEmoji(normalizeNodeEmoji(nodeDto.getEmoji()));
             node.setBranchText(normalizeBranchText(nodeDto.getBranchText()));
             if (searchWikimediaImages) {
@@ -214,6 +216,8 @@ public class MindMapService {
         node.setText(request.getText() == null || request.getText().isBlank() ? "Nuovo nodo" : request.getText().trim());
         node.setDescription(normalizeNodeDescription(request.getDescription()));
         node.setHint(normalizeNodeHint(request.getHint()));
+        node.setHint2(normalizeNodeHint(request.getHint2()));
+        node.setHint3(normalizeNodeHint(request.getHint3()));
         node.setEmoji(normalizeNodeEmoji(request.getEmoji()));
         node.setBranchText(normalizeBranchText(request.getBranchText()));
         node.setX(request.getX() == null ? 300 : request.getX());
@@ -256,6 +260,8 @@ public class MindMapService {
         updateIfPresent(request.getText(), value -> node.setText(normalizeNodeText(value)));
         updateIfPresent(request.getDescription(), value -> node.setDescription(normalizeNodeDescription(value)));
         updateIfPresent(request.getHint(), value -> node.setHint(normalizeNodeHint(value)));
+        updateIfPresent(request.getHint2(), value -> node.setHint2(normalizeNodeHint(value)));
+        updateIfPresent(request.getHint3(), value -> node.setHint3(normalizeNodeHint(value)));
         updateIfPresent(request.getEmoji(), value -> node.setEmoji(normalizeNodeEmoji(value)));
         updateIfPresent(request.getBranchText(), value -> node.setBranchText(normalizeBranchText(value)));
         updateIfPresent(request.getX(), node::setX);
