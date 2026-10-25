@@ -53,6 +53,7 @@ const state = {
 const svg = document.getElementById("mindmap-canvas");
 const textInput = document.getElementById("node-text");
 const descriptionInput = document.getElementById("node-description");
+const hintInput = document.getElementById("node-hint");
 const colorInput = document.getElementById("node-color");
 const branchColorInput = document.getElementById("branch-color");
 const branchStyleInput = document.getElementById("branch-style");
@@ -976,6 +977,7 @@ function selectNode(nodeId, options = {}) {
     if (!node) return;
     textInput.value = node.text || "";
     descriptionInput.value = node.description || "";
+    hintInput.value = node.hint || "";
     if (nodeEmojiInput) nodeEmojiInput.value = node.emoji || "";
     branchTextInput.value = node.branchText || "";
     colorInput.value = getNodeColor(node);
@@ -1310,8 +1312,8 @@ imageHeightInput.addEventListener("input", () => {
 });
 }
 
-const autosubmitFields = [textInput, descriptionInput, nodeEmojiInput, branchTextInput, colorInput, branchColorInput, branchStyleInput, branchWidthInput, branchCurveInput, fontSizeInput, imageUrlInput].filter(Boolean);
-const instantAutosubmitFields = new Set([textInput, imageUrlInput, branchColorInput, branchWidthInput, fontSizeInput]);
+const autosubmitFields = [textInput, descriptionInput, hintInput, nodeEmojiInput, branchTextInput, colorInput, branchColorInput, branchStyleInput, branchWidthInput, branchCurveInput, fontSizeInput, imageUrlInput].filter(Boolean);
+const instantAutosubmitFields = new Set([textInput, hintInput, imageUrlInput, branchColorInput, branchWidthInput, fontSizeInput]);
 for (const field of autosubmitFields) {
     const eventName = instantAutosubmitFields.has(field) ? "input" : "change";
     field.addEventListener(eventName, () => queueAutoSubmitSelectedNode());
@@ -1331,6 +1333,7 @@ function updateImagePreview(uri) {
 function applyFormToNode(node) {
     node.text = normalizeNodeText(textInput.value);
     node.description = normalizeNodeText(descriptionInput.value || "").slice(0, 280);
+    node.hint = sanitizePlainText(hintInput.value || "").trim().slice(0, 280);
     node.emoji = normalizeNodeEmoji(nodeEmojiInput?.value || "");
     node.branchText = (branchTextInput.value || "").trim();
     node.color = colorInput.value;

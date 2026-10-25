@@ -41,6 +41,9 @@ public class Node {
     @Column
     private String description;
 
+    @Column(length = 280)
+    private String hint;
+
     private String emoji;
 
     private String branchText;

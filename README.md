@@ -101,7 +101,7 @@ La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti,
 
 ### Giocare
 
-Premi **Giochiamo!** e prendi un'immagine dallo zainetto. Trascinala nella casella corretta, oppure selezionala e poi tocca la casella; da tastiera puoi usare Invio o Spazio sui controlli. Dopo un tentativo sbagliato compare un indizio tratto dalla descrizione del nodo corretto o, se manca, dal suo titolo.
+Premi **Giochiamo!** e prendi un'immagine dallo zainetto. Trascinala nella casella corretta, oppure selezionala e poi tocca la casella; da tastiera puoi usare Invio o Spazio sui controlli. Dopo un tentativo sbagliato compare l’**Indizio per il gioco** del nodo a cui appartiene l’immagine. Puoi scriverlo nell’editor: scegli un aiuto che faccia ragionare, senza svelare la risposta. Se il campo è vuoto, compare un incoraggiamento generico; descrizione e titolo non vengono usati come indizi. Le mappe generate con AI includono un indizio modificabile. Per applicare gli indizi a un gioco già condiviso, premi **Aggiorna gioco pubblicato** e condividi il nuovo link.
 
 I pulsanti **− / +** e il cursore regolano lo zoom dal **10% al 250%**. **Vedi tutta la mappa** adatta la vista alla finestra. Trascina lo sfondo con la manina per esplorare la mappa ingrandita, anche con il tocco.
 

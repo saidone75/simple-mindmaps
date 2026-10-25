@@ -9,8 +9,13 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 Modifiche previste per la versione **0.1.1**.
 
+### Added
+
+- Campo «Indizio per il gioco» nei nodi, con salvataggio automatico nell’editor e generazione per le nuove mappe AI.
+
 ### Changed
 
+- Dopo gli errori il gioco usa esclusivamente l’indizio dedicato o un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
 - CSS semplificato eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
 
 ### Fixed

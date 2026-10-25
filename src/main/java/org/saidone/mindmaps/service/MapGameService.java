@@ -114,6 +114,7 @@ public class MapGameService {
             this.token = token;
             this.map = new Gson().fromJson(new Gson().toJson(snapshot), MindMapDto.class);
             for (val node : map.getNodes()) {
+                node.setHint(null);
                 if (!hasImage(node)) continue;
                 val cardId = UUID.randomUUID().toString();
                 originalImages.put(node.getId(), node.getImageUri());
@@ -144,9 +145,9 @@ public class MapGameService {
             }
             else {
                 errors++;
-                hint = answer.getDescription();
-                if (hint == null || hint.isBlank() || hint.equals("Breve descrizione del nodo.")) {
-                    hint = "Cerca la casella con il titolo: " + answer.getText();
+                hint = answer.getHint();
+                if (hint == null || hint.isBlank()) {
+                    hint = "Osserva i dettagli dell’immagine e prova un’altra casella. Puoi farcela!";
                 }
             }
             val complete = matched.size() == answers.size();

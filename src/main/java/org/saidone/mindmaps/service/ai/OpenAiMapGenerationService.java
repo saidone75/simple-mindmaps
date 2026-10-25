@@ -65,10 +65,11 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                   "items": {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": ["text", "description", "emoji", "branchText", "imageUri", "imageKeywords", "parentId"],
+                    "required": ["text", "description", "hint", "emoji", "branchText", "imageUri", "imageKeywords", "parentId"],
                     "properties": {
                       "text": { "type": "string" },
                       "description": { "type": "string" },
+                      "hint": { "type": "string", "maxLength": 280 },
                       "emoji": { "type": "string" },
                       "branchText": { "type": "string" },
                       "imageUri": { "type": "string" },
@@ -127,7 +128,7 @@ public class OpenAiMapGenerationService implements MapGenerationService {
         val userPrompt = """
                 Crea una mindmap in italiano e rispondi SOLO con JSON valido compatibile con MindMapDto.
                 Campi obbligatori: title (string), stylePreset (string), nodes (array).
-                Ogni node deve avere: text (titolo), description (breve descrizione/curiosità), emoji, branchText, imageUri, parentId.
+                Ogni node deve avere: text (titolo), description (breve descrizione/curiosità), hint (indizio per il gioco), emoji, branchText, imageUri, parentId.
 
                 Vincoli:
                 - Argomento: %s
@@ -136,6 +137,7 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                 - text deve essere sempre un titolo breve (2-6 parole).
                 - description è OBBLIGATORIA per ogni nodo: una sola frase breve con descrizione o curiosità utile.
                 - Non lasciare mai description vuota o generica (es. "descrizione", "nodo", "...").
+                - hint è un breve indizio in italiano per bambini della scuola primaria: invita a ragionare su una caratteristica indiretta, senza citare il titolo del nodo, sinonimi evidenti o rivelare la risposta. Deve essere diverso da description e lungo al massimo 280 caratteri.
                 - I nodi successivi devono essere brevi, non duplicati e coerenti col tema.
                 - %s
                 - imageUri deve essere sempre stringa vuota.
