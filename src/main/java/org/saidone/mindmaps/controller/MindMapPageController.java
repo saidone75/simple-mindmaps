@@ -105,6 +105,18 @@ public class MindMapPageController {
         return "maps/editor";
     }
 
+    @PostMapping("/{id}/prizes")
+    public String updatePrizes(@PathVariable Long id, @RequestParam("prizes") java.util.List<String> prizes,
+                                   RedirectAttributes attributes) {
+        try {
+            mindMapService.updatePrizes(id, prizes);
+            attributes.addFlashAttribute("publicationMessage", "Titoli premio salvati. Aggiorna il gioco pubblicato per condividerli.");
+        } catch (IllegalArgumentException ex) {
+            attributes.addFlashAttribute("publicationMessage", ex.getMessage());
+        }
+        return "redirect:/maps/" + id;
+    }
+
     @PostMapping("/{id}/publish")
     public String publish(@PathVariable Long id, RedirectAttributes attributes) {
         try {

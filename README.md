@@ -105,7 +105,9 @@ Premi **Giochiamo!** e prendi un'immagine dallo zainetto. Trascinala nella casel
 
 I pulsanti **− / +** e il cursore regolano lo zoom dal **10% al 250%**. **Vedi tutta la mappa** adatta la vista alla finestra. Trascina lo sfondo con la manina per esplorare la mappa ingrandita, anche con il tocco.
 
-Durante il gioco si vedono i progressi, senza cronometro o conteggio degli errori. **Giochiamo ancora ↻** avvia una nuova partita. Ogni sessione del browser mantiene una sola partita attiva; i risultati vengono mostrati alla fine e non sono archiviati in una classifica.
+Durante il gioco si vedono i progressi e un livello incoraggiante, senza punteggi, cronometro o conteggio degli errori. Le mappe generate con AI ricevono cinque titoli premio legati al tema nella stessa richiesta che crea la mappa: il livello cresce con le immagini sistemate e il quinto titolo premio si raggiunge completando la mappa. Errori e tempo impiegato non fanno perdere livelli. Nell'editor, apri **I cinque titoli premio del gioco** per modificarli e salvarli, poi aggiorna la pubblicazione per condividerli. Le mappe manuali, da template e già esistenti senza titoli premio AI usano titoli premio iniziali legati al nome della mappa, modificabili dall'insegnante.
+
+**Giochiamo ancora ↻** avvia una nuova partita. Ogni sessione del browser mantiene una sola partita attiva e non esiste una classifica.
 
 ## Persistenza ed esportazione
 

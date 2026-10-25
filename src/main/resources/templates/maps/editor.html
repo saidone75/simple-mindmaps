@@ -62,6 +62,18 @@
             <a class="publication-open" th:href="@{/play/{token}(token=${publicToken})}" target="_blank" rel="noopener">Apri gioco ↗</a>
             <form th:action="@{/maps/{id}/unpublish(id=${map.id})}" method="post"><button class="secondary-btn" type="submit">Ritira pubblicazione</button></form>
         </div>
+        <details class="prizes-editor">
+            <summary>🏅 I cinque titoli premio del gioco</summary>
+            <p>Ogni livello festeggia una nuova parte della mappa: nessuna penalità per errori o tempo.
+                Puoi personalizzare tutti i titoli premio. Per mostrarli nel gioco condiviso, aggiorna la pubblicazione.</p>
+            <form th:action="@{/maps/{id}/prizes(id=${map.id})}" method="post" class="prizes-form">
+                <div th:each="prize, level : ${map.prizes}" class="prize-field">
+                    <label th:for="${'prize-' + level.index}" th:text="${'Livello ' + level.count}">Livello</label>
+                    <input th:id="${'prize-' + level.index}" type="text" name="prizes" th:value="${prize}" required maxlength="120">
+                </div>
+                <button type="submit" class="secondary-btn small-btn">Salva i titoli premio</button>
+            </form>
+        </details>
         <small>La pubblicazione salva una copia della mappa. Aggiornandola, il vecchio link viene disattivato.</small>
     </section>
     <script>document.addEventListener('DOMContentLoaded', () => { const link = document.getElementById('public-game-link'); if (link) { link.value = new URL(link.value, location.origin).href; link.onclick = () => link.select(); } });</script>

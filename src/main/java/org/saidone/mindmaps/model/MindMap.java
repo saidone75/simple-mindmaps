@@ -38,6 +38,10 @@ public class MindMap {
     @Column
     private String stylePreset;
 
+    @Lob
+    @Column(name = "game_titles", columnDefinition = "CLOB")
+    private String prizesJson;
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

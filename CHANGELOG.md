@@ -12,15 +12,24 @@ Modifiche previste per la versione **0.1.1**.
 ### Added
 
 - Tre campi «Indizio per il gioco» per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.
+- Cinque titoli premio (`prizes`) legati al tema, generati dall’AI nella stessa richiesta della mappa e modificabili singolarmente dall’insegnante. Per le mappe manuali, da template o già esistenti senza titoli premio vengono proposti valori iniziali modificabili.
 
 ### Changed
 
 - Dopo ogni errore il gioco sceglie casualmente uno degli indizi dedicati compilati, ignorando i duplicati, oppure mostra un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
 - CSS semplificato eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
+- Punteggio sostituito da cinque livelli incoraggianti basati sull’avanzamento: errori e tempo non fanno perdere livelli e completare la mappa assegna il quinto titolo premio.
+- Riordino automatico e salvataggio delle posizioni alla prima apertura delle nuove mappe, anche da template e generate con AI.
+- Disposizione radiale più compatta, con nodo principale al centro anche dell’area di disegno e livelli successivi progressivamente più esterni, tenendo conto delle dimensioni dei nodi e delle immagini.
+- Apertura dell’editor senza nodi selezionati, anche per le mappe appena generate.
+- Rendering dell’editor ottimizzato con riuso degli elementi SVG invariati, aggiornamenti del mouse raggruppati per fotogramma, cache delle dimensioni e griglia disegnata tramite pattern SVG.
 
 ### Fixed
 
 - Pan dell'editor collegato al contenitore scorrevole della mappa e attivabile trascinando tutta l'area vuota.
+- Stato della partita e dati contenuti resi serializzabili per il salvataggio nella sessione HTTP, con ripristino dell’orologio alla deserializzazione e tipo esplicito nel controller per l’analisi SonarQube.
+- Attesa esplicita delle richieste di abbinamento nei gestori di tastiera e trascinamento del gioco.
+- Espressioni regolari per le variabili CSS nelle esportazioni semplificate per ridurre il backtracking.
 
 ## [0.1.0] - 2026-10-25
 

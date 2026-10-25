@@ -261,3 +261,11 @@
 
 .canvas-scroll-area.is-panning,
 .canvas-scroll-area.is-panning * { cursor: grabbing; user-select: none; }
+
+.prizes-editor { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid #e5ddf3; }
+.prizes-editor summary { cursor: pointer; font-weight: 700; color: #5d4b82; }
+.prizes-editor p { font-size: .85rem; line-height: 1.5; color: #746585; }
+.prizes-form { display: grid; gap: 10px; margin-bottom: 12px; }
+.prize-field { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 10px; }
+.prize-field input { width: 100%; min-width: 0; }
+.prizes-form button { justify-self: start; }
