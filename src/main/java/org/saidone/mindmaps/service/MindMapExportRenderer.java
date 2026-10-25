@@ -52,8 +52,8 @@ public class MindMapExportRenderer {
 
     private static final String APP_CSS_RESOURCE = "static/css/app.css";
     private static final Set<String> SUPPORTED_PDF_FORMATS = Set.of("a4", "a3", "letter", "legal");
-    private static final Pattern CSS_VARIABLE_PATTERN = Pattern.compile("var\\(\\s*--([A-Za-z0-9_-]+)(?:\\s*,\\s*([^)]*))?\\s*\\)");
-    private static final Pattern CSS_VARIABLE_DECLARATION_PATTERN = Pattern.compile("--([A-Za-z0-9_-]+)\\s*:\\s*([^;]+);");
+    private static final Pattern CSS_VARIABLE_PATTERN = Pattern.compile("var\\(\\s*+--([A-Za-z0-9_-]++)\\s*+(?:,([^)]*+))?\\)");
+    private static final Pattern CSS_VARIABLE_DECLARATION_PATTERN = Pattern.compile("(?<![A-Za-z0-9_-])--([A-Za-z0-9_-]++)\\s*+:([^;]++);");
 
     private final Map<String, String> exportCssVariables;
 
