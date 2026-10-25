@@ -1595,13 +1595,15 @@ if (canvasViewport) {
     }, { passive: false, capture: true });
 }
 
-autoLayoutBtn.addEventListener("click", async () => {
+async function reorderMap() {
     pushUndoSnapshot();
     const root = applyOrganicLayout();
     render();
     focusCanvasOnContent(root);
     await persistAllNodePositions();
-});
+}
+
+autoLayoutBtn.addEventListener("click", reorderMap);
 
 async function createNode(payload) {
     const response = await fetch(`/api/maps/${state.map.id}/nodes`, {
@@ -2074,3 +2076,9 @@ if (stylePresetInput) {
 }
 selectNode(state.map.nodes[0]?.id ?? null);
 render();
+if (autoLayoutOnOpen) {
+    reorderMap().catch(error => {
+        console.error("Impossibile salvare il riordino iniziale della mappa", error);
+        if (autosaveStatus) autosaveStatus.textContent = "Riordino non salvato. Premi Riordina la mappa per riprovare.";
+    });
+}

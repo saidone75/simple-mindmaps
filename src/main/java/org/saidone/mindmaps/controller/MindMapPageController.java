@@ -56,19 +56,22 @@ public class MindMapPageController {
     public String create(@Valid @ModelAttribute("mapForm") CreateMindMapRequest mapForm,
                          BindingResult bindingResult,
                          Model model,
-                         Principal principal) {
+                         Principal principal,
+                         RedirectAttributes redirectAttributes) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("username", principal.getName());
             model.addAttribute("maps", mindMapService.findAll());
             return "maps/list";
         }
         val map = mindMapService.create(mapForm);
+        redirectAttributes.addFlashAttribute("autoLayoutOnOpen", true);
         return String.format("redirect:/maps/%s", map.getId());
     }
 
     @PostMapping("/template/{templateKey}")
-    public String createTemplate(@PathVariable String templateKey) {
+    public String createTemplate(@PathVariable String templateKey, RedirectAttributes redirectAttributes) {
         val map = mindMapService.createFromTemplate(templateKey);
+        redirectAttributes.addFlashAttribute("autoLayoutOnOpen", true);
         return String.format("redirect:/maps/%s", map.getId());
     }
 
@@ -86,6 +89,7 @@ public class MindMapPageController {
         try {
             val generated = mapGenerationApplicationService.generateMindMap(request);
             val map = mindMapService.createFromGeneratedMap(generated, searchWikimediaImages);
+            redirectAttributes.addFlashAttribute("autoLayoutOnOpen", true);
             return String.format("redirect:/maps/%s", map.getId());
         } catch (RuntimeException ex) {
             redirectAttributes.addFlashAttribute("aiError", ex.getMessage());
