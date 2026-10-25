@@ -8,7 +8,7 @@ Un'applicazione per creare mappe mentali e trasformarle in giochi delle immagini
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 
-Versione **0.1.0**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
+Versione in sviluppo: **0.1.1-SNAPSHOT**. Ultima release: **0.1.0**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 ## Funzionalità
 
@@ -71,16 +71,16 @@ La chiave OpenAI serve alla generazione AI; la creazione manuale delle mappe non
 
 ### Build e avvio del JAR
 
-Per compilare e verificare la release con i test già presenti:
+Per compilare e verificare il progetto con i test già presenti:
 
 ```bash
 mvn -B clean verify
 ```
 
-L'artefatto eseguibile è `target/mindmaps-0.1.0.jar`. Con credenziali e directory dei dati già configurate:
+L'artefatto eseguibile è `target/mindmaps-0.1.1-SNAPSHOT.jar`. Con credenziali e directory dei dati già configurate:
 
 ```bash
-java -jar target/mindmaps-0.1.0.jar --spring.profiles.active=prod
+java -jar target/mindmaps-0.1.1-SNAPSHOT.jar --spring.profiles.active=prod
 ```
 
 Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `./log/mindmaps.log`. I profili sono di Spring: non occorre un profilo Maven `-Pprod`.

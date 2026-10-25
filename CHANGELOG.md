@@ -7,6 +7,16 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+Modifiche previste per la versione **0.1.1**.
+
+### Changed
+
+- CSS semplificato eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
+
+### Fixed
+
+- Pan dell'editor collegato al contenitore scorrevole della mappa e attivabile trascinando tutta l'area vuota.
+
 ## [0.1.0] - 2026-10-25
 
 ### Added

@@ -76,6 +76,7 @@ const gridEnabledInput = document.getElementById("grid-enabled");
 const gridSizeInput = document.getElementById("grid-size-control");
 const stylePresetInput = document.getElementById("style-preset-control");
 const canvasPanel = svg.closest(".canvas-panel");
+const canvasViewport = svg.closest(".canvas-scroll-area");
 const nodeEditorOverlay = document.getElementById("node-editor-overlay");
 const imageEditorOverlay = document.getElementById("image-editor-overlay");
 const appDialog = document.getElementById("app-dialog");
@@ -791,7 +792,7 @@ function captureInteractionViewport() {
 
 
 function focusCanvasOnContent(node) {
-    if (!canvasPanel) return;
+    if (!canvasViewport) return;
     const viewport = getViewportForRender();
     const size = node ? getLayoutNodeSize(node) : null;
     const point = svg.createSVGPoint();
@@ -800,10 +801,10 @@ function focusCanvasOnContent(node) {
     const matrix = svg.getScreenCTM();
     if (!matrix) return;
     const center = point.matrixTransform(matrix);
-    const panelRect = canvasPanel.getBoundingClientRect();
+    const panelRect = canvasViewport.getBoundingClientRect();
 
-    canvasPanel.scrollLeft += center.x - panelRect.left - canvasPanel.clientLeft - canvasPanel.clientWidth / 2;
-    canvasPanel.scrollTop += center.y - panelRect.top - canvasPanel.clientTop - canvasPanel.clientHeight / 2;
+    canvasViewport.scrollLeft += center.x - panelRect.left - canvasViewport.clientLeft - canvasViewport.clientWidth / 2;
+    canvasViewport.scrollTop += center.y - panelRect.top - canvasViewport.clientTop - canvasViewport.clientHeight / 2;
 }
 
 function renderNodeImage(group, node, width) {
@@ -1068,16 +1069,16 @@ function startNodeResize(event) {
 }
 
 function startCanvasPan(event) {
-    if (!canvasPanel || event.button !== 0) return;
+    if (!canvasViewport || event.button !== 0) return;
     if (state.drag || state.resize) return;
     if (event.target.closest(".node-group") || event.target.closest(".node-action-button") || event.target.closest(".node-resize-handle") || event.target.closest(".image-resize-handle")) return;
     state.pan = {
         startClientX: event.clientX,
         startClientY: event.clientY,
-        startScrollLeft: canvasPanel.scrollLeft,
-        startScrollTop: canvasPanel.scrollTop,
+        startScrollLeft: canvasViewport.scrollLeft,
+        startScrollTop: canvasViewport.scrollTop,
     };
-    svg.classList.add("is-panning");
+    canvasViewport.classList.add("is-panning");
     event.preventDefault();
 }
 
@@ -1114,11 +1115,11 @@ document.addEventListener("mousemove", event => {
 });
 
 document.addEventListener("mousemove", event => {
-    if (!state.pan || !canvasPanel) return;
+    if (!state.pan || !canvasViewport) return;
     const dx = event.clientX - state.pan.startClientX;
     const dy = event.clientY - state.pan.startClientY;
-    canvasPanel.scrollLeft = state.pan.startScrollLeft - dx;
-    canvasPanel.scrollTop = state.pan.startScrollTop - dy;
+    canvasViewport.scrollLeft = state.pan.startScrollLeft - dx;
+    canvasViewport.scrollTop = state.pan.startScrollTop - dy;
 });
 
 document.addEventListener("mousemove", event => {
@@ -1152,7 +1153,7 @@ function resetPointerInteractionState() {
     state.resize = null;
     state.pan = null;
     state.interactionViewport = null;
-    svg.classList.remove("is-panning");
+    canvasViewport?.classList.remove("is-panning");
     applyCanvasViewport();
 }
 
@@ -1571,10 +1572,10 @@ if (renameMapBtn) {
     renameMapBtn.addEventListener("click", () => renameMap());
 }
 
-if (canvasPanel) {
-    svg.addEventListener("mousedown", startCanvasPan);
+if (canvasViewport) {
+    canvasViewport.addEventListener("mousedown", startCanvasPan);
 
-    canvasPanel.addEventListener("scroll", () => {
+    canvasViewport.addEventListener("scroll", () => {
         const selectedNode = getNodeById(state.selectedNodeId);
         if (selectedNode) updateNodeEditorOverlay(selectedNode);
         const imageOverlayNode = getNodeById(state.imageOverlayNodeId);
@@ -1582,7 +1583,7 @@ if (canvasPanel) {
     });
 
     globalThis.addEventListener("wheel", event => {
-        const rect = canvasPanel.getBoundingClientRect();
+        const rect = canvasViewport.getBoundingClientRect();
         const isInsideCanvasByPointer = event.clientX >= rect.left && event.clientX <= rect.right
             && event.clientY >= rect.top && event.clientY <= rect.bottom;
         if (!isInsideCanvasByPointer) return;
