@@ -168,13 +168,13 @@
                 group.setAttribute('tabindex', '0'); group.setAttribute('role','button');
                 group.setAttribute('aria-label', `${node.text}${matched.has(node.id) ? ', completata' : ', inserisci immagine'}`);
                 group.onclick = () => attempt(node);
-                group.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); attempt(node); } };
+                group.onkeydown = async e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); await attempt(node); } };
                 group.ondragover = e => {
                     e.preventDefault();
                     if (selected && !matched.has(node.id)) group.classList.add('drop-ready');
                 };
                 group.ondragleave = () => group.classList.remove('drop-ready');
-                group.ondrop = e => { e.preventDefault(); group.classList.remove('drop-ready'); attempt(node); };
+                group.ondrop = async e => { e.preventDefault(); group.classList.remove('drop-ready'); await attempt(node); };
             }
             const lines = getNodeDisplayLines(node, imageNode ? 18 : 20);
             const font = Number(node.fontSize) || 18, lineHeight = Math.max(16, Math.round(font*1.2));
