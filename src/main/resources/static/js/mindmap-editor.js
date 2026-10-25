@@ -50,6 +50,42 @@ const state = {
     imageOverlayNodeId: null
 };
 
+// Keep unchanged SVG elements (especially images) alive between frames.
+const renderCache = { nodes: new Map(), connectors: new Map(), layers: null, gridKey: null };
+const layoutSizeCache = new WeakMap();
+let renderFrame = null;
+let renderNodeIndex = null;
+let renderNodeSizes = null;
+
+function requestRender() {
+    if (renderFrame != null) return;
+    renderFrame = requestAnimationFrame(() => {
+        renderFrame = null;
+        render();
+    });
+}
+
+function sameRenderInputs(previous, next) {
+    return previous?.length === next.length && next.every((value, index) => Object.is(value, previous[index]));
+}
+
+function updateCachedElement(cache, id, inputs, layer, draw) {
+    const previous = cache.get(id);
+    if (previous && sameRenderInputs(previous.inputs, inputs)) return;
+    const element = draw();
+    if (previous) previous.element.replaceWith(element);
+    else layer.appendChild(element);
+    cache.set(id, { inputs, element });
+}
+
+function removeStaleElements(cache, activeIds) {
+    for (const [id, entry] of cache) {
+        if (activeIds.has(id)) continue;
+        entry.element.remove();
+        cache.delete(id);
+    }
+}
+
 const svg = document.getElementById("mindmap-canvas");
 const textInput = document.getElementById("node-text");
 const descriptionInput = document.getElementById("node-description");
@@ -294,7 +330,7 @@ function redoChange() {
     restoreEditorState(next);
 }
 function getNodeById(id) {
-    return state.map.nodes.find(n => n.id === id);
+    return renderNodeIndex ? renderNodeIndex.get(id) : state.map.nodes.find(n => n.id === id);
 }
 
 
@@ -372,39 +408,40 @@ function renderConnectorDefs() {
 }
 
 function renderGrid(viewport) {
-    if (!state.gridEnabled) return;
-    const gridGroup = document.createElementNS(SVG_NS, "g");
-    gridGroup.setAttribute("class", "grid-layer");
-    gridGroup.setAttribute("opacity", "0.28");
+    const layer = renderCache.layers.grid;
     const gridSize = Math.max(5, Number(state.gridSize) || DEFAULT_GRID_SIZE);
-    const startX = Math.floor(viewport.x / gridSize) * gridSize;
-    const startY = Math.floor(viewport.y / gridSize) * gridSize;
-    const endX = viewport.x + viewport.width;
-    const endY = viewport.y + viewport.height;
+    const inputs = [state.gridEnabled, gridSize, viewport.x, viewport.y, viewport.width, viewport.height];
+    if (sameRenderInputs(renderCache.gridKey, inputs)) return;
+    renderCache.gridKey = inputs;
+    layer.replaceChildren();
+    if (!state.gridEnabled) return;
 
-    for (let x = startX; x <= endX; x += gridSize) {
-        const line = document.createElementNS(SVG_NS, "line");
-        line.setAttribute("x1", String(x));
-        line.setAttribute("y1", String(startY));
-        line.setAttribute("x2", String(x));
-        line.setAttribute("y2", String(endY));
-        line.setAttribute("stroke", "#8fa0b5");
-        line.setAttribute("stroke-width", x % (gridSize * 5) === 0 ? "0.9" : "0.45");
-        gridGroup.appendChild(line);
+    // Two reusable patterns replace potentially thousands of individual lines.
+    const defs = document.createElementNS(SVG_NS, "defs");
+    for (const [id, size, strokeWidth] of [["editor-grid-minor", gridSize, "0.45"], ["editor-grid-major", gridSize * 5, "0.9"]]) {
+        const pattern = document.createElementNS(SVG_NS, "pattern");
+        pattern.setAttribute("id", id);
+        pattern.setAttribute("patternUnits", "userSpaceOnUse");
+        pattern.setAttribute("width", size);
+        pattern.setAttribute("height", size);
+        const path = document.createElementNS(SVG_NS, "path");
+        path.setAttribute("d", `M ${size} 0 H 0 V ${size}`);
+        path.setAttribute("fill", "none");
+        path.setAttribute("stroke", "#8fa0b5");
+        path.setAttribute("stroke-width", strokeWidth);
+        pattern.appendChild(path);
+        defs.appendChild(pattern);
     }
-    for (let y = startY; y <= endY; y += gridSize) {
-        const line = document.createElementNS(SVG_NS, "line");
-        line.setAttribute("x1", String(startX));
-        line.setAttribute("y1", String(y));
-        line.setAttribute("x2", String(endX));
-        line.setAttribute("y2", String(y));
-        line.setAttribute("stroke", "#8fa0b5");
-        line.setAttribute("stroke-width", y % (gridSize * 5) === 0 ? "0.9" : "0.45");
-        gridGroup.appendChild(line);
+    layer.appendChild(defs);
+    for (const id of ["editor-grid-minor", "editor-grid-major"]) {
+        const rect = document.createElementNS(SVG_NS, "rect");
+        for (const key of ["x", "y", "width", "height"]) rect.setAttribute(key, viewport[key]);
+        rect.setAttribute("fill", `url(#${id})`);
+        rect.setAttribute("opacity", "0.28");
+        rect.setAttribute("pointer-events", "none");
+        layer.appendChild(rect);
     }
-    svg.appendChild(gridGroup);
 }
-
 
 function renderConnectors(depthMap, sketchPreset) {
     for (const node of state.map.nodes) {
@@ -412,26 +449,32 @@ function renderConnectors(depthMap, sketchPreset) {
         const parent = getNodeById(node.parentId);
         if (!parent) continue;
 
-        const parentSize = sketchPreset ? getSketchNodeSize(parent) : getNodeSize(parent);
-        const nodeSize = sketchPreset ? getSketchNodeSize(node) : getNodeSize(node);
+        const parentSize = getLayoutNodeSize(parent);
+        const nodeSize = getLayoutNodeSize(node);
         const x1 = parent.x + parentSize.width / 2;
         const y1 = parent.y + parentSize.height / 2;
         const x2 = node.x + nodeSize.width / 2;
         const y2 = node.y + nodeSize.height / 2;
         const depth = depthMap.get(node.id) || 1;
-        const path = document.createElementNS(SVG_NS, "path");
-        path.setAttribute("class", "connector");
-        path.setAttribute("d", buildConnectorPath(node, x1, y1, x2, y2));
-        applyBranchStyle(path, node, depth);
-        if (sketchPreset) {
-            path.classList.add("connector-sketch");
-            path.removeAttribute("marker-end");
-            const sketchStrokeWidth = String(Math.max(2.5, 5.5 - Math.min(depth, 3)));
-            path.style.strokeWidth = sketchStrokeWidth;
-            path.setAttribute("stroke-width", sketchStrokeWidth);
-        }
-        svg.appendChild(path);
-        renderBranchLabel(node, (x1 + x2) / 2, (y1 + y2) / 2, x1, y1, x2, y2);
+        const inputs = [node, x1, y1, x2, y2, depth, sketchPreset,
+            node.branchColor, node.branchStyle, node.branchWidth, node.branchCurve, node.branchText];
+        updateCachedElement(renderCache.connectors, node.id, inputs, renderCache.layers.connectors, () => {
+            const group = document.createElementNS(SVG_NS, "g");
+            const path = document.createElementNS(SVG_NS, "path");
+            path.setAttribute("class", "connector");
+            path.setAttribute("d", buildConnectorPath(node, x1, y1, x2, y2));
+            applyBranchStyle(path, node, depth);
+            if (sketchPreset) {
+                path.classList.add("connector-sketch");
+                path.removeAttribute("marker-end");
+                const sketchStrokeWidth = String(Math.max(2.5, 5.5 - Math.min(depth, 3)));
+                path.style.strokeWidth = sketchStrokeWidth;
+                path.setAttribute("stroke-width", sketchStrokeWidth);
+            }
+            group.appendChild(path);
+            renderBranchLabel(node, (x1 + x2) / 2, (y1 + y2) / 2, x1, y1, x2, y2, group);
+            return group;
+        });
     }
 }
 
@@ -481,7 +524,7 @@ function bindNodeGroupEvents(group, node) {
         }
         if (state.hoveredNodeId === node.id) return;
         state.hoveredNodeId = node.id;
-        render();
+        requestRender();
     });
     group.addEventListener("mouseleave", () => {
         if (state.hoveredNodeId !== node.id) return;
@@ -489,7 +532,7 @@ function bindNodeGroupEvents(group, node) {
         state.hoverHideTimer = setTimeout(() => {
             state.hoveredNodeId = null;
             state.hoverHideTimer = null;
-            render();
+            requestRender();
         }, 1800);
     });
     group.addEventListener("contextmenu", event => openContextMenu(event, node.id));
@@ -567,7 +610,7 @@ function appendSketchUnderline(group, node, width, height, depth, sketchPreset) 
 }
 
 function renderNodeGroup(node, depth, sketchPreset) {
-    const { width, height } = sketchPreset ? getSketchNodeSize(node) : getNodeSize(node);
+    const { width, height } = getLayoutNodeSize(node);
     const group = createNodeGroupElement(node, sketchPreset);
     const emojiValue = hasNodeImage(node) ? "" : normalizeNodeEmoji(node.emoji);
 
@@ -579,25 +622,50 @@ function renderNodeGroup(node, depth, sketchPreset) {
     appendSketchUnderline(group, node, width, height, depth, sketchPreset);
 
     bindNodeGroupEvents(group, node);
-    svg.appendChild(group);
+    return group;
 }
 
 function render() {
-    svg.innerHTML = "";
-    renderConnectorDefs();
-    renderGrid(getViewportForRender());
-    const depthMap = buildDepthMap(state.map.nodes);
-    const sketchPreset = isSketchPreset();
-    renderConnectors(depthMap, sketchPreset);
-    for (const node of state.map.nodes) renderNodeGroup(node, depthMap.get(node.id) || 0, sketchPreset);
-    applyCanvasViewport();
-    const selectedNode = getNodeById(state.selectedNodeId);
-    if (selectedNode) {
-        updateNodeEditorOverlay(selectedNode);
+    if (renderFrame != null) {
+        cancelAnimationFrame(renderFrame);
+        renderFrame = null;
     }
-    const imageOverlayNode = getNodeById(state.imageOverlayNodeId);
-    if (imageOverlayNode) {
-        updateImageEditorOverlay(imageOverlayNode);
+    if (!renderCache.layers) {
+        renderConnectorDefs();
+        renderCache.layers = {};
+        for (const name of ["grid", "connectors", "nodes"]) {
+            const layer = document.createElementNS(SVG_NS, "g");
+            layer.setAttribute("class", `${name}-layer`);
+            svg.appendChild(layer);
+            renderCache.layers[name] = layer;
+        }
+    }
+    renderNodeIndex = new Map(state.map.nodes.map(node => [node.id, node]));
+    renderNodeSizes = new Map();
+    try {
+        renderGrid(getViewportForRender());
+        const depthMap = buildDepthMap(state.map.nodes);
+        const sketchPreset = isSketchPreset();
+        renderConnectors(depthMap, sketchPreset);
+        const connectorIds = new Set();
+        for (const node of state.map.nodes) {
+            const depth = depthMap.get(node.id) || 0;
+            const inputs = [node, ...Object.values(node), depth, sketchPreset, getNodeColor(node),
+                node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
+            updateCachedElement(renderCache.nodes, node.id, inputs, renderCache.layers.nodes,
+                () => renderNodeGroup(node, depth, sketchPreset));
+            if (node.parentId != null && renderNodeIndex.has(node.parentId)) connectorIds.add(node.id);
+        }
+        removeStaleElements(renderCache.nodes, new Set(renderNodeIndex.keys()));
+        removeStaleElements(renderCache.connectors, connectorIds);
+        applyCanvasViewport();
+        const selectedNode = getNodeById(state.selectedNodeId);
+        if (selectedNode && nodeEditorOverlay?.classList.contains("visible")) updateNodeEditorOverlay(selectedNode);
+        const imageOverlayNode = getNodeById(state.imageOverlayNodeId);
+        if (imageOverlayNode) updateImageEditorOverlay(imageOverlayNode);
+    } finally {
+        renderNodeIndex = null;
+        renderNodeSizes = null;
     }
 }
 
@@ -716,7 +784,7 @@ function getCanvasBounds() {
     let maxX = BASE_CANVAS_WIDTH - CANVAS_PADDING;
     let maxY = BASE_CANVAS_HEIGHT - CANVAS_PADDING;
     for (const node of state.map.nodes) {
-        const nodeSize = isSketchPreset() ? getSketchNodeSize(node) : getNodeSize(node);
+        const nodeSize = getLayoutNodeSize(node);
         minX = Math.min(minX, node.x);
         minY = Math.min(minY, node.y);
         maxX = Math.max(maxX, node.x + nodeSize.width);
@@ -950,7 +1018,7 @@ function renderNodeResizeHandle(group, node, nodeWidth, nodeHeight) {
     group.appendChild(handle);
 }
 
-function renderBranchLabel(node, cx, cy, x1, y1, x2, y2) {
+function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
     const branchText = (node.branchText || "").trim();
     if (!branchText) return;
     const label = document.createElementNS(SVG_NS, "text");
@@ -969,7 +1037,7 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2) {
         event.stopPropagation();
         await quickEditBranchText(node.id);
     });
-    svg.appendChild(label);
+    target.appendChild(label);
 }
 
 
@@ -1115,7 +1183,7 @@ document.addEventListener("mousemove", event => {
     const point = toSvgPoint(event);
     node.x = snapToGrid(Math.round(point.x - state.drag.offsetX));
     node.y = snapToGrid(Math.round(point.y - state.drag.offsetY));
-    render();
+    requestRender();
     scheduleAutosave(node);
 });
 
@@ -1145,7 +1213,7 @@ document.addEventListener("mousemove", event => {
         if (imageHeightInput) imageHeightInput.value = node.imageHeight;
         updateImageSizeLabels();
     }
-    render();
+    requestRender();
     scheduleAutosave(node);
 });
 
@@ -1195,6 +1263,7 @@ document.addEventListener("mouseup", () => {
 
     if (state.drag || state.resize) commitInteractionSnapshot();
 
+    if (renderFrame != null) render();
     resetPointerInteractionState();
     refreshOverlaysAfterMouseup(wasDragging, dragMoved);
     flushResizeAutosave(resizeState);
@@ -1521,6 +1590,7 @@ async function normalizeExportImageHref(href) {
 }
 
 async function buildExportSvg() {
+    if (renderFrame != null) render();
     const clone = svg.cloneNode(true);
     const viewBox = (svg.getAttribute("viewBox") || "0 0 1400 900").split(/\s+/).map(Number);
     const width = Number.isFinite(viewBox[2]) ? viewBox[2] : 1400;
@@ -1807,7 +1877,17 @@ function applyOrganicLayout() {
 }
 
 function getLayoutNodeSize(node) {
-    return isSketchPreset() ? getSketchNodeSize(node) : getNodeSize(node);
+    if (renderNodeSizes?.has(node.id)) return renderNodeSizes.get(node.id);
+    const sketchPreset = isSketchPreset();
+    const inputs = [sketchPreset, node.text, node.description, node.fontSize, node.imageUri,
+        node.imageWidth, node.imageHeight, node.nodeWidth, node.nodeHeight];
+    const cached = layoutSizeCache.get(node);
+    const size = cached && sameRenderInputs(cached.inputs, inputs)
+        ? cached.size
+        : sketchPreset ? getSketchNodeSize(node) : getNodeSize(node);
+    if (size !== cached?.size) layoutSizeCache.set(node, { inputs, size });
+    renderNodeSizes?.set(node.id, size);
+    return size;
 }
 
 async function persistAllNodePositions() {
