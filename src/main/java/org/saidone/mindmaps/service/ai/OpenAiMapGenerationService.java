@@ -65,10 +65,13 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                   "items": {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": ["text", "description", "emoji", "branchText", "imageUri", "imageKeywords", "parentId"],
+                    "required": ["text", "description", "hint", "hint2", "hint3", "emoji", "branchText", "imageUri", "imageKeywords", "parentId"],
                     "properties": {
                       "text": { "type": "string" },
                       "description": { "type": "string" },
+                      "hint": { "type": "string", "maxLength": 280 },
+                      "hint2": { "type": "string", "maxLength": 280 },
+                      "hint3": { "type": "string", "maxLength": 280 },
                       "emoji": { "type": "string" },
                       "branchText": { "type": "string" },
                       "imageUri": { "type": "string" },
@@ -127,7 +130,7 @@ public class OpenAiMapGenerationService implements MapGenerationService {
         val userPrompt = """
                 Crea una mindmap in italiano e rispondi SOLO con JSON valido compatibile con MindMapDto.
                 Campi obbligatori: title (string), stylePreset (string), nodes (array).
-                Ogni node deve avere: text (titolo), description (breve descrizione/curiosità), emoji, branchText, imageUri, parentId.
+                Ogni node deve avere: text (titolo), description (breve descrizione/curiosità), hint, hint2, hint3 (tre indizi diversi per il gioco), emoji, branchText, imageUri, parentId.
 
                 Vincoli:
                 - Argomento: %s
@@ -136,6 +139,7 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                 - text deve essere sempre un titolo breve (2-6 parole).
                 - description è OBBLIGATORIA per ogni nodo: una sola frase breve con descrizione o curiosità utile.
                 - Non lasciare mai description vuota o generica (es. "descrizione", "nodo", "...").
+                - hint, hint2 e hint3 sono tre brevi indizi in italiano per bambini della scuola primaria: ciascuno invita a ragionare su una caratteristica indiretta diversa, senza citare il titolo del nodo, sinonimi evidenti o rivelare la risposta. Devono essere diversi tra loro e da description, non vuoti e lunghi al massimo 280 caratteri ciascuno.
                 - I nodi successivi devono essere brevi, non duplicati e coerenti col tema.
                 - %s
                 - imageUri deve essere sempre stringa vuota.

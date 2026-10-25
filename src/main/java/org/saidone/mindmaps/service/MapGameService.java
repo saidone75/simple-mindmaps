@@ -33,6 +33,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.time.Clock;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Stream;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -114,6 +116,9 @@ public class MapGameService {
             this.token = token;
             this.map = new Gson().fromJson(new Gson().toJson(snapshot), MindMapDto.class);
             for (val node : map.getNodes()) {
+                node.setHint(null);
+                node.setHint2(null);
+                node.setHint3(null);
                 if (!hasImage(node)) continue;
                 val cardId = UUID.randomUUID().toString();
                 originalImages.put(node.getId(), node.getImageUri());
@@ -126,6 +131,18 @@ public class MapGameService {
         }
 
         public Board board() { return new Board(id, map, List.copyOf(cards)); }
+
+        private String randomHint(NodeDto node) {
+            val hints = Stream.of(node.getHint(), node.getHint2(), node.getHint3())
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(value -> !value.isEmpty())
+                    .distinct()
+                    .toList();
+            return hints.isEmpty()
+                    ? "Osserva i dettagli dell’immagine e prova un’altra casella. Puoi farcela!"
+                    : hints.get(ThreadLocalRandom.current().nextInt(hints.size()));
+        }
 
         public synchronized Result attempt(String runId, String cardId, Long nodeId) {
             if (!id.equals(runId)) throw new ResponseStatusException(CONFLICT, "Partita sostituita: ricarica il gioco.");
@@ -144,10 +161,7 @@ public class MapGameService {
             }
             else {
                 errors++;
-                hint = answer.getDescription();
-                if (hint == null || hint.isBlank() || hint.equals("Breve descrizione del nodo.")) {
-                    hint = "Cerca la casella con il titolo: " + answer.getText();
-                }
+                hint = randomHint(answer);
             }
             val complete = matched.size() == answers.size();
             if (complete) finished = clock.instant();

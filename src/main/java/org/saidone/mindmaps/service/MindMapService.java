@@ -188,6 +188,9 @@ public class MindMapService {
                     nodeDto.getY() != null ? nodeDto.getY() : 260,
                     nodeDto.getColor() != null ? nodeDto.getColor() : DEFAULT_NODE_COLOR
             );
+            node.setHint(normalizeNodeHint(nodeDto.getHint()));
+            node.setHint2(normalizeNodeHint(nodeDto.getHint2()));
+            node.setHint3(normalizeNodeHint(nodeDto.getHint3()));
             node.setEmoji(normalizeNodeEmoji(nodeDto.getEmoji()));
             node.setBranchText(normalizeBranchText(nodeDto.getBranchText()));
             if (searchWikimediaImages) {
@@ -212,6 +215,9 @@ public class MindMapService {
         node.setParentId(request.getParentId());
         node.setText(request.getText() == null || request.getText().isBlank() ? "Nuovo nodo" : request.getText().trim());
         node.setDescription(normalizeNodeDescription(request.getDescription()));
+        node.setHint(normalizeNodeHint(request.getHint()));
+        node.setHint2(normalizeNodeHint(request.getHint2()));
+        node.setHint3(normalizeNodeHint(request.getHint3()));
         node.setEmoji(normalizeNodeEmoji(request.getEmoji()));
         node.setBranchText(normalizeBranchText(request.getBranchText()));
         node.setX(request.getX() == null ? 300 : request.getX());
@@ -253,6 +259,9 @@ public class MindMapService {
     private void applyNodeUpdate(Node node, UpdateNodeRequest request) {
         updateIfPresent(request.getText(), value -> node.setText(normalizeNodeText(value)));
         updateIfPresent(request.getDescription(), value -> node.setDescription(normalizeNodeDescription(value)));
+        updateIfPresent(request.getHint(), value -> node.setHint(normalizeNodeHint(value)));
+        updateIfPresent(request.getHint2(), value -> node.setHint2(normalizeNodeHint(value)));
+        updateIfPresent(request.getHint3(), value -> node.setHint3(normalizeNodeHint(value)));
         updateIfPresent(request.getEmoji(), value -> node.setEmoji(normalizeNodeEmoji(value)));
         updateIfPresent(request.getBranchText(), value -> node.setBranchText(normalizeBranchText(value)));
         updateIfPresent(request.getX(), node::setX);
@@ -432,6 +441,12 @@ public class MindMapService {
                 .limit(2)
                 .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
                 .toString();
+    }
+
+    private String normalizeNodeHint(String hint) {
+        if (hint == null || hint.isBlank()) return null;
+        val normalized = hint.trim().replaceAll("\\s+", " ");
+        return normalized.length() > 280 ? normalized.substring(0, 280) : normalized;
     }
 
     private String normalizeNodeDescription(String description) {
