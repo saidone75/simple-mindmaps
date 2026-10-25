@@ -2016,7 +2016,7 @@ if (stylePresetInput) {
     stylePresetInput.addEventListener("change", onPresetChange);
     stylePresetInput.addEventListener("input", onPresetChange);
 }
-selectNode(state.map.nodes[0]?.id ?? null);
+selectNode(null);
 render();
 if (autoLayoutOnOpen) {
     reorderMap().catch(error => {
