@@ -30,6 +30,10 @@ import org.saidone.mindmaps.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.Serial;
+import java.io.Serializable;
 import java.time.Instant;
 import java.time.Clock;
 import java.util.*;
@@ -86,12 +90,15 @@ public class MapGameService {
         return node.getImageUri() != null && !node.getImageUri().isBlank();
     }
 
-    public record Card(String id, String uri) {}
+    public record Card(String id, String uri) implements Serializable {}
     public record Board(String runId, MindMapDto map, List<Card> images) {}
     public record Result(boolean correct, String hint, int attempts, int errors, int matched,
                          int total, long seconds, int score, boolean complete) {}
 
-    public static final class GameRun {
+    public static final class GameRun implements Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+
         public final String token;
         private final String id = UUID.randomUUID().toString();
         private final MindMapDto map;
@@ -100,7 +107,7 @@ public class MapGameService {
         private final Set<String> usedCards = new HashSet<>();
         private final Map<Long, String> originalImages = new HashMap<>();
         private final List<Card> cards = new ArrayList<>();
-        private final Clock clock;
+        private transient Clock clock;
         private final Instant started;
         private Instant finished;
         private int attempts;
@@ -128,6 +135,12 @@ public class MapGameService {
                 node.setImageKeywords(null);
             }
             Collections.shuffle(cards);
+        }
+
+        @Serial
+        private void readObject(ObjectInputStream input) throws IOException, ClassNotFoundException {
+            input.defaultReadObject();
+            clock = Clock.systemUTC();
         }
 
         public Board board() { return new Board(id, map, List.copyOf(cards)); }
