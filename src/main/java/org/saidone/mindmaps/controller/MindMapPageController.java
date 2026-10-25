@@ -39,6 +39,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class MindMapPageController {
 
     private final MindMapService mindMapService;
+    private final org.saidone.mindmaps.service.MapGameService mapGameService;
     private final MapGenerationApplicationService mapGenerationApplicationService;
 
     @GetMapping
@@ -96,7 +97,25 @@ public class MindMapPageController {
     public String editor(@PathVariable Long id, Model model, Principal principal) {
         model.addAttribute("username", principal.getName());
         model.addAttribute("map", mindMapService.findMapWithNodes(id));
+        model.addAttribute("publicToken", mapGameService.publicToken(id));
         return "maps/editor";
+    }
+
+    @PostMapping("/{id}/publish")
+    public String publish(@PathVariable Long id, RedirectAttributes attributes) {
+        try {
+            mapGameService.publish(id);
+            attributes.addFlashAttribute("publicationMessage", "Gioco pubblicato. Puoi condividere il link pubblico.");
+        } catch (IllegalArgumentException ex) {
+            attributes.addFlashAttribute("publicationMessage", ex.getMessage());
+        }
+        return "redirect:/maps/" + id;
+    }
+
+    @PostMapping("/{id}/unpublish")
+    public String unpublish(@PathVariable Long id) {
+        mapGameService.unpublish(id);
+        return "redirect:/maps/" + id;
     }
 
     @PostMapping("/{id}/clone")

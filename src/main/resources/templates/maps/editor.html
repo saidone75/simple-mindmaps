@@ -48,6 +48,20 @@
         </div>
     </header>
 
+    <section class="publication-panel" aria-label="Pubblicazione gioco">
+        <p th:if="${publicationMessage}" th:text="${publicationMessage}" role="status"></p>
+        <form th:action="@{/maps/{id}/publish(id=${map.id})}" method="post">
+            <button type="submit" th:text="${publicToken != null ? 'Aggiorna gioco pubblicato' : 'Pubblica come gioco'}">Pubblica come gioco</button>
+        </form>
+        <div th:if="${publicToken != null}">
+            <label for="public-game-link">Link pubblico da condividere</label>
+            <input id="public-game-link" readonly th:value="@{/play/{token}(token=${publicToken})}">
+            <a th:href="@{/play/{token}(token=${publicToken})}" target="_blank" rel="noopener">Apri gioco ↗</a>
+            <form th:action="@{/maps/{id}/unpublish(id=${map.id})}" method="post"><button class="secondary-btn" type="submit">Ritira pubblicazione</button></form>
+        </div>
+        <small>La pubblicazione salva una copia della mappa. Aggiornandola, il vecchio link viene disattivato.</small>
+    </section>
+    <script>document.addEventListener('DOMContentLoaded', () => { const link = document.getElementById('public-game-link'); if (link) { link.value = new URL(link.value, location.origin).href; link.onclick = () => link.select(); } });</script>
     <main class="editor-layout">
         <section class="canvas-panel">
             <div class="canvas-hint">Trascina i nodi con il mouse; trascina su un punto vuoto del canvas per scorrere la vista. Clicca direttamente sul testo del nodo per modificarlo. Ridimensiona un nodo dal pallino in basso a destra quando è selezionato. I pulsanti sopra il nodo seguono l'ordine: aggiungi figlio, immagine, emoji, elimina.</div>
@@ -154,6 +168,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.7.5/dist/floating-ui.core.umd.min.js" integrity="sha256-/AzKIabPLvDJyQj77eBhTcryhejr/tINDhRPr8Lr8Fk=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.7.6/dist/floating-ui.dom.umd.min.js" integrity="sha256-IUteAZ9w/aNsfwo15es6qE+lNEjA+MrE96TB4m5xSYw=" crossorigin="anonymous"></script>
 <script th:src="@{/js/loading-overlay.js}"></script>
+<script th:src="@{/js/map-geometry.js}"></script>
 <script th:src="@{/js/mindmap-editor.js}"></script>
 </body>
 </html>

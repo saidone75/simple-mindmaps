@@ -1,0 +1,51 @@
+<!--
+  ~ Alice's Simple Mind Maps
+  ~ Copyright (C) 2026 Miss Alice & Saidone
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${title} + ' — Gioco delle immagini'">Gioco delle immagini</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/map-game.css}">
+</head>
+<body>
+<main class="game-page" th:if="${unavailable == true}">
+    <h1>Gioco non disponibile</h1>
+    <p>Il gioco ha cambiato indirizzo. Chiedi a un adulto il nuovo link: ti aspetta una nuova avventura!</p>
+</main>
+<main class="game-page" th:if="${unavailable != true}">
+    <h1 th:text="${title}">Gioco delle immagini</h1>
+    <p>Rimetti ogni immagine nella sua casella! Trascinala oppure selezionala e poi tocca la casella.</p>
+    <p>Ogni tentativo ti aiuta a imparare! Prenditi tutto il tempo che vuoi: i suggerimenti ti daranno una mano e ogni immagine al suo posto ti farà guadagnare punti.</p>
+    <div class="game-toolbar">
+        <button id="start-game" type="button">Inizia a giocare</button>
+        <label>Zoom <input id="game-zoom" type="range" min="40" max="200" value="100"></label>
+        <span id="game-stats">Pronti per una nuova scoperta?</span>
+    </div>
+    <p id="game-feedback" role="status" aria-live="polite"></p>
+    <div class="game-layout">
+        <aside aria-label="Immagini da sistemare"><h2>Immagini</h2><div id="game-images"></div></aside>
+        <div class="game-board-scroll"><svg id="game-board" xmlns="http://www.w3.org/2000/svg" aria-label="Mappa da completare"></svg></div>
+    </div>
+</main>
+<script th:if="${unavailable != true}" th:src="@{/js/map-geometry.js}"></script>
+<script th:if="${unavailable != true}" th:src="@{/js/map-game.js}"></script>
+</body>
+</html>

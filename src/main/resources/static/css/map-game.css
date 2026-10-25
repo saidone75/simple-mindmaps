@@ -1,0 +1,35 @@
+/*
+ * Alice's Simple Mind Maps
+ * Copyright (C) 2026 Miss Alice & Saidone
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+.game-page { padding: 20px; max-width: 1800px; margin: auto; }
+.game-toolbar, .publication-panel { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
+.publication-panel { margin: 12px 20px; padding: 12px; background: var(--surface-soft); border-radius: 12px; }
+.publication-panel input { min-width: 280px; }
+.game-layout { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 16px; }
+.game-layout aside { max-height: 75vh; overflow: auto; }
+#game-images { display: grid; gap: 12px; padding: 6px; }
+.game-image { padding: 8px; background: white; border: 3px solid transparent; border-radius: 12px; cursor: grab; }
+.game-image img { width: 130px; height: 110px; object-fit: contain; pointer-events: none; }
+.game-image[aria-pressed=true] { border-color: #1767ac; }
+.game-board-scroll { overflow: auto; max-height: 75vh; min-height: 400px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface-soft); }
+#game-board { display: block; min-width: 100%; }
+.game-target { cursor: pointer; }
+.game-target:focus > rect:first-child { stroke: #1767ac; stroke-width: 5; }
+.game-target.matched > rect:first-child { stroke: #218547; stroke-width: 4; }
+#game-feedback { min-height: 2em; font-size: 1.1rem; }
+@media(max-width: 650px) { .game-layout { grid-template-columns: minmax(0, 1fr); } .game-layout aside { max-height: 180px; } #game-images { display: flex; } .game-image img { width: 85px; height: 75px; } }

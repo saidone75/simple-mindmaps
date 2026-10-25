@@ -34,6 +34,7 @@ Obiettivo: **trasformare idee in una struttura visiva chiara**.
 - ✅ Export PDF stampabile
 - ✅ Login multiutente con mappe isolate per utente
 - ✅ Eliminazione mappe e nodi
+- ✅ Pubblicazione di giochi delle immagini con link pubblico revocabile
 
 ---
 
@@ -145,3 +146,17 @@ http://localhost:8080/maps
 Hai idee per rendere l'app ancora più utile o divertente?
 Apri una issue o proponi una PR: ogni contributo è il benvenuto. 🚀
 
+
+## Gioco delle immagini
+
+Nell’editor, aggiungi almeno un’immagine e premi **Pubblica come gioco**. Copia il link pubblico mostrato: i ragazzi possono aprirlo senza account. La pubblicazione conserva una copia della mappa, con gli stessi testi, collegamenti, colori e dimensioni dei nodi. Le immagini vengono mescolate in un pannello laterale: si possono trascinare oppure selezionare e poi inserire toccando una casella (anche con Invio o Spazio da tastiera).
+
+Ogni risposta errata mostra la descrizione del nodo corretto come suggerimento; quando manca, viene indicato il titolo. Il server conta tentativi, errori e tempo. Il punteggio premia il completamento della mappa fino a **1.000 punti**: i primi **3 errori sono gratuiti**, poi si perdono solo **5 punti per errore**, con una riduzione massima di **100 punti**. Chi completa la mappa ottiene quindi almeno **900 punti**. Il tempo non comporta penalità: viene registrato dall’inizio alla fine e mostrato solo a partita conclusa. Durante il gioco si vedono i progressi, senza cronometro o conteggio degli errori, e ogni risposta riceve un messaggio incoraggiante. **Ricomincia** avvia una nuova partita; ogni sessione del browser mantiene una sola partita attiva. I risultati sono mostrati a fine partita e non vengono archiviati.
+
+**Aggiorna gioco pubblicato** crea una nuova copia e un nuovo link, disattivando il precedente. **Ritira pubblicazione** disabilita il link e le partite in corso. Le modifiche alla mappa privata non cambiano la copia pubblicata finché non viene aggiornata.
+
+I test dell’interazione e della geometria condivisa si eseguono con Node.js:
+
+```bash
+node --test src/test/js/map-game.test.cjs
+```
