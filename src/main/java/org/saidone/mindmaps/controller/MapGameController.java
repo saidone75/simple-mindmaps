@@ -22,7 +22,6 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.saidone.mindmaps.service.MapGameService;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -62,7 +61,7 @@ public class MapGameController {
     @PostMapping("/start")
     @ResponseBody
     public ResponseEntity<MapGameService.Board> start(@PathVariable String token, HttpSession session) {
-        val run = games.start(token);
+        MapGameService.GameRun run = games.start(token);
         session.setAttribute(RUN, run);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(run.board());
     }
@@ -73,7 +72,7 @@ public class MapGameController {
     @ResponseBody
     public ResponseEntity<MapGameService.Result> attempt(@PathVariable String token, @RequestBody Attempt attempt, HttpSession session) {
         games.published(token); // Recheck publication so withdrawn links stop active games too.
-        val run = (MapGameService.GameRun) session.getAttribute(RUN);
+        MapGameService.GameRun run = (MapGameService.GameRun) session.getAttribute(RUN);
         if (run == null || !run.token.equals(token)) throw new ResponseStatusException(CONFLICT, "Avvia una nuova partita.");
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
                 .body(run.attempt(attempt.runId(), attempt.imageId(), attempt.nodeId()));
