@@ -23,8 +23,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${map.title}">Editor mappa</title>
     <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/mindmap-editor.css}">
 </head>
-<body>
+<body class="mindmap-workspace">
 <div class="editor-page">
     <header class="editor-topbar">
         <a class="back-link" th:href="@{/maps}">← Torna alle mappe</a>
@@ -33,9 +34,10 @@
             <button type="submit" class="secondary-btn small-btn">Esci</button>
         </form>
         <div class="editor-title-actions-row">
-            <div class="map-title-row">
+            <div class="editor-heading"><span class="editor-eyebrow">IL TUO LABORATORIO DI IDEE</span><div class="map-title-row">
                 <h1 id="map-title" th:text="${map.title}">Titolo mappa</h1>
                 <button type="button" id="rename-map-btn" class="icon-btn" title="Rinomina mappa" aria-label="Rinomina mappa">✏️</button>
+            </div>
             </div>
             <div class="topbar-actions">
             <a id="export-png-btn" class="secondary-btn" th:href="@{/api/maps/{id}/export/png(id=${map.id})}">Esporta PNG</a>
@@ -49,14 +51,15 @@
     </header>
 
     <section class="publication-panel" aria-label="Pubblicazione gioco">
+        <div class="publication-heading"><span class="publication-icon" aria-hidden="true">🧩</span><div><h2>Da mappa a gioco</h2><p>Trasforma le tue idee in una scoperta da condividere.</p></div><span class="publication-status" th:if="${publicToken != null}">● Gioco pubblicato</span></div>
         <p th:if="${publicationMessage}" th:text="${publicationMessage}" role="status"></p>
-        <form th:action="@{/maps/{id}/publish(id=${map.id})}" method="post">
+        <form class="publication-action" th:action="@{/maps/{id}/publish(id=${map.id})}" method="post">
             <button type="submit" th:text="${publicToken != null ? 'Aggiorna gioco pubblicato' : 'Pubblica come gioco'}">Pubblica come gioco</button>
         </form>
-        <div th:if="${publicToken != null}">
+        <div class="publication-link" th:if="${publicToken != null}">
             <label for="public-game-link">Link pubblico da condividere</label>
-            <input id="public-game-link" readonly th:value="@{/play/{token}(token=${publicToken})}">
-            <a th:href="@{/play/{token}(token=${publicToken})}" target="_blank" rel="noopener">Apri gioco ↗</a>
+            <input id="public-game-link" type="url" readonly th:value="@{/play/{token}(token=${publicToken})}">
+            <a class="publication-open" th:href="@{/play/{token}(token=${publicToken})}" target="_blank" rel="noopener">Apri gioco ↗</a>
             <form th:action="@{/maps/{id}/unpublish(id=${map.id})}" method="post"><button class="secondary-btn" type="submit">Ritira pubblicazione</button></form>
         </div>
         <small>La pubblicazione salva una copia della mappa. Aggiornandola, il vecchio link viene disattivato.</small>
@@ -64,18 +67,18 @@
     <script>document.addEventListener('DOMContentLoaded', () => { const link = document.getElementById('public-game-link'); if (link) { link.value = new URL(link.value, location.origin).href; link.onclick = () => link.select(); } });</script>
     <main class="editor-layout">
         <section class="canvas-panel">
-            <div class="canvas-hint">Trascina i nodi con il mouse; trascina su un punto vuoto del canvas per scorrere la vista. Clicca direttamente sul testo del nodo per modificarlo. Ridimensiona un nodo dal pallino in basso a destra quando è selezionato. I pulsanti sopra il nodo seguono l'ordine: aggiungi figlio, immagine, emoji, elimina.</div>
+            <div class="canvas-section-heading"><div><span class="editor-eyebrow">SPAZIO ALLE IDEE</span><h2>Disegna i tuoi collegamenti</h2></div><details class="canvas-help"><summary>Come si usa?</summary><p>Trascina i nodi per spostarli e lo sfondo per esplorare la mappa. Clicca sul testo per scrivere. I pulsanti di ogni nodo permettono di aggiungere figli, immagini ed emoji. Il pallino in basso serve a ridimensionare.</p></details></div>
             <div class="canvas-toolbar">
-                <button type="button" id="auto-layout-btn" class="secondary-btn small-btn">Auto-layout</button>
+                <div class="editor-tool-group"><button type="button" id="auto-layout-btn" class="secondary-btn small-btn">✦ Riordina la mappa</button>
                 <label for="style-preset-control">Stile</label>
                 <select id="style-preset-control" onchange="window.applyMapStylePreset && window.applyMapStylePreset(this.value)">
                     <option value="CLASSIC">Classico</option>
                     <option value="TRUE_SUMMER">True Summer</option>
                 </select>
-                <label for="zoom-control">Zoom</label>
+                </div><div class="editor-tool-group editor-zoom-group"><label for="zoom-control">Vista</label>
                 <input id="zoom-control" type="range" min="10" max="200" step="1" value="100">
                 <span id="zoom-value">100%</span>
-                <label class="toolbar-checkbox" for="grid-enabled">
+                </div><div class="editor-tool-group"><label class="toolbar-checkbox" for="grid-enabled">
                     <input id="grid-enabled" type="checkbox">
                     Griglia
                 </label>
@@ -84,7 +87,7 @@
                     <option value="10">Fine</option>
                     <option value="20" selected>Media</option>
                     <option value="40">Grande</option>
-                </select>
+                </select></div>
             </div>
             <div class="canvas-scroll-area">
                 <svg id="mindmap-canvas" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg"></svg>
