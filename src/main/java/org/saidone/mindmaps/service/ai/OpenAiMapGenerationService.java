@@ -55,9 +55,13 @@ public class OpenAiMapGenerationService implements MapGenerationService {
             {
               "type": "object",
               "additionalProperties": false,
-              "required": ["title", "stylePreset", "nodes"],
+              "required": ["title", "prizes", "stylePreset", "nodes"],
               "properties": {
                 "title": { "type": "string" },
+                "prizes": {
+                  "type": "array", "minItems": 5, "maxItems": 5,
+                  "items": { "type": "string", "minLength": 1, "maxLength": 120 }
+                },
                 "stylePreset": { "type": "string" },
                 "nodes": {
                   "type": "array",
@@ -129,12 +133,19 @@ public class OpenAiMapGenerationService implements MapGenerationService {
         val includeBranchText = Boolean.TRUE.equals(request.getIncludeBranchText());
         val userPrompt = """
                 Crea una mindmap in italiano e rispondi SOLO con JSON valido compatibile con MindMapDto.
-                Campi obbligatori: title (string), stylePreset (string), nodes (array).
+                Campi obbligatori: title (string), prizes (array di 5 stringhe), stylePreset (string), nodes (array).
                 Ogni node deve avere: text (titolo), description (breve descrizione/curiosità), hint, hint2, hint3 (tre indizi diversi per il gioco), emoji, branchText, imageUri, parentId.
 
                 Vincoli:
                 - Argomento: %s
                 - Profondità massima della mappa (livelli gerarchici): %d
+                - prizes contiene esattamente 5 titoli premio diversi, ordinati dal livello 1 al 5.
+                - I titoli premio sono giocosi, positivi e originali, in italiano, legati precisamente all'argomento,
+                  con ruoli fantasiosi e aggettivi sempre più celebrativi. Massimo 120 caratteri ciascuno.
+                  Esempi per Mesopotamia: Curioso esploratore dei due fiumi, Brillante cercatore di tavolette,
+                  Abile scriba delle meraviglie, Saggio custode di Babilonia, Custode supremo della ziggurat.
+                  Per geografia: da Intrepido cercatore di sentieri a Sommo cartografo delle meraviglie.
+                  Non copiare gli esempi per argomenti diversi; non usare etichette negative, voti o confronti con altri bambini.
                 - Il primo nodo rappresenta il tema centrale.
                 - text deve essere sempre un titolo breve (2-6 parole).
                 - description è OBBLIGATORIA per ogni nodo: una sola frase breve con descrizione o curiosità utile.

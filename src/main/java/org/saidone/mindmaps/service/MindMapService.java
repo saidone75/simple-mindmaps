@@ -34,6 +34,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Arrays;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -64,6 +66,7 @@ public class MindMapService {
     private final CurrentUserService currentUserService;
 
     private final NodeMapper nodeMapper;
+    private static final Gson PRIZES_JSON = new Gson();
 
     public List<MindMap> findAll() {
         return mindMapRepository.findByOwnerUsernameIgnoreCaseOrderByUpdatedAtDesc(currentUserService.getCurrentUser().getUsername());
@@ -74,6 +77,7 @@ public class MindMapService {
         val dto = new MindMapDto();
         dto.setId(map.getId());
         dto.setTitle(map.getTitle());
+        dto.setPrizes(prizes(map));
         dto.setStylePreset(normalizeStylePreset(map.getStylePreset()));
         dto.setNodes(nodeRepository.findByMapIdOrderByIdAsc(id).stream().map(nodeMapper::toDto).toList());
         return dto;
@@ -166,6 +170,9 @@ public class MindMapService {
         val map = new MindMap();
         map.setTitle(title);
         map.setStylePreset(normalizeStylePreset(generatedMap.getStylePreset()));
+        if (validPrizes(generatedMap.getPrizes())) {
+            map.setPrizesJson(PRIZES_JSON.toJson(normalizePrizes(generatedMap.getPrizes())));
+        }
         map.setOwner(currentUserService.getCurrentUser());
         val saved = mindMapRepository.save(map);
 
@@ -306,6 +313,7 @@ public class MindMapService {
 
         val clonedMap = new MindMap();
         clonedMap.setTitle(sourceMap.getTitle() + " (Copia)");
+        clonedMap.setPrizesJson(sourceMap.getPrizesJson());
         clonedMap.setStylePreset(normalizeStylePreset(sourceMap.getStylePreset()));
         clonedMap.setOwner(sourceMap.getOwner());
         val savedMap = mindMapRepository.save(clonedMap);
@@ -360,6 +368,40 @@ public class MindMapService {
         map.setTitle(normalizedTitle);
         mindMapRepository.save(map);
         return findMapWithNodes(mapId);
+    }
+
+    @Transactional
+    public void updatePrizes(Long mapId, List<String> prizes) {
+        val map = getMap(mapId);
+        map.setPrizesJson(PRIZES_JSON.toJson(normalizePrizes(prizes)));
+        mindMapRepository.save(map);
+    }
+
+    private List<String> prizes(MindMap map) {
+        if (map.getPrizesJson() == null) return defaultPrizes(map.getTitle());
+        val prizes = Arrays.asList(PRIZES_JSON.fromJson(map.getPrizesJson(), String[].class));
+        return validPrizes(prizes) ? normalizePrizes(prizes) : defaultPrizes(map.getTitle());
+    }
+
+    private static boolean validPrizes(List<String> prizes) {
+        return prizes != null && prizes.size() == 5
+                && prizes.stream().allMatch(prize -> prize != null && !prize.isBlank() && prize.strip().length() <= 120)
+                && prizes.stream().map(prize -> prize.strip().toLowerCase(Locale.ROOT)).distinct().count() == 5;
+    }
+
+    private static List<String> normalizePrizes(List<String> prizes) {
+        if (!validPrizes(prizes)) {
+            throw new IllegalArgumentException("Inserisci cinque titoli premio diversi, da 1 a 120 caratteri ciascuno.");
+        }
+        return prizes.stream().map(String::strip).toList();
+    }
+
+    private static List<String> defaultPrizes(String topic) {
+        val theme = topic == null || topic.isBlank() ? "questa avventura" : topic.strip();
+        val shortTheme = theme.substring(0, Math.min(65, theme.length()));
+        return List.of("Curioso esploratore: " + shortTheme, "Intrepido cercatore: " + shortTheme,
+                "Brillante scopritore: " + shortTheme, "Saggio custode: " + shortTheme,
+                "Custode supremo: " + shortTheme);
     }
 
     private void deleteRecursive(Long nodeId, List<Node> allNodes) {

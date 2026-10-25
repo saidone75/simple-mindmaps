@@ -93,7 +93,7 @@ public class MapGameService {
     public record Card(String id, String uri) implements Serializable {}
     public record Board(String runId, MindMapDto map, List<Card> images) {}
     public record Result(boolean correct, String hint, int attempts, int errors, int matched,
-                         int total, long seconds, int score, boolean complete) {}
+                         int total, long seconds, int level, String prize, boolean complete) {}
 
     public static final class GameRun implements Serializable {
         @Serial
@@ -179,10 +179,13 @@ public class MapGameService {
             val complete = matched.size() == answers.size();
             if (complete) finished = clock.instant();
             val seconds = Math.max(0, java.time.Duration.between(started, finished == null ? clock.instant() : finished).getSeconds());
-            // Give children time to learn: three free retries and at most 100 points lost.
-            val retryPenalty = Math.min(100L, Math.max(0L, errors - 3L) * 5L);
-            val score = (int) Math.max(0, Math.round(1000.0 * matched.size() / answers.size()) - retryPenalty);
-            return new Result(correct, hint, attempts, errors, matched.size(), answers.size(), seconds, score, complete);
+            // Levels reward progress only: retries and time never remove an achievement.
+            val total = answers.size();
+            val level = 1 + matched.size() * 4 / Math.max(1, total);
+            val prizes = map.getPrizes();
+            val prize = prizes != null && prizes.size() == 5 && prizes.get(level - 1) != null
+                    ? prizes.get(level - 1) : "Esploratore delle meraviglie";
+            return new Result(correct, hint, attempts, errors, matched.size(), total, seconds, level, prize, complete);
         }
     }
 }

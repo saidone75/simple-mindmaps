@@ -19,6 +19,8 @@
 package org.saidone.mindmaps.dto;
 
 import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.google.gson.annotations.SerializedName;
 
 import java.io.Serial;
 import java.io.Serializable;
@@ -32,6 +34,9 @@ public class MindMapDto implements Serializable {
 
     private Long id;
     private String title;
+    @JsonAlias("gameTitles")
+    @SerializedName(value = "prizes", alternate = {"gameTitles"})
+    private List<String> prizes;
     private String stylePreset;
     private List<NodeDto> nodes;
 }

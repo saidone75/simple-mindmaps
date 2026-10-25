@@ -98,6 +98,13 @@ public class MapGenerationApplicationService {
         if (!StringUtils.hasText(generated.getTitle())) {
             generated.setTitle("Mindmap generata dall'IA");
         }
+        val prizes = generated.getPrizes();
+        if (prizes == null || prizes.size() != 5
+                || prizes.stream().anyMatch(prize -> !StringUtils.hasText(prize) || prize.strip().length() > 120)
+                || prizes.stream().map(prize -> prize.strip().toLowerCase(java.util.Locale.ROOT)).distinct().count() != 5) {
+            throw new IllegalStateException("L'AI non ha generato cinque titoli premio validi e diversi.");
+        }
+        generated.setPrizes(prizes.stream().map(String::strip).toList());
 
         generated.setNodes(generated.getNodes().stream()
                 .filter(this::hasValidNode)

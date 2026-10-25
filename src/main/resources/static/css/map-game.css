@@ -411,3 +411,8 @@
 
     #game-zoom { flex: 1; min-width: 65px; }
 }
+
+.game-level-card { margin: 0 0 18px; padding: 20px 24px; border: 1px solid #d9cdeb; border-radius: 20px; background: #f6f0fd; }
+.game-level-card[hidden] { display: none; }
+.game-level-card h2 { margin: 8px 0; color: #5d427d; font-size: clamp(1.2rem, 3vw, 1.65rem); overflow-wrap: anywhere; }
+.game-level-card p { margin: 0; color: #746585; font-size: .9rem; }

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* Public image matching game. Answers, elapsed time and score are checked by the server. */
+/* Public image matching game. Answers and encouraging progress levels are checked by the server. */
 (() => {
     const svg = document.getElementById('game-board');
     const tray = document.getElementById('game-images');
@@ -50,7 +50,12 @@
     }
     function showStats() {
         stats.textContent = `${lastResult?.matched || 0}/${board.images.length} immagini al loro posto. Un passo alla volta!`;
-        if (finished) stats.textContent = `Tutte le immagini a casa! Hai conquistato ${lastResult.score} punti ★`;
+        if (finished) stats.textContent = 'Tutte le immagini a casa! Hai completato la tua avventura ★';
+        const level = lastResult?.level || 1;
+        const prize = lastResult?.prize || board.map.prizes?.[level - 1] || 'Esploratore delle meraviglie';
+        document.getElementById('game-level-card').hidden = false;
+        document.getElementById('game-level-label').textContent = `Livello ${level} di 5 ★`;
+        document.getElementById('game-level-prize').textContent = prize;
         progress.max = board.images.length;
         progress.value = lastResult?.matched || 0;
     }
@@ -117,7 +122,7 @@
                     message.textContent = '★ Zainetto vuoto, mappa piena di scoperte. Ottimo lavoro!';
                     tray.appendChild(message);
                 }
-                feedback.textContent = result.complete ? `Ce l’hai fatta! Hai completato tutta la mappa e conquistato ${result.score} punti. Ogni tentativo ti ha aiutato a imparare!` : 'Ottimo lavoro! Un’immagine ha trovato la sua casella. Continua così!';
+                feedback.textContent = result.complete ? `Ce l’hai fatta! Hai completato tutta la mappa: ${result.prize}! Ogni tentativo ti ha aiutato a imparare!` : 'Ottimo lavoro! Un’immagine ha trovato la sua casella. Continua così!';
             } else {
                 feedbackWrap.dataset.mood = 'hint';
                 feedback.textContent = `Bel tentativo! Proviamo insieme un’altra casella. Un piccolo indizio: ${result.hint}`;
