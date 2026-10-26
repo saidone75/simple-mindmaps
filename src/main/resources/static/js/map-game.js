@@ -35,6 +35,10 @@
     const endpoint = location.pathname.replace(/\/$/, '');
     let board, selected, busy = false, lastResult, finished = false;
     const matched = new Map();
+    let nodesById, nodeSizes, nodeDepths;
+    const levelCard = document.getElementById('game-level-card');
+    const levelLabel = document.getElementById('game-level-label');
+    const levelPrize = document.getElementById('game-level-prize');
     let bounds;
     const make = (name, attrs = {}, text) => {
         const el = document.createElementNS(SVG_NS, name);
@@ -54,9 +58,9 @@
         if (finished) stats.textContent = 'Tutte le immagini a casa! Hai completato la tua avventura ★';
         const level = lastResult?.level || 1;
         const prize = lastResult?.prize || board.map.prizes?.[level - 1] || 'Esploratore delle meraviglie';
-        document.getElementById('game-level-card').hidden = false;
-        document.getElementById('game-level-label').textContent = `Livello ${level} di 5 ★`;
-        document.getElementById('game-level-prize').textContent = prize;
+        levelCard.hidden = false;
+        levelLabel.textContent = `Livello ${level} di 5 ★`;
+        levelPrize.textContent = prize;
         progress.max = board.images.length;
         progress.value = lastResult?.matched || 0;
     }
@@ -100,7 +104,7 @@
         group?.classList.add('just-matched');
         setTimeout(() => group?.classList.remove('just-matched'), 1100);
         if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
-        const {width} = getNodeSize(node);
+        const {width} = nodeSizes.get(node.id);
         const box = getNodeImageBounds(node, width);
         const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
         const burst = make('g', {class: 'game-celebration', 'aria-hidden': 'true'});
@@ -168,11 +172,11 @@
     function renderMap() {
         svg.replaceChildren();
         const nodes = board.map.nodes;
-        const depths = buildDepthMap(nodes);
+        const depths = nodeDepths;
         for (const node of nodes) {
-            const parent = nodes.find(n => n.id === node.parentId);
+            const parent = nodesById.get(node.parentId);
             if (!parent) continue;
-            const p = getNodeSize(parent), n = getNodeSize(node);
+            const p = nodeSizes.get(parent.id), n = nodeSizes.get(node.id);
             const x1 = parent.x + p.width / 2, y1 = parent.y + p.height / 2;
             const x2 = node.x + n.width / 2, y2 = node.y + n.height / 2;
             const path = make('path', {d: buildConnectorPath(node, x1, y1, x2, y2)});
@@ -184,7 +188,7 @@
             }
         }
         for (const node of nodes) {
-            const {width, height} = getNodeSize(node);
+            const {width, height} = nodeSizes.get(node.id);
             const imageNode = hasNodeImage(node);
             const group = make('g', {'data-node-id': node.id, class: imageNode ? `game-target${matched.has(node.id) ? ' matched' : ''}` : ''});
             const radius = getNodeCornerRadius(node, depths.get(node.id) || 0, false);
@@ -295,7 +299,10 @@
         try {
             const next = await request('start');
             board = next; selected = null; matched.clear(); finished = false; lastResult = null;
-            const sizes = board.map.nodes.map(n => ({x:n.x,y:n.y,...getNodeSize(n)}));
+            nodesById = new Map(board.map.nodes.map(node => [node.id, node]));
+            nodeSizes = new Map(board.map.nodes.map(node => [node.id, getNodeSize(node)]));
+            nodeDepths = buildDepthMap(board.map.nodes, nodesById);
+            const sizes = board.map.nodes.map(n => ({x:n.x,y:n.y,...nodeSizes.get(n.id)}));
             const x = Math.min(...sizes.map(n=>n.x))-40, y = Math.min(...sizes.map(n=>n.y))-40;
             bounds = {x,y,w:Math.max(...sizes.map(n=>n.x+n.width))-x+40,h:Math.max(...sizes.map(n=>n.y+n.height))-y+40};
             welcome.hidden = true;

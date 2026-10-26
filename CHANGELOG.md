@@ -20,6 +20,7 @@ Modifiche previste per la versione **0.1.1**.
 
 ### Changed
 
+- JavaScript dell’editor ottimizzato: riuso del nodo SVG anche durante il trascinamento, elaborazione dei movimenti una volta per fotogramma, meno ricalcoli della vista e undo raggruppato durante la digitazione. Cache di testi e dimensioni, griglia disegnata tramite pattern SVG e indici dei nodi preparati una sola volta per partita nel gioco.
 - Modello di embedding predefinito sostituito con `all-MiniLM-L6-v2`, più leggero e pensato per testi inglesi; resta configurabile tramite `AI_EMBEDDING_MODEL_URL`.
 - Messaggi dei log della ricerca Wikimedia e del modello riscritti in linguaggio più semplice, con i dettagli tecnici delle richieste riservati al livello `TRACE`.
 - Dopo ogni errore il gioco sceglie casualmente uno degli indizi dedicati compilati, ignorando i duplicati, oppure mostra un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
@@ -28,7 +29,6 @@ Modifiche previste per la versione **0.1.1**.
 - Riordino automatico e salvataggio delle posizioni alla prima apertura delle nuove mappe, anche da template e generate con AI.
 - Disposizione radiale più compatta, con nodo principale al centro anche dell’area di disegno e livelli successivi progressivamente più esterni, tenendo conto delle dimensioni dei nodi e delle immagini.
 - Apertura dell’editor senza nodi selezionati, anche per le mappe appena generate.
-- Rendering dell’editor ottimizzato con riuso degli elementi SVG invariati, aggiornamenti del mouse raggruppati per fotogramma, cache delle dimensioni e griglia disegnata tramite pattern SVG.
 
 ### Fixed
 
