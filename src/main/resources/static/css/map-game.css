@@ -121,10 +121,10 @@
 
 #game-progress::-webkit-progress-bar { background: #f1eaf7; border-radius: 99px; }
 
-#game-progress::-webkit-progress-value,
-#game-progress::-moz-progress-bar { background: #75b99b; border-radius: 99px; }
+/* Keep browser-specific pseudo-elements in separate rules. */
+#game-progress::-webkit-progress-value { background: #75b99b; border-radius: 99px; transition: width .4s ease; }
 
-#game-progress::-webkit-progress-value { transition: width .4s ease; }
+#game-progress::-moz-progress-bar { background: #75b99b; border-radius: 99px; }
 
 .game-feedback-wrap { display: flex; gap: 12px; align-items: center; padding: 18px 8px; min-height: 80px; }
 
@@ -236,7 +236,8 @@
 #game-board { display: block; min-width: 0; margin-inline: auto; }
 
 #game-board[hidden],
-.game-welcome[hidden] { display: none; }
+.game-welcome[hidden],
+.game-level-card[hidden] { display: none; }
 
 .game-welcome {
     min-height: 420px;
@@ -413,6 +414,5 @@
 }
 
 .game-level-card { margin: 0 0 18px; padding: 20px 24px; border: 1px solid #d9cdeb; border-radius: 20px; background: #f6f0fd; }
-.game-level-card[hidden] { display: none; }
 .game-level-card h2 { margin: 8px 0; color: #5d427d; font-size: clamp(1.2rem, 3vw, 1.65rem); overflow-wrap: anywhere; }
 .game-level-card p { margin: 0; color: #746585; font-size: .9rem; }

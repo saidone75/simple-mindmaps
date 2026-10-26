@@ -99,7 +99,8 @@ button.login-card-bunny:hover,
 .side-panel,
 .map-card,
 .login-card,
-.app-dialog-card {
+.app-dialog-card,
+.loading-status {
     border: 1px solid var(--border);
     border-radius: 22px;
     box-shadow: 0 12px 32px var(--shadow);
@@ -107,15 +108,14 @@ button.login-card-bunny:hover,
 
 .hero-card,
 .section-card,
-.side-panel { background: var(--card); }
+.side-panel,
+.app-dialog-card,
+.loading-status { background: var(--card); }
 
-.app-dialog-card { background: var(--card); }
-
-.hero-card { padding: 24px; margin-bottom: 20px; }
-
+.hero-card,
 .section-card { margin-bottom: 20px; }
 
-.hero-card { display: flex; flex-wrap: wrap; }
+.hero-card { display: flex; flex-wrap: wrap; padding: 24px; }
 
 .section-header,
 .card-actions,
@@ -300,7 +300,6 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 #mindmap-canvas { display: block; min-width: 0; min-height: 0; cursor: grab; }
 
-#mindmap-canvas.is-panning,
 .node-group,
 .node-group * { cursor: grab; }
 
@@ -319,9 +318,15 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 .side-panel h2 { margin-bottom: 8px; font-size: 1rem; }
 
-.image-preview-box { border: 1px solid var(--border); border-radius: 14px; padding: 8px; background: var(--surface-soft); }
-
-.image-preview-box { min-height: 72px; display: grid; place-items: center; }
+.image-preview-box {
+    display: grid;
+    place-items: center;
+    min-height: 72px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-soft);
+}
 
 #node-image-preview { display: none; max-width: 100%; max-height: 110px; border-radius: 10px; }
 
@@ -433,6 +438,17 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 }
 
 #loading-overlay p { color: var(--sketch-ink); font-size: 16px; font-weight: 700; }
+
+/* Current server activity stays readable while map creation runs. */
+.loading-status {
+    width: min(520px, calc(100% - 32px));
+    padding: 20px 24px;
+    text-align: center;
+    border-radius: 18px;
+}
+#loading-overlay .loading-status p { margin: 0; font-size: 18px; line-height: 1.5; }
+.loading-status small { display: block; margin-top: 10px; color: var(--muted); line-height: 1.5; }
+.loading-status small[hidden] { display: none; }
 
 .login-page { min-height: 100vh; display: grid; place-items: center; padding: 32px 18px; }
 
@@ -681,21 +697,3 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
     .login-card { padding: 30px 22px; }
 }
-
-.publication-panel { flex-wrap: wrap; align-items: center; }
-
-.publication-panel input { min-width: 280px; }
-
-/* Current server activity stays readable while map creation runs. */
-.loading-status {
-    width: min(520px, calc(100% - 32px));
-    padding: 20px 24px;
-    text-align: center;
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 18px;
-    box-shadow: 0 12px 32px var(--shadow);
-}
-#loading-overlay .loading-status p { margin: 0; font-size: 18px; line-height: 1.5; }
-.loading-status small { display: block; margin-top: 10px; color: var(--muted); line-height: 1.5; }
-.loading-status small[hidden] { display: none; }

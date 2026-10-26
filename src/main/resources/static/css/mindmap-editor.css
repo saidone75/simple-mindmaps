@@ -54,6 +54,7 @@
 
 .publication-panel {
     display: grid;
+    align-items: center;
     grid-template-columns: minmax(0,1fr) auto;
     gap: 14px 24px;
     padding: 18px 22px;
@@ -267,5 +268,5 @@
 .prizes-editor p { font-size: .85rem; line-height: 1.5; color: #746585; }
 .prizes-form { display: grid; gap: 10px; margin-bottom: 12px; }
 .prize-field { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 10px; }
-.prize-field input { width: 100%; min-width: 0; }
+.prize-field input { min-width: 0; }
 .prizes-form button { justify-self: start; }

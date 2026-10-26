@@ -30,6 +30,7 @@ Modifiche previste per la versione **0.1.1**.
 
 ### Fixed
 
+- Regole della barra di avanzamento del gioco separate per Chrome/Safari e Firefox, evitando selettori specifici dei browser nella stessa regola.
 - Configurazione del modello di embedding allineata a `ai.embedding.model-url` e logger di sviluppo corretto per il package `org.saidone.mindmaps`.
 - Ricerca Wikimedia semplice e semantica con esclusione delle immagini già assegnate nella stessa mappa, per evitare duplicati tra i nodi.
 - Pan dell'editor collegato al contenitore scorrevole della mappa e attivabile trascinando tutta l'area vuota.
