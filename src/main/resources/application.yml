@@ -26,7 +26,7 @@ app:
       password: ${INITIAL_USER_PASSWORD:}
 ai:
   embedding:
-    model-url: ${AI_EMBEDDING_MODEL_URL:djl://ai.djl.huggingface.pytorch/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+    model-url: ${AI_EMBEDDING_MODEL_URL:djl://ai.djl.huggingface.pytorch/sentence-transformers/all-MiniLM-L6-v2}
   generation:
     max-attachment-chars: ${AI_GENERATION_MAX_ATTACHMENT_CHARS:60000}
     max-attempts: ${AI_GENERATION_MAX_ATTEMPTS:2}

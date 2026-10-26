@@ -25,23 +25,27 @@ import ai.djl.repository.zoo.Criteria;
 import ai.djl.repository.zoo.ModelNotFoundException;
 import ai.djl.repository.zoo.ZooModel;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.IOException;
+import java.time.Duration;
 
 @Configuration
 @Slf4j
 public class EmbeddingModelConfig {
 
-    @Value("${app.ai.embedding.model-url:djl://ai.djl.huggingface.pytorch/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}")
+    @Value("${ai.embedding.model-url:djl://ai.djl.huggingface.pytorch/sentence-transformers/all-MiniLM-L6-v2}")
     private String embeddingModelUrl;
 
     @Bean(destroyMethod = "close")
     public ZooModel<String, float[]> textEmbeddingModel() throws ModelNotFoundException, MalformedModelException, IOException {
-        log.debug("Caricamento modello: {}", embeddingModelUrl);
-        Criteria<String, float[]> criteria = Criteria.builder()
+        val startedAt = System.nanoTime();
+        log.info("Preparo il modello che aiuta a scegliere le immagini confrontando il significato dei testi.");
+        log.debug("Modello da caricare: {}. Il motore usato è PyTorch.", embeddingModelUrl);
+        val criteria = Criteria.builder()
                 .setTypes(String.class, float[].class)
                 .optApplication(Application.NLP.TEXT_EMBEDDING)
                 .optEngine("PyTorch")
@@ -49,6 +53,16 @@ public class EmbeddingModelConfig {
                 .optTranslatorFactory(new TextEmbeddingTranslatorFactory())
                 .build();
 
-        return criteria.loadModel();
+        try {
+            val model = criteria.loadModel();
+            log.info("Il modello per confrontare i testi è pronto ({} ms).",
+                    Duration.ofNanos(System.nanoTime() - startedAt).toMillis());
+            log.debug("Il modello lavora su questo computer ed è riutilizzato tra le ricerche. Le risorse di ogni confronto vengono chiuse al termine.");
+            return model;
+        } catch (ModelNotFoundException | MalformedModelException | IOException e) {
+            log.error("Non riesco a caricare il modello {} dopo {} ms.",
+                    embeddingModelUrl, Duration.ofNanos(System.nanoTime() - startedAt).toMillis(), e);
+            throw e;
+        }
     }
 }

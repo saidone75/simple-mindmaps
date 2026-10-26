@@ -71,6 +71,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
     private final ObjectMapper objectMapper;
     private final Cache<String, float[]> embeddingCache = Caffeine.newBuilder()
             .maximumWeight(MAX_EMBEDDING_CACHE_BYTES)
+            .recordStats()
             .weigher(WikimediaSemanticImageSearchService::estimateEmbeddingEntryWeight)
             .build();
 
@@ -80,10 +81,10 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             return findMostRelevantImage(keywords, excludedImageUrls);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("Ricerca immagine semantica su Wikimedia interrotta: {}", e.getMessage());
+            log.warn("La ricerca di immagini su Wikimedia è stata interrotta: {}", e.getMessage());
             return null;
         } catch (Exception e) {
-            log.warn("Errore durante la ricerca immagine semantica su Wikimedia: {}", e.getMessage());
+            log.warn("Non riesco a completare la ricerca di immagini su Wikimedia: {}", e.getMessage());
             return null;
         }
     }
@@ -108,7 +109,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
 
         val dedup = collectCandidates(cleanedKeywords, excludedImageUrls);
         if (dedup.isEmpty()) {
-            log.info("Nessuna immagine candidata trovata per keyword: {}", cleanedKeywords);
+            log.info("Non ho trovato immagini nuove e utilizzabili per: {}", cleanedKeywords);
             return null;
         }
 
@@ -134,17 +135,16 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
     }
 
     private void logSearchStart(String[] keywords, List<String> cleanedKeywords) {
-        log.info("Avvio ricerca immagine Wikimedia | originalKeywords={} | cleanedKeywords={} | count={}",
-                Arrays.toString(Optional.ofNullable(keywords).orElse(new String[0])),
-                cleanedKeywords,
-                cleanedKeywords.size());
+        log.info("Cerco su Wikimedia un’immagine adatta a: {}.", String.join(", ", cleanedKeywords));
+        log.debug("Parole ricevute: {}. Dopo la pulizia ne uso {}.",
+                Arrays.toString(Optional.ofNullable(keywords).orElse(new String[0])), cleanedKeywords.size());
     }
 
     private LinkedHashMap<String, Candidate> collectCandidates(List<String> cleanedKeywords, Set<String> excludedImageUrls)
             throws IOException, InterruptedException {
         val dedup = new LinkedHashMap<String, Candidate>();
         val queryBatches = buildSearchQueryBatches(cleanedKeywords);
-        log.debug("Strategie query (ordine esecuzione): {}",
+        log.trace("Ricerche da eseguire, in ordine: {}",
                 queryBatches.stream()
                         .flatMap(List::stream)
                         .map(q -> String.format("%s=%s", q.label, q.query))
@@ -178,7 +178,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                 dedup.putIfAbsent(c.title, c);
             }
         }
-        log.debug("Query [{}] ha prodotto {} candidati, nuovi={}, deduplicatiTotali={}, elapsedMs={}",
+        log.debug("La ricerca [{}] ha trovato {} immagini: {} nuove, {} disponibili in tutto ({} ms).",
                 queryResult.querySpec().label(),
                 queryResult.details().size(),
                 dedup.size() - dedupBeforeQuery,
@@ -192,7 +192,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                                  long batchStart) {
         long batchElapsedMs = Duration.ofNanos(System.nanoTime() - batchStart).toMillis();
         int newInBatch = dedup.size() - dedupBeforeBatch;
-        log.debug("Batch query {} completato: nuoviCandidati={}, deduplicatiTotali={}, elapsedMs={}",
+        log.debug("Fase {} completata: {} nuove immagini, {} disponibili in tutto ({} ms).",
                 batchIndex + 1, newInBatch, dedup.size(), batchElapsedMs);
     }
 
@@ -201,9 +201,9 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         val querySpec = batch.get(queryIndex);
         val limit = resolveQueryLimit(batchIndex, queryIndex, keywordCount);
         val queryStart = System.nanoTime();
-        log.debug("Eseguo query [{}] con srlimit={}: {}", querySpec.label, limit, querySpec.query);
+        log.trace("Avvio la ricerca [{}], con al massimo {} risultati: {}", querySpec.label, limit, querySpec.query);
         val details = searchImageCandidates(querySpec.query, limit);
-        log.debug("Query [{}] ({}/{}) ha prodotto {} candidati: {}",
+        log.trace("La ricerca [{}] ({}/{}) ha trovato {} immagini: {}",
                 querySpec.label, queryIndex + 1, batch.size(), details.size(),
                 details.stream().map(c -> c.title).toList());
         long elapsedMs = Duration.ofNanos(System.nanoTime() - queryStart).toMillis();
@@ -215,11 +215,11 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             return false;
         }
         if (dedup.size() >= TARGET_CANDIDATE_POOL_SIZE) {
-            log.debug("Interrompo espansione query: raggiunto target candidati={} nel batch {}",
+            log.debug("Ho raccolto abbastanza immagini da confrontare: {} alla fase {}.",
                     dedup.size(), batchIndex + 1);
             return false;
         }
-        log.debug("Proseguo con batch successivo: candidati raccolti={} dopo batch {}",
+        log.debug("Ho raccolto {} immagini alla fase {}. Amplio la ricerca per trovare altre alternative.",
                 dedup.size(), batchIndex + 1);
         return true;
     }
@@ -228,25 +228,34 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         for (val c : candidates) {
             c.lexicalScore = lexicalScore(c, cleanedKeywords);
         }
-        log.debug("Calcolato lexicalScore per {} candidati", candidates.size());
+        log.debug("Ho controllato quanto le parole cercate compaiono nei testi di {} immagini.", candidates.size());
     }
 
     private void calculateSemanticScores(List<Candidate> candidates, List<String> cleanedKeywords)
             throws TranslateException {
+        val startedAt = System.nanoTime();
         val queryText = String.join(" ", cleanedKeywords);
-        log.debug("Testo query per embedding: '{}'", queryText);
+        log.debug("Confronto i testi di {} immagini con l’argomento '{}', considerando sia le parole presenti sia il loro significato.",
+                candidates.size(), queryText);
 
         try (val predictor = embeddingModel.newPredictor()) {
-            float[] queryEmbedding = getOrComputeEmbedding(predictor, queryText);
+            val queryEmbedding = getOrComputeEmbedding(predictor, queryText);
             for (val c : candidates) {
                 val descriptionText = fallbackDescriptionText(c);
-                float[] descriptionEmbedding = getOrComputeEmbedding(predictor, descriptionText);
-                float[] candEmbedding = getOrComputeEmbedding(predictor, c.semanticText);
+                val descriptionEmbedding = getOrComputeEmbedding(predictor, descriptionText);
+                val candEmbedding = getOrComputeEmbedding(predictor, c.semanticText);
                 c.descriptionSemanticScore = cosineSimilarity(queryEmbedding, descriptionEmbedding);
                 c.semanticScore = cosineSimilarity(queryEmbedding, candEmbedding);
                 c.totalScore = computeTotalScore(c);
                 c.rationale = buildRationale(c, cleanedKeywords);
             }
+            log.info("Ho confrontato il significato dei testi di {} immagini in {} ms.",
+                    candidates.size(), Duration.ofNanos(System.nanoTime() - startedAt).toMillis());
+            log.trace("Ogni testo è rappresentato da {} valori numerici per confrontarne il significato.", queryEmbedding.length);
+            val cacheStats = embeddingCache.stats();
+            log.debug("Dall’avvio: {} testi in memoria, {} riusi, {} nuovi calcoli richiesti e {} risultati rimossi per fare spazio. Limite di memoria: {} MiB.",
+                    embeddingCache.estimatedSize(), cacheStats.hitCount(), cacheStats.missCount(),
+                    cacheStats.evictionCount(), MAX_EMBEDDING_CACHE_BYTES / (1024 * 1024));
         }
     }
 
@@ -255,8 +264,10 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         val key = Objects.toString(text, "");
         val cached = embeddingCache.getIfPresent(key);
         if (cached != null) {
+            log.trace("Riutilizzo il confronto già preparato per un testo di {} caratteri ({} valori numerici).", key.length(), cached.length);
             return cached;
         }
+        log.trace("Preparo il confronto per un nuovo testo di {} caratteri su questo computer.", key.length());
         val computed = predictor.predict(key);
         if (computed != null) {
             embeddingCache.put(key, computed);
@@ -270,7 +281,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         val topCandidates = candidates.stream()
                 .limit(3)
                 .map(c -> String.format(
-                        "%s [total=%s, lexical=%s, semanticDesc=%s, semantic=%s, mime=%s]",
+                        "%s [valutazione=%s, parole=%s, significato della descrizione=%s, significato degli altri testi=%s, formato=%s]",
                         c.title,
                         round(c.totalScore),
                         round(c.lexicalScore),
@@ -280,10 +291,11 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                 ))
                 .toList();
         val totalMs = Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
-        log.info("Miglior immagine trovata | title={} | imageUrl={} | totalScore={} | elapsedMs={}",
-                best.title, best.imageUrl, round(best.totalScore), totalMs);
-        log.debug("Top 3 candidati: {}", topCandidates);
-        log.debug("Rationale migliore candidato: {}", best.rationale);
+        log.info("Immagine scelta: '{}' (valutazione: {}, ricerca completata in {} ms).",
+                best.title, round(best.totalScore), totalMs);
+        log.debug("Indirizzo dell’immagine scelta: {}", best.imageUrl);
+        log.debug("Le tre immagini più adatte: {}", topCandidates);
+        log.debug("Perché è stata scelta questa immagine: {}", best.rationale);
 
         return new ImageResult(
                 best.title,
@@ -378,7 +390,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                 limit,
                 encode(srsearch)
         );
-        log.trace("Chiamata searchImageCandidates URL: {}", url);
+        log.trace("Indirizzo della richiesta a Wikimedia: {}", url);
 
         val root = getJson(url);
         val pages = root.path("query").path("pages");
@@ -409,7 +421,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             c.mime = ii.path("mime").asText("");
 
             if (isUnsupportedMedia(c.title, c.mime, c.imageUrl)) {
-                log.debug("Scarto file non supportato: title={}, mime={}, imageUrl={}", c.title, c.mime, c.imageUrl);
+                log.debug("Ignoro il file {} perché il formato {} non è supportato: {}", c.title, c.mime, c.imageUrl);
                 continue;
             }
 
@@ -518,7 +530,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                 .toList();
 
         return String.format(
-                "matched=%s, mime=%s, lexical=%s, semanticDescription=%s, semantic=%s, total=%s",
+                "parole trovate=%s, formato=%s, corrispondenza delle parole=%s, significato della descrizione=%s, significato degli altri testi=%s, valutazione finale=%s",
                 matched,
                 c.mime,
                 round(c.lexicalScore),

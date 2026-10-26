@@ -47,12 +47,14 @@ public class WikimediaImageSearchSelectorService implements WikimediaImageSearch
             searchSemaphore.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            log.warn("Ricerca immagine Wikimedia interrotta in attesa di slot disponibile: {}", e.getMessage());
+            log.warn("La ricerca su Wikimedia è stata interrotta mentre attendeva di poter iniziare: {}", e.getMessage());
             return null;
         }
 
         try {
             val mode = resolveMode(preferredMode);
+            log.debug("Cerco immagini su Wikimedia con la ricerca {}. Escludo {} immagini già usate nella mappa.",
+                    MODE_ADVANCED.equals(mode) ? "basata sul significato dei testi" : "semplice", excludedImageUrls.size());
             if (MODE_SIMPLE.equals(mode)) {
                 return simpleImageFinderService.searchImage(keywords, mode, excludedImageUrls);
             }
@@ -68,7 +70,7 @@ public class WikimediaImageSearchSelectorService implements WikimediaImageSearch
             if (MODE_SIMPLE.equals(normalizedPreferredMode) || MODE_ADVANCED.equals(normalizedPreferredMode)) {
                 return normalizedPreferredMode;
             }
-            log.warn("Modalità preferita '{}' non riconosciuta. Uso '{}'.", preferredMode, MODE_ADVANCED);
+            log.warn("La modalità '{}' non è riconosciuta: uso la ricerca basata sul significato dei testi.", preferredMode);
             return MODE_ADVANCED;
         }
 

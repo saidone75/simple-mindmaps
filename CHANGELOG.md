@@ -11,11 +11,14 @@ Modifiche previste per la versione **0.1.1**.
 
 ### Added
 
+- Log sul caricamento e sull’uso di `textEmbeddingModel`, con durata del ranking semantico, dimensione dei vettori e statistiche della cache.
 - Tre campi «Indizio per il gioco» per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.
 - Cinque titoli premio (`prizes`) legati al tema, generati dall’AI nella stessa richiesta della mappa e modificabili singolarmente dall’insegnante. Per le mappe manuali, da template o già esistenti senza titoli premio vengono proposti valori iniziali modificabili.
 
 ### Changed
 
+- Modello di embedding predefinito sostituito con `all-MiniLM-L6-v2`, più leggero e pensato per testi inglesi; resta configurabile tramite `AI_EMBEDDING_MODEL_URL`.
+- Messaggi dei log della ricerca Wikimedia e del modello riscritti in linguaggio più semplice, con i dettagli tecnici delle richieste riservati al livello `TRACE`.
 - Dopo ogni errore il gioco sceglie casualmente uno degli indizi dedicati compilati, ignorando i duplicati, oppure mostra un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
 - CSS semplificato eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
 - Punteggio sostituito da cinque livelli incoraggianti basati sull’avanzamento: errori e tempo non fanno perdere livelli e completare la mappa assegna il quinto titolo premio.
@@ -26,6 +29,7 @@ Modifiche previste per la versione **0.1.1**.
 
 ### Fixed
 
+- Configurazione del modello di embedding allineata a `ai.embedding.model-url` e logger di sviluppo corretto per il package `org.saidone.mindmaps`.
 - Ricerca Wikimedia semplice e semantica con esclusione delle immagini già assegnate nella stessa mappa, per evitare duplicati tra i nodi.
 - Pan dell'editor collegato al contenitore scorrevole della mappa e attivabile trascinando tutta l'area vuota.
 - Stato della partita e dati contenuti resi serializzabili per il salvataggio nella sessione HTTP, con ripristino dell’orologio alla deserializzazione e tipo esplicito nel controller per l’analisi SonarQube.

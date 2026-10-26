@@ -101,13 +101,11 @@ La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti,
 
 ### Giocare
 
-Premi **Giochiamo!** e prendi un'immagine dallo zainetto. Trascinala nella casella corretta, oppure selezionala e poi tocca la casella; da tastiera puoi usare Invio o Spazio sui controlli. Ogni nodo può avere **tre indizi per il gioco**, modificabili nell’editor. Dopo ogni errore il server ne sceglie uno a caso tra quelli compilati, ignorando eventuali duplicati. Scrivi aiuti diversi che facciano ragionare, senza svelare la risposta. Se tutti i campi sono vuoti, compare un incoraggiamento generico; descrizione e titolo non vengono usati come indizi. Le nuove mappe AI includono tre indizi diversi e modificabili. I nodi già esistenti conservano il loro primo indizio; puoi aggiungere gli altri due nell’editor. Per applicare gli indizi a un gioco già condiviso, premi **Aggiorna gioco pubblicato** e condividi il nuovo link.
+Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare uno dei tre indizi del nodo, scelto a caso. Gli indizi sono modificabili nell’editor e generati automaticamente per le nuove mappe AI.
 
-I pulsanti **− / +** e il cursore regolano lo zoom dal **10% al 250%**. **Vedi tutta la mappa** adatta la vista alla finestra. Trascina lo sfondo con la manina per esplorare la mappa ingrandita, anche con il tocco.
+Usa **− / +** per ingrandire o rimpicciolire la mappa e trascina lo sfondo con la manina per spostarti. **Vedi tutta la mappa** la adatta alla finestra.
 
-Durante il gioco si vedono i progressi e un livello incoraggiante, senza punteggi, cronometro o conteggio degli errori. Le mappe generate con AI ricevono cinque titoli premio legati al tema nella stessa richiesta che crea la mappa: il livello cresce con le immagini sistemate e il quinto titolo premio si raggiunge completando la mappa. Errori e tempo impiegato non fanno perdere livelli. Nell'editor, apri **I cinque titoli premio del gioco** per modificarli e salvarli, poi aggiorna la pubblicazione per condividerli. Le mappe manuali, da template e già esistenti senza titoli premio AI usano titoli premio iniziali legati al nome della mappa, modificabili dall'insegnante.
-
-**Giochiamo ancora ↻** avvia una nuova partita. Ogni sessione del browser mantiene una sola partita attiva e non esiste una classifica.
+Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personalizzabili dall’insegnante. Errori e tempo non penalizzano il bambino. Per ricominciare, premi **Giochiamo ancora ↻**.
 
 ## Persistenza ed esportazione
 
