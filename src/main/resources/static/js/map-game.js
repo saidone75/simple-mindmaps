@@ -31,6 +31,7 @@
     const progress = document.getElementById('game-progress');
     const welcome = document.getElementById('game-welcome');
     const feedbackWrap = document.querySelector('.game-feedback-wrap');
+    const completion = document.getElementById('game-completion');
     const endpoint = location.pathname.replace(/\/$/, '');
     let board, selected, busy = false, lastResult, finished = false;
     const matched = new Map();
@@ -59,6 +60,37 @@
         progress.max = board.images.length;
         progress.value = lastResult?.matched || 0;
     }
+    function showCompletion(result) {
+        if (!result.complete || result.level !== 5 || completion.open) return;
+        document.getElementById('game-completion-prize').textContent = result.prize;
+        const confetti = completion.querySelector('.game-completion-confetti');
+        confetti.replaceChildren();
+        if (!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+            const colors = ['#e7ae35', '#b287d8', '#6bb996', '#eb919f', '#7caedd'];
+            for (let i = 0; i < 32; i++) {
+                const piece = document.createElement('span');
+                piece.style.setProperty('--confetti-x', `${Math.random() * 100}%`);
+                piece.style.setProperty('--confetti-delay', `${Math.random() * .7}s`);
+                piece.style.setProperty('--confetti-color', colors[i % colors.length]);
+                piece.style.setProperty('--confetti-turn', `${Math.random() * 720 - 360}deg`);
+                confetti.appendChild(piece);
+            }
+        }
+        completion.showModal();
+    }
+    document.getElementById('game-completion-dismiss').onclick = () => completion.close();
+    document.getElementById('game-completion-view').onclick = () => {
+        completion.close();
+        document.querySelector('.game-map-panel').scrollIntoView({ block: 'start', behavior: 'auto' });
+    };
+    document.getElementById('game-completion-replay').onclick = () => {
+        completion.close();
+        start.click();
+    };
+    completion.addEventListener('close', () => {
+        completion.querySelector('.game-completion-confetti').replaceChildren();
+        start.focus({ preventScroll: true });
+    });
     function select(id) {
         selected = id;
         for (const button of tray.children) button.setAttribute('aria-pressed', String(button.dataset.id === id));
@@ -129,6 +161,7 @@
             }
             finished = result.complete;
             showStats();
+            showCompletion(result);
         } catch (error) { feedbackWrap.dataset.mood = 'hint'; feedback.textContent = error.message; }
         finally { busy = false; }
     }
@@ -258,6 +291,7 @@
     start.onclick = async () => {
         if (busy) return;
         busy = true; start.disabled = true;
+        if (completion.open) completion.close();
         try {
             const next = await request('start');
             board = next; selected = null; matched.clear(); finished = false; lastResult = null;

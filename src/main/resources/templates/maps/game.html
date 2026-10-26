@@ -43,7 +43,7 @@
                 <span><b>3</b> Fai una nuova scoperta!</span>
             </div>
         </div>
-        <div class="game-hero-art" aria-hidden="true"><span class="hero-spark spark-one">✦</span><span class="game-mascot">🐰</span><span class="hero-spark spark-two">✧</span><span class="mascot-caption">Un passo alla volta!</span></div>
+        <div class="game-hero-art" aria-hidden="true"><span class="hero-spark spark-one">✦</span><span class="game-mascot">🐰</span><span class="hero-spark spark-two">✧</span></div>
     </header>
     <div class="game-toolbar">
         <button id="start-game" type="button">Giochiamo! <span aria-hidden="true">→</span></button>
@@ -82,6 +82,22 @@
         </section>
     </div>
 </main>
+<dialog id="game-completion" class="game-completion" th:if="${unavailable != true}" aria-labelledby="game-completion-title" aria-describedby="game-completion-message">
+    <div class="game-completion-card">
+        <div class="game-completion-confetti" aria-hidden="true"></div>
+        <button id="game-completion-dismiss" class="game-completion-dismiss" type="button" aria-label="Chiudi il festeggiamento">×</button>
+        <div class="game-completion-trophy" aria-hidden="true">🏆</div>
+        <span class="game-eyebrow">Livello 5 di 5 · Tutte le immagini al loro posto!</span>
+        <h2 id="game-completion-title">Ce l’hai fatta!</h2>
+        <p class="game-completion-award">Ti sei meritato il prestigioso titolo di</p>
+        <p id="game-completion-prize" class="game-completion-prize"></p>
+        <p id="game-completion-message">Hai completato la mappa! Ogni tentativo ti ha aiutato a fare una nuova scoperta.</p>
+        <div class="game-completion-actions">
+            <button id="game-completion-replay" type="button">Giochiamo ancora ↻</button>
+            <button id="game-completion-view" class="secondary-btn" type="button" autofocus>Guarda la tua mappa</button>
+        </div>
+    </div>
+</dialog>
 <script th:if="${unavailable != true}" th:src="@{/js/map-geometry.js}"></script>
 <script th:if="${unavailable != true}" th:src="@{/js/map-game.js}"></script>
 </body>
