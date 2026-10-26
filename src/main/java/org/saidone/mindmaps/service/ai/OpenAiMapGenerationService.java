@@ -145,11 +145,9 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                 - prizes contiene esattamente 5 titoli premio diversi, ordinati dal livello 1 al 5.
                 - I titoli premio devono essere qualifiche in italiano, brevi, positive e legate all'argomento,
                   adatte ai bambini della scuola primaria e sempre più prestigiose dal primo al quinto livello.
-                  Inventa cinque qualifiche con ruoli e riferimenti al tema diversi tra loro.
-                  "Esperto di…", "Maestro…", "Gran maestro…", "Mago del…" sono solo spunti:
-                  non usarli come una sequenza fissa; scegli anche altre qualifiche fantasiose e pertinenti.
-                  Evita di ripetere la stessa parola o di cambiare soltanto un aggettivo o il grado del titolo.
-                  Varia le qualifiche anche tra mappe di argomenti diversi, adattandole al tema specifico.
+                  Inventa cinque qualifiche fantasiose con ruoli e riferimenti concreti al tema diversi tra loro.
+                  Ogni titolo deve riconoscere una competenza o un talento, con parole semplici e memorabili.
+                  Evita formule fisse, ruoli ripetuti e titoli che cambiano soltanto per un aggettivo o un grado.
                   Massimo 120 caratteri ciascuno; niente voti o confronti con altri bambini.
                 - Il primo nodo rappresenta il tema centrale.
                 - text deve essere sempre un titolo breve (2-6 parole).
@@ -177,13 +175,16 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                 - Albero n-ario: sia la radice sia ogni figlio possono avere più figli (0..n).
                 - Evita collegamenti incrociati o riassegnazioni ambigue: ogni nodo deve avere un solo parentId.
                 - Ordina i nodi per livelli (prima i figli della radice, poi i figli dei figli, ecc.).
-                - I collegamenti devono rispettare una relazione "è un tipo/sottoinsieme di" oppure "è una parte di" coerente semanticamente.
+                - Ogni collegamento padre->figlio deve esprimere una relazione chiara e corretta per il tema:
+                  categoria o parte, ma anche caratteristica, esempio, causa, conseguenza, fase di un processo
+                  o aspetto di un argomento. Non forzare tutti i collegamenti in una classificazione tassonomica.
                 - Vietato creare catene tassonomiche errate (esempio: "Uccelli" figlio di "Mammiferi" è sempre sbagliato).
                 - Le grandi categorie parallele (es. Mammiferi, Uccelli, Rettili, Pesci, Insetti) devono essere sorelle con lo stesso parentId, non una figlia dell'altra.
                 - Prima di rispondere, fai un controllo di coerenza semantica di tutti gli archi padre->figlio e correggi eventuali errori.
                 - Non superare la profondità massima richiesta: massimo %d livelli contando il nodo radice come livello 1.
-                - Se la mappa raggiunge il livello massimo in almeno un ramo, tutti i rami principali devono raggiungere lo stesso livello massimo.
-                - Evita rami principali tronchi: quando possibile, completa ogni ramo con nodi coerenti fino al livello massimo richiesto.
+                - La profondità richiesta è un limite massimo, non un obiettivo da raggiungere in ogni ramo.
+                  I rami possono avere profondità diverse: aggiungi dettagli solo se utili e pertinenti,
+                  senza inventare suddivisioni o ripetere concetti per riempire i livelli.
 
                 Testo di riferimento allegato (se presente):
                 %s
