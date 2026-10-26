@@ -21,7 +21,8 @@ const MAP_CENTER_Y = 450;
 const BASE_CANVAS_WIDTH = 1400;
 const BASE_CANVAS_HEIGHT = 900;
 const CANVAS_PADDING = 180;
-const INTERACTION_VIEWPORT_MAX_STEP = 4;
+const WORKSPACE_EDGE_MARGIN = 48;
+const WORKSPACE_PAN_STEP = 10;
 const MIN_ZOOM_PERCENT = 10;
 const MAX_ZOOM_PERCENT = 200;
 const DEFAULT_GRID_SIZE = 20;
@@ -31,7 +32,7 @@ const state = {
     drag: null,
     resize: null,
     pan: null,
-    interactionViewport: null,
+    workspaceViewport: null,
     pendingImageNodeId: null,
     autosaveTimer: null,
     autosaveNodeId: null,
@@ -56,6 +57,8 @@ const layoutSizeCache = new WeakMap();
 let renderFrame = null;
 let interactionFrame = null;
 let pendingPointerMove = null;
+let edgePanActive = false;
+let appliedViewport = null;
 let formEditGroup = null;
 let renderNodeIndex = null;
 let renderNodeSizes = null;
@@ -836,61 +839,60 @@ function applyCanvasViewport(viewport = getViewportForRender()) {
     }
     const zoomFactor = clampedZoomPercent / 100;
     const { x, y, width, height } = viewport;
+    const offsetX = appliedViewport ? (appliedViewport.x - x) * zoomFactor : 0;
+    const offsetY = appliedViewport ? (appliedViewport.y - y) * zoomFactor : 0;
+    const pixelWidth = String(Math.round(width * zoomFactor));
+    const pixelHeight = String(Math.round(height * zoomFactor));
 
     for (const [name, value] of [
         ["viewBox", `${x} ${y} ${width} ${height}`],
-        ["width", String(Math.round(width * zoomFactor))],
-        ["height", String(Math.round(height * zoomFactor))]
+        ["width", pixelWidth],
+        ["height", pixelHeight]
     ]) {
         if (svg.getAttribute(name) !== value) svg.setAttribute(name, value);
+    }
+    // Keep the drawing scale fixed when its bounds grow, including on mobile.
+    if (svg.style.width !== `${pixelWidth}px`) svg.style.width = `${pixelWidth}px`;
+    if (svg.style.height !== `${pixelHeight}px`) svg.style.height = `${pixelHeight}px`;
+    if (svg.style.minWidth !== '0px') svg.style.minWidth = '0px';
+    appliedViewport = viewport;
+    if (canvasViewport) {
+        if (offsetX) canvasViewport.scrollLeft += offsetX;
+        if (offsetY) canvasViewport.scrollTop += offsetY;
     }
     if (zoomValue) {
         zoomValue.textContent = `${clampedZoomPercent}%`;
     }
 }
 
-function moveTowards(current, target, maxDelta) {
-    if (Math.abs(target - current) <= maxDelta) return target;
-    return current + (target > current ? maxDelta : -maxDelta);
-}
-
 function getViewportForRender() {
-    if (!state.interactionViewport) {
-        return getCanvasBounds();
+    if (!state.workspaceViewport) state.workspaceViewport = getCanvasBounds();
+    const current = state.workspaceViewport;
+    const interaction = state.drag || state.resize;
+    const nodes = interaction ? [getNodeById(interaction.nodeId)].filter(Boolean) : state.map.nodes;
+    let left = current.x, top = current.y;
+    let right = left + current.width, bottom = top + current.height;
+    const matrix = interaction ? svg.getScreenCTM() : null;
+    const area = interaction && canvasViewport ? canvasViewport.getBoundingClientRect() : null;
+    const margin = WORKSPACE_EDGE_MARGIN / Math.max(Math.abs(matrix?.a || 1), 0.01);
+    const padding = Math.max(CANVAS_PADDING, margin * 2);
+    for (const node of nodes) {
+        const size = getLayoutNodeSize(node);
+        const nodeRight = node.x + size.width, nodeBottom = node.y + size.height;
+        // During dragging, expand only at the corresponding visible work-area edge.
+        const nearLeft = area && matrix && node.x * matrix.a + matrix.e <= area.left + WORKSPACE_EDGE_MARGIN;
+        const nearRight = area && matrix && nodeRight * matrix.a + matrix.e >= area.left + canvasViewport.clientWidth - WORKSPACE_EDGE_MARGIN;
+        const nearTop = area && matrix && node.y * matrix.d + matrix.f <= area.top + WORKSPACE_EDGE_MARGIN;
+        const nearBottom = area && matrix && nodeBottom * matrix.d + matrix.f >= area.top + canvasViewport.clientHeight - WORKSPACE_EDGE_MARGIN;
+        if (interaction ? nearLeft && node.x < left + margin : node.x < left) left = Math.min(left, node.x - padding);
+        if (interaction ? nearRight && nodeRight > right - margin : nodeRight > right) right = Math.max(right, nodeRight + padding);
+        if (interaction ? nearTop && node.y < top + margin : node.y < top) top = Math.min(top, node.y - padding);
+        if (interaction ? nearBottom && nodeBottom > bottom - margin : nodeBottom > bottom) bottom = Math.max(bottom, nodeBottom + padding);
     }
-    const target = getCanvasBounds();
-    const current = state.interactionViewport;
-    const currentRight = current.x + current.width;
-    const currentBottom = current.y + current.height;
-    const targetRight = target.x + target.width;
-    const targetBottom = target.y + target.height;
-
-    const nonShrinkingTarget = {
-        x: Math.min(current.x, target.x),
-        y: Math.min(current.y, target.y),
-        width: Math.max(currentRight, targetRight) - Math.min(current.x, target.x),
-        height: Math.max(currentBottom, targetBottom) - Math.min(current.y, target.y),
-    };
-
-    const smoothed = {
-        x: moveTowards(current.x, nonShrinkingTarget.x, INTERACTION_VIEWPORT_MAX_STEP),
-        y: moveTowards(current.y, nonShrinkingTarget.y, INTERACTION_VIEWPORT_MAX_STEP),
-        width: moveTowards(current.width, nonShrinkingTarget.width, INTERACTION_VIEWPORT_MAX_STEP),
-        height: moveTowards(current.height, nonShrinkingTarget.height, INTERACTION_VIEWPORT_MAX_STEP),
-    };
-    state.interactionViewport = smoothed;
-    return smoothed;
-}
-
-function captureInteractionViewport() {
-    if (state.interactionViewport) return;
-    const viewBox = (svg.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
-    if (viewBox.length === 4 && viewBox.every(Number.isFinite)) {
-        const [x, y, width, height] = viewBox;
-        state.interactionViewport = { x, y, width, height };
-        return;
+    if (left !== current.x || top !== current.y || right !== current.x + current.width || bottom !== current.y + current.height) {
+        state.workspaceViewport = { x: left, y: top, width: right - left, height: bottom - top };
     }
-    state.interactionViewport = getCanvasBounds();
+    return state.workspaceViewport;
 }
 
 
@@ -1116,7 +1118,6 @@ function startDrag(event) {
     if (!node) return;
 
     const point = toSvgPoint(event);
-    captureInteractionViewport();
     state.drag = {
         nodeId,
         offsetX: point.x - node.x,
@@ -1140,7 +1141,6 @@ function startImageResize(event) {
     const nodeSize = getNodeSize(node);
     const bounds = getNodeImageBounds(node, nodeSize.width);
     const point = toSvgPoint(event);
-    captureInteractionViewport();
     state.resize = {
         mode: "image",
         nodeId,
@@ -1162,7 +1162,6 @@ function startNodeResize(event) {
     selectNode(nodeId, { showNodeOverlay: false });
     const size = getNodeSize(node);
     const point = toSvgPoint(event);
-    captureInteractionViewport();
     state.resize = {
         mode: "node",
         nodeId,
@@ -1251,18 +1250,42 @@ function applyPointerMove(event) {
     return false;
 }
 
-function flushPointerMove() {
+function queuePointerMove(event) {
+    pendingPointerMove = { clientX: event.clientX, clientY: event.clientY };
+    if (interactionFrame == null) interactionFrame = requestAnimationFrame(() => flushPointerMove());
+}
+
+function panNearWorkspaceEdge(event) {
+    if (!state.drag?.moved || !canvasViewport) return false;
+    const rect = canvasViewport.getBoundingClientRect();
+    const left = rect.left + canvasViewport.clientLeft, top = rect.top + canvasViewport.clientTop;
+    const right = left + canvasViewport.clientWidth, bottom = top + canvasViewport.clientHeight;
+    if (event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom) return false;
+    const step = (position, min, max) => {
+        if (position < min + WORKSPACE_EDGE_MARGIN) return -WORKSPACE_PAN_STEP * (1 - (position - min) / WORKSPACE_EDGE_MARGIN);
+        if (position > max - WORKSPACE_EDGE_MARGIN) return WORKSPACE_PAN_STEP * (1 - (max - position) / WORKSPACE_EDGE_MARGIN);
+        return 0;
+    };
+    const previousLeft = canvasViewport.scrollLeft, previousTop = canvasViewport.scrollTop;
+    const dx = step(event.clientX, left, right), dy = step(event.clientY, top, bottom);
+    if (dx) canvasViewport.scrollLeft += dx;
+    if (dy) canvasViewport.scrollTop += dy;
+    return canvasViewport.scrollLeft !== previousLeft || canvasViewport.scrollTop !== previousTop;
+}
+
+function flushPointerMove(allowPan = true) {
     if (interactionFrame != null) cancelAnimationFrame(interactionFrame);
     interactionFrame = null;
     const event = pendingPointerMove;
     pendingPointerMove = null;
-    if (event && applyPointerMove(event)) render();
+    if (!event) return;
+    if (applyPointerMove(event) || edgePanActive) render();
+    edgePanActive = allowPan && panNearWorkspaceEdge(event);
+    if (edgePanActive) queuePointerMove(event);
 }
 
 document.addEventListener("mousemove", event => {
-    if (!state.drag && !state.resize && !state.pan) return;
-    pendingPointerMove = { clientX: event.clientX, clientY: event.clientY };
-    if (interactionFrame == null) interactionFrame = requestAnimationFrame(flushPointerMove);
+    if (state.drag || state.resize || state.pan) queuePointerMove(event);
 });
 
 function shouldHideNodeEditorAfterMouseup(wasDragging, dragMoved, justOpenedContextMenu) {
@@ -1273,7 +1296,10 @@ function resetPointerInteractionState() {
     state.drag = null;
     state.resize = null;
     state.pan = null;
-    state.interactionViewport = null;
+    edgePanActive = false;
+    pendingPointerMove = null;
+    if (interactionFrame != null) cancelAnimationFrame(interactionFrame);
+    interactionFrame = null;
     canvasViewport?.classList.remove("is-panning");
     applyCanvasViewport();
 }
@@ -1305,7 +1331,7 @@ function flushResizeAutosave(resizeState) {
 }
 
 document.addEventListener("mouseup", () => {
-    flushPointerMove();
+    flushPointerMove(false);
     const wasDragging = !!state.drag;
     const dragMoved = !!state.drag?.moved;
     const resizeState = state.resize ? { ...state.resize } : null;
@@ -1639,7 +1665,7 @@ async function normalizeExportImageHref(href) {
 }
 
 async function buildExportSvg() {
-    flushPointerMove();
+    flushPointerMove(false);
     if (renderFrame != null) render();
     if (renderFrame != null) render();
     const clone = svg.cloneNode(true);
@@ -1722,6 +1748,7 @@ if (canvasViewport) {
 async function reorderMap() {
     pushUndoSnapshot();
     const root = applyOrganicLayout();
+    state.workspaceViewport = null;
     render();
     focusCanvasOnContent(root);
     await persistAllNodePositions();

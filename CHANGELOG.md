@@ -35,7 +35,7 @@ Modifiche previste per la versione **0.1.1**.
 - Regole della barra di avanzamento del gioco separate per Chrome/Safari e Firefox, evitando selettori specifici dei browser nella stessa regola.
 - Configurazione del modello di embedding allineata a `ai.embedding.model-url` e logger di sviluppo corretto per il package `org.saidone.mindmaps`.
 - Ricerca Wikimedia semplice e semantica con esclusione delle immagini già assegnate nella stessa mappa, per evitare duplicati tra i nodi.
-- Pan dell'editor collegato al contenitore scorrevole della mappa e attivabile trascinando tutta l'area vuota.
+- Pan dell’editor collegato al contenitore scorrevole e attivabile trascinando l’area vuota. Lo spostamento dei nodi mantiene ferma la vista, anche al rilascio: scorrimento automatico solo vicino al bordo visibile ed espansione sul lato necessario, mantenendo lo zoom.
 - Stato della partita e dati contenuti resi serializzabili per il salvataggio nella sessione HTTP, con ripristino dell’orologio alla deserializzazione e tipo esplicito nel controller per l’analisi SonarQube.
 - Attesa esplicita delle richieste di abbinamento nei gestori di tastiera e trascinamento del gioco.
 - Espressioni regolari per le variabili CSS nelle esportazioni semplificate per ridurre il backtracking.
