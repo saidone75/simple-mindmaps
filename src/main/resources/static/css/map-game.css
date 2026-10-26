@@ -306,6 +306,45 @@
     100% { opacity: 0; transform: scale(1.65); }
 }
 
+/* A final celebration stays open until the child chooses what to do next. */
+.game-completion {
+    width: min(560px, calc(100% - 28px));
+    max-height: calc(100dvh - 32px);
+    padding: 0;
+    border: 0;
+    border-radius: 28px;
+    background: #fffdf7;
+    color: var(--ink);
+    box-shadow: 0 24px 90px #35224540;
+}
+.game-completion::backdrop { background: #35224580; backdrop-filter: blur(6px); }
+.game-completion-card { position: relative; overflow: hidden; padding: 40px 28px 30px; text-align: center; }
+.game-completion-card > :not(.game-completion-confetti) { position: relative; z-index: 1; }
+.game-completion-card .game-completion-dismiss { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #efe5fc; color: #6948aa; font-size: 26px; }
+.game-completion-trophy { font-size: 76px; line-height: 1.3; margin-bottom: 16px; }
+.game-completion[open] .game-completion-trophy { animation: happy-pop .7s ease both; }
+.game-completion h2 { margin: 14px 0 10px; font-size: clamp(2rem, 8vw, 3rem); letter-spacing: -.04em; color: #6544ac; }
+.game-completion-award { margin: 0 0 8px; line-height: 1.5; }
+.game-completion-prize { margin: 0 0 16px; color: #8a6518; font-size: clamp(1.15rem, 4vw, 1.5rem); font-weight: 800; overflow-wrap: anywhere; }
+#game-completion-message { margin-bottom: 24px; line-height: 1.7; }
+.game-completion-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+.game-completion-actions button { min-height: 48px; }
+.game-completion-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.game-completion-confetti span {
+    position: absolute;
+    left: var(--confetti-x);
+    top: -20px;
+    width: 9px;
+    height: 15px;
+    border-radius: 3px;
+    background: var(--confetti-color);
+    animation: confetti-fall 3s var(--confetti-delay) ease-out both;
+}
+@keyframes confetti-fall {
+    from { transform: translateY(0) rotate(0); opacity: 1; }
+    to { transform: translateY(650px) rotate(var(--confetti-turn)); opacity: 0; }
+}
+
 @media(max-width: 900px) {
     .game-layout { grid-template-columns: 170px minmax(0,1fr); gap: 14px; }
 
@@ -324,12 +363,17 @@
 
     .game-target.just-matched > rect:first-child { stroke: #66a681; stroke-width: 5; }
 
-    .game-celebration { display: none; }
+    .game-celebration,
+    .game-completion-confetti { display: none; }
 }
 
 .game-zoom-controls { display: grid; gap: 8px; min-width: 0; }
 
-.game-zoom-controls > label { color: #766981; font-size: .78rem; font-weight: 700; }
+.game-zoom-controls > label,
+.game-completion-award,
+#game-completion-message { color: #766981; }
+
+.game-zoom-controls > label { font-size: .78rem; font-weight: 700; }
 
 .game-zoom-buttons { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 
@@ -348,7 +392,8 @@
 
 .game-zoom-buttons button:disabled { opacity: .45; cursor: default; }
 
-.game-zoom-buttons button:focus-visible { outline: 3px solid #6544ac; outline-offset: 3px; }
+.game-zoom-buttons button:focus-visible,
+.game-completion button:focus-visible { outline: 3px solid #6544ac; outline-offset: 3px; }
 
 #game-zoom { width: 110px; padding: 0; accent-color: #7553bf; border: 0; }
 
@@ -406,46 +451,3 @@
 .game-level-card { margin: 0 0 18px; padding: 20px 24px; border: 1px solid #d9cdeb; border-radius: 20px; background: #f6f0fd; }
 .game-level-card h2 { margin: 8px 0; color: #5d427d; font-size: clamp(1.2rem, 3vw, 1.65rem); overflow-wrap: anywhere; }
 .game-level-card p { margin: 0; color: #746585; font-size: .9rem; }
-
-/* A final celebration stays open until the child chooses what to do next. */
-.game-completion {
-    width: min(560px, calc(100% - 28px));
-    max-height: calc(100dvh - 32px);
-    padding: 0;
-    border: 0;
-    border-radius: 28px;
-    background: #fffdf7;
-    color: var(--ink);
-    box-shadow: 0 24px 90px #35224540;
-}
-.game-completion::backdrop { background: #35224580; backdrop-filter: blur(6px); }
-.game-completion-card { position: relative; overflow: hidden; padding: 40px 28px 30px; text-align: center; }
-.game-completion-card > :not(.game-completion-confetti) { position: relative; z-index: 1; }
-.game-completion-card .game-completion-dismiss { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #efe5fc; color: #6948aa; font-size: 26px; }
-.game-completion-trophy { font-size: 76px; line-height: 1.3; margin-bottom: 16px; }
-.game-completion[open] .game-completion-trophy { animation: happy-pop .7s ease both; }
-.game-completion h2 { margin: 14px 0 10px; font-size: clamp(2rem, 8vw, 3rem); letter-spacing: -.04em; color: #6544ac; }
-.game-completion-award { margin: 0 0 8px; color: #766981; line-height: 1.5; }
-.game-completion-prize { margin: 0 0 16px; color: #8a6518; font-size: clamp(1.15rem, 4vw, 1.5rem); font-weight: 800; overflow-wrap: anywhere; }
-#game-completion-message { margin-bottom: 24px; color: #766981; line-height: 1.7; }
-.game-completion-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
-.game-completion-actions button { min-height: 48px; }
-.game-completion button:focus-visible { outline: 3px solid #6544ac; outline-offset: 3px; }
-.game-completion-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.game-completion-confetti span {
-    position: absolute;
-    left: var(--confetti-x);
-    top: -20px;
-    width: 9px;
-    height: 15px;
-    border-radius: 3px;
-    background: var(--confetti-color);
-    animation: confetti-fall 3s var(--confetti-delay) ease-out both;
-}
-@keyframes confetti-fall {
-    from { transform: translateY(0) rotate(0); opacity: 1; }
-    to { transform: translateY(650px) rotate(var(--confetti-turn)); opacity: 0; }
-}
-@media(prefers-reduced-motion: reduce) {
-    .game-completion-confetti { display: none; }
-}

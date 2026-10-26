@@ -23,7 +23,7 @@ Modifiche previste per la versione **0.1.1**.
 - Modello di embedding predefinito sostituito con `all-MiniLM-L6-v2`, più leggero e pensato per testi inglesi; resta configurabile tramite `AI_EMBEDDING_MODEL_URL`.
 - Messaggi dei log della ricerca Wikimedia e del modello riscritti in linguaggio più semplice, con i dettagli tecnici delle richieste riservati al livello `TRACE`.
 - Dopo ogni errore il gioco sceglie casualmente uno degli indizi dedicati compilati, ignorando i duplicati, oppure mostra un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
-- CSS semplificato eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
+- CSS di editor, gioco, spinner e overlay di festeggiamento semplificati eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
 - Punteggio sostituito da cinque livelli incoraggianti basati sull’avanzamento: errori e tempo non fanno perdere livelli e completare la mappa assegna il quinto titolo premio.
 - Riordino automatico e salvataggio delle posizioni alla prima apertura delle nuove mappe, anche da template e generate con AI.
 - Disposizione radiale più compatta, con nodo principale al centro anche dell’area di disegno e livelli successivi progressivamente più esterni, tenendo conto delle dimensioni dei nodi e delle immagini.
