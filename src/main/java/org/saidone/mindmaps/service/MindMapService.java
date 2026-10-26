@@ -414,9 +414,12 @@ public class MindMapService {
     private static List<String> defaultPrizes(String topic) {
         val theme = topic == null || topic.isBlank() ? "questa avventura" : topic.strip();
         val shortTheme = theme.substring(0, Math.min(65, theme.length()));
-        return List.of("Curioso esploratore: " + shortTheme, "Intrepido cercatore: " + shortTheme,
-                "Brillante scopritore: " + shortTheme, "Saggio custode: " + shortTheme,
-                "Custode supremo: " + shortTheme);
+        return List.of(
+                String.format("Una scintilla di idee: %s", shortTheme),
+                String.format("Detective delle sorprese: %s", shortTheme),
+                String.format("Acchiappastelle in missione: %s", shortTheme),
+                String.format("Regista di nuove scoperte: %s", shortTheme),
+                String.format("Un fuoco d’artificio di scoperte: %s", shortTheme));
     }
 
     private void deleteRecursive(Long nodeId, List<Node> allNodes) {

@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Conteggio dei livelli nella generazione AI comprensivo del nodo principale: scegliendo 2 livelli si ottengono solo radice e figli, con controllo del limite anche sul server.
+
 ### Added
 
 - Supporto dei risultati Wikimedia DjVu tramite anteprima della prima pagina, nelle ricerche semplice e semantica; i documenti senza anteprima supportata vengono scartati.
