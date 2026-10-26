@@ -40,7 +40,6 @@ import java.text.Normalizer;
 import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,7 +50,6 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
     private static final Pattern HTML_TAGS = Pattern.compile("<[^>]+>");
     private static final Pattern MULTISPACE = Pattern.compile("\\s+");
     private static final Pattern TOKEN_SPLIT = Pattern.compile("\\s+");
-    private static final Set<String> UNSUPPORTED_FILE_EXTENSIONS = Set.of(".djvu", ".djv");
     private static final double PRIMARY_KEYWORD_TITLE_WEIGHT = 1.8;
     private static final double PRIMARY_KEYWORD_TEXT_WEIGHT = 1.5;
     private static final double PRIMARY_KEYWORD_FULL_MATCH_BONUS = 4.0;
@@ -63,7 +61,6 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
     private static final int MAX_QUERY_LIMIT = 35;
     private static final int TARGET_CANDIDATE_POOL_SIZE = 35;
     private static final long MAX_EMBEDDING_CACHE_BYTES = 10L * 1024L * 1024L;
-    private static final String SEARCH_EXCLUDED_FILE_TYPES = "-filetype:djvu -filetype:djv";
 
     @Qualifier("wikimediaRestClient")
     private final RestClient wikimediaRestClient;
@@ -201,7 +198,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         val querySpec = batch.get(queryIndex);
         val limit = resolveQueryLimit(batchIndex, queryIndex, keywordCount);
         val queryStart = System.nanoTime();
-        log.trace("Avvio la ricerca [{}], con al massimo {} risultati: {}", querySpec.label, limit, querySpec.query);
+        log.debug("Avvio la ricerca [{}], con al massimo {} risultati: {}", querySpec.label, limit, querySpec.query);
         val details = searchImageCandidates(querySpec.query, limit);
         log.trace("La ricerca [{}] ({}/{}) ha trovato {} immagini: {}",
                 querySpec.label, queryIndex + 1, batch.size(), details.size(),
@@ -352,40 +349,20 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
     }
 
     List<List<SearchQuerySpec>> buildSearchQueryBatches(List<String> keywords) {
-        val joined = String.join(" ", keywords);
-        val andJoined = String.join(" AND ", keywords);
-        val orJoined = String.join(" OR ", keywords);
-
-        val titleOnly = keywords.stream()
-                .map(k -> String.format("intitle:%s", quoteIfNeeded(k)))
-                .collect(Collectors.joining(" "));
-
-        val titleBoost = keywords.stream()
-                .limit(2)
-                .map(k -> String.format("intitle:%s", quoteIfNeeded(k)))
-                .collect(Collectors.joining(" "));
-
-        val strict = List.of(
-                new SearchQuerySpec("and", String.format("filemime:image %s %s", andJoined, SEARCH_EXCLUDED_FILE_TYPES)),
-                new SearchQuerySpec("title", String.format("filemime:image %s %s", titleOnly, SEARCH_EXCLUDED_FILE_TYPES)),
-                new SearchQuerySpec("title-boost", String.format("filemime:image %s %s %s",
-                        titleBoost, joined, SEARCH_EXCLUDED_FILE_TYPES))
-        );
-        val medium = List.of(
-                new SearchQuerySpec("phrase", String.format("filemime:image \"%s\" %s", joined, SEARCH_EXCLUDED_FILE_TYPES)),
-                new SearchQuerySpec("plain", String.format("filemime:image %s %s", joined, SEARCH_EXCLUDED_FILE_TYPES))
-        );
-        val broad = List.of(
-                new SearchQuerySpec("or", String.format("filemime:image %s %s", orJoined, SEARCH_EXCLUDED_FILE_TYPES))
-        );
-        return List.of(strict, medium, broad);
+        val batches = WikimediaImageQueries.batches(keywords);
+        return java.util.stream.IntStream.range(0, batches.size())
+                .mapToObj(index -> batches.get(index).stream()
+                        .map(query -> new SearchQuerySpec(
+                                index == batches.size() - 1 ? "subject-words" : "subject-context", query))
+                        .toList())
+                .toList();
     }
 
     private List<Candidate> searchImageCandidates(String srsearch, int limit)
             throws IOException, InterruptedException {
 
         val url = String.format(
-                "%s?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=%s&gsrsearch=%s&prop=imageinfo%%7Cinfo&inprop=url&iiprop=url%%7Cmime%%7Cextmetadata",
+                "%s?action=query&format=json&generator=search&gsrnamespace=6&gsrlimit=%s&gsrsearch=%s&prop=imageinfo%%7Cinfo&inprop=url&iiprop=url%%7Cmime%%7Cextmetadata%%7Cthumbmime&iiurlwidth=1024",
                 COMMONS_API,
                 limit,
                 encode(srsearch)
@@ -420,9 +397,15 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             c.thumbnailUrl = c.imageUrl;
             c.mime = ii.path("mime").asText("");
 
-            if (isUnsupportedMedia(c.title, c.mime, c.imageUrl)) {
-                log.debug("Ignoro il file {} perché il formato {} non è supportato: {}", c.title, c.mime, c.imageUrl);
-                continue;
+            if (WikimediaDjvuPreview.isDjvu(c.title, c.mime, c.imageUrl)) {
+                c.imageUrl = WikimediaDjvuPreview.resolve(ii.path("thumburl").asText(null),
+                        ii.path("thumbmime").asText(null));
+                if (c.imageUrl == null) {
+                    log.debug("Ignoro il file DjVu {} perché manca un’anteprima supportata", c.title);
+                    continue;
+                }
+                c.thumbnailUrl = c.imageUrl;
+                c.mime = ii.path("thumbmime").asText("");
             }
 
             val semanticText = String.join(" | ",
@@ -651,10 +634,6 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         return normalized.split(" ").length >= 3;
     }
 
-    private static String quoteIfNeeded(String s) {
-        return s.contains(" ") ? String.format("\"%s\"", s) : s;
-    }
-
     private int resolveQueryLimit(int batchIndex, int queryIndex, int keywordCount) {
         int baseLimit = switch (batchIndex) {
             case 0 -> STRICT_BATCH_LIMIT;
@@ -684,17 +663,6 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         long embeddingBytes = embedding == null ? 0L : (long) embedding.length * Float.BYTES;
         long estimate = keyBytes + embeddingBytes + 64L;
         return (int) Math.min(Integer.MAX_VALUE, estimate);
-    }
-
-    static boolean isUnsupportedMedia(String title, String mime, String imageUrl) {
-        val loweredMime = Objects.toString(mime, "").toLowerCase(Locale.ROOT);
-        if (loweredMime.contains("djvu") || loweredMime.contains("vnd.djvu")) {
-            return true;
-        }
-
-        val titleOrUrl = (Objects.toString(title, "") + " " + Objects.toString(imageUrl, ""))
-                .toLowerCase(Locale.ROOT);
-        return UNSUPPORTED_FILE_EXTENSIONS.stream().anyMatch(titleOrUrl::contains);
     }
 
     public static class Candidate {

@@ -127,7 +127,8 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
                         .queryParam("action", "query")
                         .queryParam("titles", fileTitle)
                         .queryParam("prop", "imageinfo")
-                        .queryParam("iiprop", "url|mime")
+                        .queryParam("iiprop", "url|mime|thumbmime")
+                        .queryParam("iiurlwidth", "1024")
                         .queryParam("format", "json")
                         .build())
                 .retrieve()
@@ -139,20 +140,19 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
             return null;
         }
 
+        if (WikimediaDjvuPreview.isDjvu(fileTitle, firstImageInfo.mime(), firstImageInfo.url())) {
+            return WikimediaDjvuPreview.resolve(firstImageInfo.thumburl(), firstImageInfo.thumbmime());
+        }
+
         val mimeType = firstImageInfo.mime();
         val imageUrl = firstImageInfo.url();
         return isWebImage(mimeType, imageUrl) ? imageUrl : null;
     }
 
     private List<String> buildSearchQueries(String[] normalizedKeywords) {
-        val rawQueries = new LinkedHashSet<String>();
-        val phraseQuery = String.join(" ", normalizedKeywords);
-        if (normalizedKeywords.length > 1) {
-            rawQueries.add("\"" + phraseQuery + "\"");
-            rawQueries.add(String.join(" AND ", normalizedKeywords));
-        }
-        rawQueries.add(String.join(" OR ", normalizedKeywords));
-        return List.copyOf(rawQueries);
+        return WikimediaImageQueries.batches(Arrays.asList(normalizedKeywords)).stream()
+                .flatMap(List::stream)
+                .toList();
     }
 
     private boolean isWebImage(String mimeType, String imageUrl) {
@@ -214,7 +214,7 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record ImageInfo(String url, String mime) {
+    private record ImageInfo(String url, String mime, String thumburl, String thumbmime) {
     }
 
 }

@@ -8,7 +8,7 @@ Un'applicazione per creare mappe mentali e trasformarle in giochi delle immagini
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 
-Versione corrente: **0.2.0**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
+Ultima release stabile: **0.2.0**. Versione in sviluppo su `develop`: **0.3.0-SNAPSHOT**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 ## Funzionalità
 
@@ -77,21 +77,15 @@ Per compilare e verificare il progetto con i test già presenti:
 mvn -B clean verify
 ```
 
-L'artefatto eseguibile è `target/mindmaps-0.2.0.jar`. Con credenziali e directory dei dati già configurate:
+L'artefatto eseguibile è `target/mindmaps-0.3.0-SNAPSHOT.jar`. Con credenziali e directory dei dati già configurate:
 
 ```bash
-java -jar target/mindmaps-0.2.0.jar --spring.profiles.active=prod
+java -jar target/mindmaps-0.3.0-SNAPSHOT.jar --spring.profiles.active=prod
 ```
 
 Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `./log/mindmaps.log`. I profili sono di Spring: non occorre un profilo Maven `-Pprod`.
 
 Per costruire il JAR saltando l'esecuzione dei test è disponibile `bash build.sh`.
-
-### Avanzamento della generazione AI
-
-La creazione AI prosegue sul server mentre la pagina controlla lo stato ogni **2 secondi**. Lo spinner mostra l’attività reale in corso, il nome del nodo durante la ricerca dell’immagine, il numero di nodi già preparati sul totale e una barra di avanzamento. La barra resta indeterminata finché il totale dei nodi non è noto, poi segue i nodi effettivamente preparati. Se la connessione è lenta, continua a controllare senza avviare un’altra generazione. Quando la mappa è pronta, si apre l’editor con il riordino iniziale; gli errori vengono mostrati nel modulo.
-
-Le attività sono eseguite da un gruppo di thread con una coda limitata; lo stato è temporaneo, conservato in memoria e consultabile solo dall’utente che ha avviato la richiesta. Senza JavaScript resta disponibile l’invio tradizionale del modulo.
 
 ## Gioco delle immagini
 

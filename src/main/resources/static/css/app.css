@@ -273,9 +273,31 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
     background: var(--overlay);
     border: 1px solid var(--border);
     border-radius: 16px;
+    cursor: pointer;
 }
-
-.checkbox-label input { width: 18px; height: 18px; accent-color: var(--accent-dark); }
+.checkbox-label input[role="switch"] {
+    appearance: none;
+    flex: 0 0 42px;
+    width: 42px;
+    height: 24px;
+    margin: 0;
+    padding: 2px;
+    border: 1px solid var(--node-stroke);
+    border-radius: 999px;
+    background: var(--muted);
+    cursor: inherit;
+}
+.checkbox-label input[role="switch"]::before {
+    content: "";
+    display: block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--white);
+}
+.checkbox-label input[role="switch"]:checked { background: var(--accent-dark); }
+.checkbox-label input[role="switch"]:checked::before { transform: translateX(18px); }
+.checkbox-label input[role="switch"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 .template-btn,
 .login-submit { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 12px 24px var(--shadow); }

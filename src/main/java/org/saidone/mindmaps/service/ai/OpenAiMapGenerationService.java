@@ -80,6 +80,7 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                       "branchText": { "type": "string" },
                       "imageUri": { "type": "string" },
                       "imageKeywords": {
+                        "description": "3-4 English search terms or short phrases combining the node subject with the main map topic; include explicit topic context in every node.",
                         "type": "array",
                         "minItems": 3,
                         "maxItems": 4,
@@ -138,14 +139,16 @@ public class OpenAiMapGenerationService implements MapGenerationService {
 
                 Vincoli:
                 - Argomento: %s
-                - Profondità massima della mappa (livelli gerarchici): %d
+                - Numero massimo di livelli della mappa, INCLUSO il nodo radice: %d
+                - La radice è il livello 1, i figli il livello 2, i nipoti il livello 3.
+                  Con 2 livelli crea solo radice e figli, senza nipoti.
                 - prizes contiene esattamente 5 titoli premio diversi, ordinati dal livello 1 al 5.
-                - I titoli premio sono giocosi, positivi e originali, in italiano, legati precisamente all'argomento,
-                  con ruoli fantasiosi e aggettivi sempre più celebrativi. Massimo 120 caratteri ciascuno.
-                  Esempi per Mesopotamia: Curioso esploratore dei due fiumi, Brillante cercatore di tavolette,
-                  Abile scriba delle meraviglie, Saggio custode di Babilonia, Custode supremo della ziggurat.
-                  Per geografia: da Intrepido cercatore di sentieri a Sommo cartografo delle meraviglie.
-                  Non copiare gli esempi per argomenti diversi; non usare etichette negative, voti o confronti con altri bambini.
+                - I titoli premio devono essere qualifiche in italiano, brevi, positive e legate all'argomento,
+                  adatte ai bambini della scuola primaria e sempre più prestigiose dal primo al quinto livello.
+                  Inventa cinque qualifiche fantasiose con ruoli e riferimenti concreti al tema diversi tra loro.
+                  Ogni titolo deve riconoscere una competenza o un talento, con parole semplici e memorabili.
+                  Evita formule fisse, ruoli ripetuti e titoli che cambiano soltanto per un aggettivo o un grado.
+                  Massimo 120 caratteri ciascuno; niente voti o confronti con altri bambini.
                 - Il primo nodo rappresenta il tema centrale.
                 - text deve essere sempre un titolo breve (2-6 parole).
                 - description è OBBLIGATORIA per ogni nodo: una sola frase breve con descrizione o curiosità utile.
@@ -154,20 +157,34 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                 - I nodi successivi devono essere brevi, non duplicati e coerenti col tema.
                 - %s
                 - imageUri deve essere sempre stringa vuota.
-                - imageKeywords deve contenere 2-6 keyword in inglese, separate da virgola, in ordine di importanza (la più importante per prima), pensate per cercare immagini su Wikimedia Commons.
+                - imageKeywords deve essere un array di 3-4 termini o brevi espressioni in inglese, pensati per
+                  cercare immagini su Wikimedia Commons. Per OGNI nodo, anche quelli più profondi, collega
+                  sempre il soggetto del nodo all'argomento principale della mappa: includi un riferimento
+                  esplicito al tema centrale (civiltà, epoca, luogo, ambiente o ambito pertinente).
+                  Il primo elemento identifica il soggetto specifico del nodo già contestualizzato al tema;
+                  gli altri precisano il contesto e dettagli visivi utili. Usa anche il ramo di appartenenza
+                  per disambiguare il soggetto, senza perdere il riferimento al tema principale.
+                  Evita parole generiche isolate che potrebbero portare a immagini di altri argomenti.
+                  Esempio: nella mappa sulla Mesopotamia, per il nodo "Scrittura" usa
+                  ["Mesopotamian cuneiform", "clay tablet", "Sumerian writing"], per "Case" usa
+                  ["Mesopotamian houses", "mud brick dwelling", "ancient Mesopotamia"].
+                  Adatta sempre il contesto all'argomento richiesto; non copiare questi esempi per altri temi.
                 - parentId: null solo per il nodo principale (primo elemento).
                 - Per gli altri nodi, parentId deve contenere l'indice (0-based) di un nodo precedente nella lista.
-                - Struttura gerarchica obbligatoria: radice -> figli -> nipoti -> livelli successivi.
+                - Struttura gerarchica: radice -> figli -> nipoti -> livelli successivi, solo entro il limite richiesto.
                 - Albero n-ario: sia la radice sia ogni figlio possono avere più figli (0..n).
                 - Evita collegamenti incrociati o riassegnazioni ambigue: ogni nodo deve avere un solo parentId.
                 - Ordina i nodi per livelli (prima i figli della radice, poi i figli dei figli, ecc.).
-                - I collegamenti devono rispettare una relazione "è un tipo/sottoinsieme di" oppure "è una parte di" coerente semanticamente.
+                - Ogni collegamento padre->figlio deve esprimere una relazione chiara e corretta per il tema:
+                  categoria o parte, ma anche caratteristica, esempio, causa, conseguenza, fase di un processo
+                  o aspetto di un argomento. Non forzare tutti i collegamenti in una classificazione tassonomica.
                 - Vietato creare catene tassonomiche errate (esempio: "Uccelli" figlio di "Mammiferi" è sempre sbagliato).
                 - Le grandi categorie parallele (es. Mammiferi, Uccelli, Rettili, Pesci, Insetti) devono essere sorelle con lo stesso parentId, non una figlia dell'altra.
                 - Prima di rispondere, fai un controllo di coerenza semantica di tutti gli archi padre->figlio e correggi eventuali errori.
-                - Non superare la profondità massima richiesta: massimo %d livelli dal nodo radice.
-                - Se la mappa raggiunge il livello massimo in almeno un ramo, tutti i rami principali devono raggiungere lo stesso livello massimo.
-                - Evita rami principali tronchi: quando possibile, completa ogni ramo con nodi coerenti fino al livello massimo richiesto.
+                - Non superare la profondità massima richiesta: massimo %d livelli contando il nodo radice come livello 1.
+                - La profondità richiesta è un limite massimo, non un obiettivo da raggiungere in ogni ramo.
+                  I rami possono avere profondità diverse: aggiungi dettagli solo se utili e pertinenti,
+                  senza inventare suddivisioni o ripetere concetti per riempire i livelli.
 
                 Testo di riferimento allegato (se presente):
                 %s

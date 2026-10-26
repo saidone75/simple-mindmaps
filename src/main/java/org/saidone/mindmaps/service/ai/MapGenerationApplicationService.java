@@ -57,7 +57,7 @@ public class MapGenerationApplicationService {
         for (int i = 1; i <= attempts; i++) {
             try {
                 progress.update(i == 1 ? "Sto creando la mappa con l’AI…"
-                        : "Sto riprovando a creare la mappa (tentativo " + i + " di " + attempts + ")…", 0, 0);
+                        : String.format("Sto riprovando a creare la mappa (tentativo %d di %d)…", i, attempts), 0, 0);
                 val generated = mapGenerationService.generateMindMap(request);
                 progress.update("Sto controllando i nodi e i collegamenti della mappa…", 0, 0);
                 sanitize(generated);
@@ -142,8 +142,8 @@ public class MapGenerationApplicationService {
             int parentIndex = rawParentId == null ? 0 : rawParentId.intValue();
             if (parentIndex < 0 || parentIndex >= i) {
                 parentIndex = 0;
-                node.setParentId(0L);
             }
+            node.setParentId((long) parentIndex);
 
             int depth = computeDepth(generated.getNodes(), i, targetDepth);
             if (depth > targetDepth) {
@@ -154,7 +154,7 @@ public class MapGenerationApplicationService {
     }
 
     private int computeDepth(List<NodeDto> nodes, int nodeIndex, int maxDepthGuard) {
-        int depth = 0;
+        int depth = 1;
         int current = nodeIndex;
         int guard = 0;
         while (current > 0 && guard <= nodes.size()) {
@@ -202,7 +202,7 @@ public class MapGenerationApplicationService {
     private NodeDto normalizeNodeDescription(NodeDto node) {
         val text = node.getText() == null ? "Nodo" : node.getText().trim();
         if (!StringUtils.hasText(node.getDescription())) {
-            node.setDescription("Breve descrizione: " + text + ".");
+            node.setDescription(String.format("Breve descrizione: %s.", text));
             return node;
         }
         val normalized = node.getDescription().trim().replaceAll("\\s+", " ");
