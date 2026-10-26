@@ -11,6 +11,7 @@ Modifiche previste per la versione **0.1.1**.
 
 ### Added
 
+- Barra di avanzamento nello spinner, affiancata al conteggio dei nodi: indeterminata durante la generazione AI e aggiornata sui nodi effettivamente preparati quando il totale è noto.
 - Creazione AI in background con API di avanzamento riservata al proprietario e spinner aggiornato ogni due secondi: attività corrente, nodo per cui si cerca un’immagine, numero di nodi preparati sul totale.
 - Log sul caricamento e sull’uso di `textEmbeddingModel`, con durata del ranking semantico, dimensione dei vettori e statistiche della cache.
 - Tre campi «Indizio per il gioco» per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.

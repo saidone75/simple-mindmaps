@@ -89,7 +89,7 @@ Per costruire il JAR saltando l'esecuzione dei test è disponibile `bash build.s
 
 ### Avanzamento della generazione AI
 
-La creazione AI prosegue sul server mentre la pagina controlla lo stato ogni **2 secondi**. Lo spinner mostra l’attività reale in corso, il nome del nodo durante la ricerca dell’immagine, il numero di nodi già preparati sul totale. Se la connessione è lenta, continua a controllare senza avviare un’altra generazione. Quando la mappa è pronta, si apre l’editor con il riordino iniziale; gli errori vengono mostrati nel modulo.
+La creazione AI prosegue sul server mentre la pagina controlla lo stato ogni **2 secondi**. Lo spinner mostra l’attività reale in corso, il nome del nodo durante la ricerca dell’immagine, il numero di nodi già preparati sul totale e una barra di avanzamento. La barra resta indeterminata finché il totale dei nodi non è noto, poi segue i nodi effettivamente preparati. Se la connessione è lenta, continua a controllare senza avviare un’altra generazione. Quando la mappa è pronta, si apre l’editor con il riordino iniziale; gli errori vengono mostrati nel modulo.
 
 Le attività sono eseguite da un gruppo di thread con una coda limitata; lo stato è temporaneo, conservato in memoria e consultabile solo dall’utente che ha avviato la richiesta. Senza JavaScript resta disponibile l’invio tradizionale del modulo.
 

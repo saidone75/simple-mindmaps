@@ -81,7 +81,7 @@
                 ? `Nodi preparati ${progress.completedNodes} di ${progress.totalNodes}` : '';
             const activity = connectionSlow ? 'La connessione è lenta, continuo a controllare…'
                 : progress?.activity || 'Sto avviando la creazione della mappa…';
-            globalThis.updateLoading(activity, nodes);
+            globalThis.updateLoading(activity, nodes, progress || { totalNodes: 0 });
         }
 
         function stop(hide = true) {
