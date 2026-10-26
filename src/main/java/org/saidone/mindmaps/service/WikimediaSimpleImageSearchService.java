@@ -150,14 +150,9 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
     }
 
     private List<String> buildSearchQueries(String[] normalizedKeywords) {
-        val rawQueries = new LinkedHashSet<String>();
-        val phraseQuery = String.join(" ", normalizedKeywords);
-        if (normalizedKeywords.length > 1) {
-            rawQueries.add("\"" + phraseQuery + "\"");
-            rawQueries.add(String.join(" AND ", normalizedKeywords));
-        }
-        rawQueries.add(String.join(" OR ", normalizedKeywords));
-        return List.copyOf(rawQueries);
+        return WikimediaImageQueries.batches(Arrays.asList(normalizedKeywords)).stream()
+                .flatMap(List::stream)
+                .toList();
     }
 
     private boolean isWebImage(String mimeType, String imageUrl) {

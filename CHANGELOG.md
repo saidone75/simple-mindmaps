@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Changed
+
+- Ricerche Wikimedia semplice e semantica con query progressive: soggetto principale sempre presente, dettagli aggiunti uno alla volta e ampliamento senza alternative generiche in `OR`.
+
 ### Fixed
 
 - Conteggio dei livelli nella generazione AI comprensivo del nodo principale: scegliendo 2 livelli si ottengono solo radice e figli, con controllo del limite anche sul server.

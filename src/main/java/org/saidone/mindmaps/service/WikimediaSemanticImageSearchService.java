@@ -40,7 +40,6 @@ import java.text.Normalizer;
 import java.time.Duration;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -199,7 +198,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         val querySpec = batch.get(queryIndex);
         val limit = resolveQueryLimit(batchIndex, queryIndex, keywordCount);
         val queryStart = System.nanoTime();
-        log.trace("Avvio la ricerca [{}], con al massimo {} risultati: {}", querySpec.label, limit, querySpec.query);
+        log.debug("Avvio la ricerca [{}], con al massimo {} risultati: {}", querySpec.label, limit, querySpec.query);
         val details = searchImageCandidates(querySpec.query, limit);
         log.trace("La ricerca [{}] ({}/{}) ha trovato {} immagini: {}",
                 querySpec.label, queryIndex + 1, batch.size(), details.size(),
@@ -350,33 +349,13 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
     }
 
     List<List<SearchQuerySpec>> buildSearchQueryBatches(List<String> keywords) {
-        val joined = String.join(" ", keywords);
-        val andJoined = String.join(" AND ", keywords);
-        val orJoined = String.join(" OR ", keywords);
-
-        val titleOnly = keywords.stream()
-                .map(k -> String.format("intitle:%s", quoteIfNeeded(k)))
-                .collect(Collectors.joining(" "));
-
-        val titleBoost = keywords.stream()
-                .limit(2)
-                .map(k -> String.format("intitle:%s", quoteIfNeeded(k)))
-                .collect(Collectors.joining(" "));
-
-        val strict = List.of(
-                new SearchQuerySpec("and", String.format("filemime:image %s", andJoined)),
-                new SearchQuerySpec("title", String.format("filemime:image %s", titleOnly)),
-                new SearchQuerySpec("title-boost", String.format("filemime:image %s %s",
-                        titleBoost, joined))
-        );
-        val medium = List.of(
-                new SearchQuerySpec("phrase", String.format("filemime:image \"%s\"", joined)),
-                new SearchQuerySpec("plain", String.format("filemime:image %s", joined))
-        );
-        val broad = List.of(
-                new SearchQuerySpec("or", String.format("filemime:image %s", orJoined))
-        );
-        return List.of(strict, medium, broad);
+        val batches = WikimediaImageQueries.batches(keywords);
+        return java.util.stream.IntStream.range(0, batches.size())
+                .mapToObj(index -> batches.get(index).stream()
+                        .map(query -> new SearchQuerySpec(
+                                index == batches.size() - 1 ? "subject-words" : "subject-context", query))
+                        .toList())
+                .toList();
     }
 
     private List<Candidate> searchImageCandidates(String srsearch, int limit)
@@ -653,10 +632,6 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             return false;
         }
         return normalized.split(" ").length >= 3;
-    }
-
-    private static String quoteIfNeeded(String s) {
-        return s.contains(" ") ? String.format("\"%s\"", s) : s;
     }
 
     private int resolveQueryLimit(int batchIndex, int queryIndex, int keywordCount) {
