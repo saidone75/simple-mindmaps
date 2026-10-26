@@ -17,15 +17,45 @@
  */
 
 (function () {
-    function showLoading(msg) {
+    function loadingOverlay() {
         let el = document.getElementById('loading-overlay');
         if (!el) {
             el = document.createElement('div');
             el.id = 'loading-overlay';
-            el.innerHTML = '<div class="loading-icon" aria-hidden="true">🐇</div><p></p>';
+            el.innerHTML = '<div class="loading-icon" aria-hidden="true">🐇</div><div class="loading-status"><p></p><progress class="loading-progress" data-loading-progress aria-label="Preparazione della mappa" hidden></progress><small data-loading-detail aria-live="off"></small></div>';
             document.body.appendChild(el);
         }
-        el.querySelector('p').textContent = msg || 'Caricamento...';
+        return el;
+    }
+
+    function updateLoading(msg, detail = '', progressState = null) {
+        const el = loadingOverlay();
+        const message = el.querySelector('p');
+        if (message.textContent !== msg) message.textContent = msg || 'Caricamento…';
+        const bar = el.querySelector('[data-loading-progress]');
+        if (bar) {
+            bar.hidden = progressState === null;
+            const total = Math.max(0, Number(progressState?.totalNodes) || 0);
+            if (total > 0) {
+                const completed = Math.max(0, Math.min(total, Number(progressState.completedNodes) || 0));
+                bar.max = total;
+                bar.value = completed;
+                bar.setAttribute('aria-valuetext', `${completed} nodi preparati su ${total}`);
+            } else {
+                bar.removeAttribute('value');
+                bar.removeAttribute('aria-valuetext');
+            }
+        }
+        const details = el.querySelector('[data-loading-detail]');
+        if (details) {
+            details.textContent = detail;
+            details.hidden = !detail;
+        }
+    }
+
+    function showLoading(msg) {
+        const el = loadingOverlay();
+        updateLoading(msg);
         el.style.display = 'flex';
         el.setAttribute('aria-busy', 'true');
     }
@@ -38,6 +68,7 @@
     }
 
     globalThis.showLoading = showLoading;
+    globalThis.updateLoading = updateLoading;
     globalThis.hideLoading = hideLoading;
 
     function resetLoadingOverlay() {

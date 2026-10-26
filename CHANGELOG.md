@@ -7,26 +7,35 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
-Modifiche previste per la versione **0.1.1**.
+## [0.2.0] - 2026-10-26
 
 ### Added
 
+- Overlay di festeggiamento al completamento della mappa e al raggiungimento del quinto livello, con titolo premio, coriandoli e pulsanti per rigiocare o vedere la mappa completata.
+- Barra di avanzamento nello spinner, affiancata al conteggio dei nodi: indeterminata durante la generazione AI e aggiornata sui nodi effettivamente preparati quando il totale è noto.
+- Creazione AI in background con API di avanzamento riservata al proprietario e spinner aggiornato ogni due secondi: attività corrente, nodo per cui si cerca un’immagine, numero di nodi preparati sul totale.
+- Log sul caricamento e sull’uso di `textEmbeddingModel`, con durata del ranking semantico, dimensione dei vettori e statistiche della cache.
 - Tre campi «Indizio per il gioco» per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.
 - Cinque titoli premio (`prizes`) legati al tema, generati dall’AI nella stessa richiesta della mappa e modificabili singolarmente dall’insegnante. Per le mappe manuali, da template o già esistenti senza titoli premio vengono proposti valori iniziali modificabili.
 
 ### Changed
 
+- JavaScript dell’editor ottimizzato: riuso del nodo SVG anche durante il trascinamento, elaborazione dei movimenti una volta per fotogramma, meno ricalcoli della vista e undo raggruppato durante la digitazione. Cache di testi e dimensioni, griglia disegnata tramite pattern SVG e indici dei nodi preparati una sola volta per partita nel gioco.
+- Modello di embedding predefinito sostituito con `all-MiniLM-L6-v2`, più leggero e pensato per testi inglesi; resta configurabile tramite `AI_EMBEDDING_MODEL_URL`.
+- Messaggi dei log della ricerca Wikimedia e del modello riscritti in linguaggio più semplice, con i dettagli tecnici delle richieste riservati al livello `TRACE`.
 - Dopo ogni errore il gioco sceglie casualmente uno degli indizi dedicati compilati, ignorando i duplicati, oppure mostra un incoraggiamento generico, senza rivelare descrizione e titolo del nodo. Gli indizi vengono inviati al giocatore solo quando necessari.
-- CSS semplificato eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
+- CSS di editor, gioco, spinner e overlay di festeggiamento semplificati eliminando regole inutilizzate, dichiarazioni sovrascritte e duplicazioni, mantenendo lo stile e i layout responsive.
 - Punteggio sostituito da cinque livelli incoraggianti basati sull’avanzamento: errori e tempo non fanno perdere livelli e completare la mappa assegna il quinto titolo premio.
 - Riordino automatico e salvataggio delle posizioni alla prima apertura delle nuove mappe, anche da template e generate con AI.
 - Disposizione radiale più compatta, con nodo principale al centro anche dell’area di disegno e livelli successivi progressivamente più esterni, tenendo conto delle dimensioni dei nodi e delle immagini.
 - Apertura dell’editor senza nodi selezionati, anche per le mappe appena generate.
-- Rendering dell’editor ottimizzato con riuso degli elementi SVG invariati, aggiornamenti del mouse raggruppati per fotogramma, cache delle dimensioni e griglia disegnata tramite pattern SVG.
 
 ### Fixed
 
-- Pan dell'editor collegato al contenitore scorrevole della mappa e attivabile trascinando tutta l'area vuota.
+- Regole della barra di avanzamento del gioco separate per Chrome/Safari e Firefox, evitando selettori specifici dei browser nella stessa regola.
+- Configurazione del modello di embedding allineata a `ai.embedding.model-url` e logger di sviluppo corretto per il package `org.saidone.mindmaps`.
+- Ricerca Wikimedia semplice e semantica con esclusione delle immagini già assegnate nella stessa mappa, per evitare duplicati tra i nodi.
+- Pan dell’editor collegato al contenitore scorrevole e attivabile trascinando l’area vuota. Lo spostamento dei nodi mantiene ferma la vista, anche al rilascio: scorrimento automatico solo vicino al bordo visibile ed espansione sul lato necessario, mantenendo lo zoom.
 - Stato della partita e dati contenuti resi serializzabili per il salvataggio nella sessione HTTP, con ripristino dell’orologio alla deserializzazione e tipo esplicito nel controller per l’analisi SonarQube.
 - Attesa esplicita delle richieste di abbinamento nei gestori di tastiera e trascinamento del gioco.
 - Espressioni regolari per le variabili CSS nelle esportazioni semplificate per ridurre il backtracking.
@@ -80,5 +89,6 @@ Modifiche previste per la versione **0.1.1**.
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
-[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/saidone75/simple-mindmap/releases/tag/v0.1.0
+[Unreleased]: https://github.com/saidone75/simple-mindmaps/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/saidone75/simple-mindmaps/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/saidone75/simple-mindmaps/releases/tag/v0.1.0

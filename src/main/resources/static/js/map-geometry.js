@@ -29,6 +29,7 @@ const MIN_NODE_WIDTH = 120;
 const MAX_NODE_WIDTH = 720;
 const MIN_NODE_HEIGHT = 60;
 const MAX_NODE_HEIGHT = 420;
+const nodeTextLines = new WeakMap();
 
 
 function hasNodeImage(node) {
@@ -63,6 +64,12 @@ function getNodeImageSize(node) {
 }
 
 function getNodeDisplayLines(node, maxLineLength) {
+    let cached = nodeTextLines.get(node);
+    if (!cached || cached.text !== node.text || cached.description !== node.description) {
+        cached = { text: node.text, description: node.description, lines: new Map() };
+        nodeTextLines.set(node, cached);
+    }
+    if (cached.lines.has(maxLineLength)) return cached.lines.get(maxLineLength);
     const title = normalizeNodeText(node.text || "Nodo");
     const description = normalizeNodeText(node.description || "");
     const titleLines = wrapTextByWords(title, maxLineLength).map(line => ({ text: line, isDescription: false }));
@@ -70,7 +77,9 @@ function getNodeDisplayLines(node, maxLineLength) {
         ? wrapTextByWords(description, Math.max(12, maxLineLength + 6))
             .map(line => ({ text: line, isDescription: true }))
         : [];
-    return [...titleLines, ...descriptionLines];
+    const lines = [...titleLines, ...descriptionLines];
+    cached.lines.set(maxLineLength, lines);
+    return lines;
 }
 
 function normalizeNodeText(value) {
@@ -199,8 +208,7 @@ function truncate(text, max) {
     return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-function buildDepthMap(nodes) {
-    const byId = new Map(nodes.map(node => [node.id, node]));
+function buildDepthMap(nodes, byId = new Map(nodes.map(node => [node.id, node]))) {
     const depthMap = new Map();
     const visiting = new Set();
 

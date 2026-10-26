@@ -8,14 +8,14 @@ Un'applicazione per creare mappe mentali e trasformarle in giochi delle immagini
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 
-Versione in sviluppo: **0.1.1-SNAPSHOT**. Ultima release: **0.1.0**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
+Versione corrente: **0.2.0**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 ## Funzionalità
 
-- Mappe create da zero, da template o generate con AI.
+- Mappe create da zero, da template o generate con AI. Durante la generazione, lo spinner mostra l’attività corrente: creazione della mappa, controllo dei collegamenti, ricerca di un’immagine per ciascun nodo e salvataggio.
 - Editor SVG con trascinamento dei nodi, disposizione automatica, zoom e salvataggio automatico.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
-- Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI.
+- Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
 - Duplicazione ed eliminazione delle mappe.
 - Esportazione in PNG e PDF nei formati A4 e A3.
 - Accesso con account e mappe private per ciascun proprietario.
@@ -77,15 +77,21 @@ Per compilare e verificare il progetto con i test già presenti:
 mvn -B clean verify
 ```
 
-L'artefatto eseguibile è `target/mindmaps-0.1.1-SNAPSHOT.jar`. Con credenziali e directory dei dati già configurate:
+L'artefatto eseguibile è `target/mindmaps-0.2.0.jar`. Con credenziali e directory dei dati già configurate:
 
 ```bash
-java -jar target/mindmaps-0.1.1-SNAPSHOT.jar --spring.profiles.active=prod
+java -jar target/mindmaps-0.2.0.jar --spring.profiles.active=prod
 ```
 
 Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `./log/mindmaps.log`. I profili sono di Spring: non occorre un profilo Maven `-Pprod`.
 
 Per costruire il JAR saltando l'esecuzione dei test è disponibile `bash build.sh`.
+
+### Avanzamento della generazione AI
+
+La creazione AI prosegue sul server mentre la pagina controlla lo stato ogni **2 secondi**. Lo spinner mostra l’attività reale in corso, il nome del nodo durante la ricerca dell’immagine, il numero di nodi già preparati sul totale e una barra di avanzamento. La barra resta indeterminata finché il totale dei nodi non è noto, poi segue i nodi effettivamente preparati. Se la connessione è lenta, continua a controllare senza avviare un’altra generazione. Quando la mappa è pronta, si apre l’editor con il riordino iniziale; gli errori vengono mostrati nel modulo.
+
+Le attività sono eseguite da un gruppo di thread con una coda limitata; lo stato è temporaneo, conservato in memoria e consultabile solo dall’utente che ha avviato la richiesta. Senza JavaScript resta disponibile l’invio tradizionale del modulo.
 
 ## Gioco delle immagini
 
@@ -101,13 +107,11 @@ La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti,
 
 ### Giocare
 
-Premi **Giochiamo!** e prendi un'immagine dallo zainetto. Trascinala nella casella corretta, oppure selezionala e poi tocca la casella; da tastiera puoi usare Invio o Spazio sui controlli. Ogni nodo può avere **tre indizi per il gioco**, modificabili nell’editor. Dopo ogni errore il server ne sceglie uno a caso tra quelli compilati, ignorando eventuali duplicati. Scrivi aiuti diversi che facciano ragionare, senza svelare la risposta. Se tutti i campi sono vuoti, compare un incoraggiamento generico; descrizione e titolo non vengono usati come indizi. Le nuove mappe AI includono tre indizi diversi e modificabili. I nodi già esistenti conservano il loro primo indizio; puoi aggiungere gli altri due nell’editor. Per applicare gli indizi a un gioco già condiviso, premi **Aggiorna gioco pubblicato** e condividi il nuovo link.
+Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare uno dei tre indizi del nodo, scelto a caso. Gli indizi sono modificabili nell’editor e generati automaticamente per le nuove mappe AI.
 
-I pulsanti **− / +** e il cursore regolano lo zoom dal **10% al 250%**. **Vedi tutta la mappa** adatta la vista alla finestra. Trascina lo sfondo con la manina per esplorare la mappa ingrandita, anche con il tocco.
+Usa **− / +** per ingrandire o rimpicciolire la mappa e trascina lo sfondo con la manina per spostarti. **Vedi tutta la mappa** la adatta alla finestra.
 
-Durante il gioco si vedono i progressi e un livello incoraggiante, senza punteggi, cronometro o conteggio degli errori. Le mappe generate con AI ricevono cinque titoli premio legati al tema nella stessa richiesta che crea la mappa: il livello cresce con le immagini sistemate e il quinto titolo premio si raggiunge completando la mappa. Errori e tempo impiegato non fanno perdere livelli. Nell'editor, apri **I cinque titoli premio del gioco** per modificarli e salvarli, poi aggiorna la pubblicazione per condividerli. Le mappe manuali, da template e già esistenti senza titoli premio AI usano titoli premio iniziali legati al nome della mappa, modificabili dall'insegnante.
-
-**Giochiamo ancora ↻** avvia una nuova partita. Ogni sessione del browser mantiene una sola partita attiva e non esiste una classifica.
+Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personalizzabili dall’insegnante. Errori e tempo non penalizzano il bambino. Per ricominciare, premi **Giochiamo ancora ↻**.
 
 ## Persistenza ed esportazione
 
@@ -127,6 +131,8 @@ Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint d
 | `GET`  | `/maps`                     | Elenco delle proprie mappe    |
 | `GET`  | `/maps/{id}`                | Editor                        |
 | `GET`  | `/api/maps/{id}`            | Dati della mappa privata      |
+| `POST` | `/api/map-generations` | Avvia una creazione AI in background e restituisce l’identificativo |
+| `GET` | `/api/map-generations/{id}` | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
 | `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco       |
 | `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione    |
 | `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG     |

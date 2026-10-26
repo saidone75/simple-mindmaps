@@ -18,12 +18,18 @@
 
 package org.saidone.mindmaps.service;
 
+import java.util.Set;
+
 public interface WikimediaImageSearchService {
 
-    String searchImage(String[] keywords);
+    default String searchImage(String[] keywords) {
+        return searchImage(keywords, null, Set.of());
+    }
 
     default String searchImage(String[] keywords, String preferredMode) {
-        return searchImage(keywords);
+        return searchImage(keywords, preferredMode, Set.of());
     }
+
+    String searchImage(String[] keywords, String preferredMode, Set<String> excludedImageUrls);
 
 }

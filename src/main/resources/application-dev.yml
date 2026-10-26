@@ -1,4 +1,4 @@
 logging:
   level:
     root: INFO
-    org.saidone.mindmap: DEBUG
+    org.saidone.mindmaps: DEBUG

@@ -21,7 +21,8 @@ const MAP_CENTER_Y = 450;
 const BASE_CANVAS_WIDTH = 1400;
 const BASE_CANVAS_HEIGHT = 900;
 const CANVAS_PADDING = 180;
-const INTERACTION_VIEWPORT_MAX_STEP = 4;
+const WORKSPACE_EDGE_MARGIN = 48;
+const WORKSPACE_PAN_STEP = 10;
 const MIN_ZOOM_PERCENT = 10;
 const MAX_ZOOM_PERCENT = 200;
 const DEFAULT_GRID_SIZE = 20;
@@ -31,7 +32,7 @@ const state = {
     drag: null,
     resize: null,
     pan: null,
-    interactionViewport: null,
+    workspaceViewport: null,
     pendingImageNodeId: null,
     autosaveTimer: null,
     autosaveNodeId: null,
@@ -54,6 +55,11 @@ const state = {
 const renderCache = { nodes: new Map(), connectors: new Map(), layers: null, gridKey: null };
 const layoutSizeCache = new WeakMap();
 let renderFrame = null;
+let interactionFrame = null;
+let pendingPointerMove = null;
+let edgePanActive = false;
+let appliedViewport = null;
+let formEditGroup = null;
 let renderNodeIndex = null;
 let renderNodeSizes = null;
 
@@ -71,11 +77,13 @@ function sameRenderInputs(previous, next) {
 
 function updateCachedElement(cache, id, inputs, layer, draw) {
     const previous = cache.get(id);
-    if (previous && sameRenderInputs(previous.inputs, inputs)) return;
+    if (previous && sameRenderInputs(previous.inputs, inputs)) return previous;
     const element = draw();
     if (previous) previous.element.replaceWith(element);
     else layer.appendChild(element);
-    cache.set(id, { inputs, element });
+    const entry = { inputs, element };
+    cache.set(id, entry);
+    return entry;
 }
 
 function removeStaleElements(cache, activeIds) {
@@ -149,7 +157,7 @@ if (globalThis.window !== undefined) {
 }
 
 function updateNodeEditorOverlay(node) {
-    if (!nodeEditorOverlay || !canvasPanel || !node) return;
+    if (!nodeEditorOverlay?.classList.contains("visible") || !canvasPanel || !node) return;
     const nodeSize = getNodeSize(node);
     const canvasRect = canvasPanel.getBoundingClientRect();
     const svgRect = svg.getBoundingClientRect();
@@ -194,7 +202,7 @@ function hideImageEditorOverlay() {
 }
 
 function updateImageEditorOverlay(node) {
-    if (!imageEditorOverlay || !canvasPanel || !node) return;
+    if (!imageEditorOverlay?.classList.contains("visible") || !canvasPanel || !node) return;
     const nodeSize = getNodeSize(node);
     const canvasRect = canvasPanel.getBoundingClientRect();
     const svgRect = svg.getBoundingClientRect();
@@ -223,6 +231,7 @@ function snapshotEditorState() {
 }
 
 function restoreEditorState(snapshot) {
+    formEditGroup = null;
     state.isApplyingHistory = true;
     state.map = structuredClone(snapshot.map);
     state.selectedNodeId = snapshot.selectedNodeId;
@@ -235,6 +244,7 @@ function restoreEditorState(snapshot) {
 }
 
 function pushUndoSnapshot() {
+    formEditGroup = null;
     if (state.isApplyingHistory) return;
     state.undoStack.push(snapshotEditorState());
     if (state.undoStack.length > 100) state.undoStack.shift();
@@ -242,6 +252,7 @@ function pushUndoSnapshot() {
 }
 
 function beginInteractionSnapshot() {
+    formEditGroup = null;
     if (state.interactionSnapshot || state.isApplyingHistory) return;
     state.interactionSnapshot = snapshotEditorState();
 }
@@ -625,6 +636,28 @@ function renderNodeGroup(node, depth, sketchPreset) {
     return group;
 }
 
+function updateNodeElement(node, depth, sketchPreset) {
+    // Position is applied to the existing group so dragging keeps its image alive.
+    const inputs = [node, node.parentId, node.text, node.description, node.emoji,
+        node.fontSize, node.shape, node.imageUri, node.imageWidth, node.imageHeight,
+        node.nodeWidth, node.nodeHeight, node.branchColor, depth, sketchPreset, getNodeColor(node),
+        node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
+    const previous = renderCache.nodes.get(node.id);
+    const entry = updateCachedElement(renderCache.nodes, node.id, inputs, renderCache.layers.nodes,
+        () => renderNodeGroup(node, depth, sketchPreset));
+    if (entry !== previous) {
+        entry.x = node.x;
+        entry.y = node.y;
+    }
+    const dx = node.x - entry.x, dy = node.y - entry.y;
+    const transform = dx || dy ? `translate(${dx}, ${dy})` : '';
+    if (entry.transform !== transform) {
+        if (transform) entry.element.setAttribute('transform', transform);
+        else entry.element.removeAttribute('transform');
+        entry.transform = transform;
+    }
+}
+
 function render() {
     if (renderFrame != null) {
         cancelAnimationFrame(renderFrame);
@@ -643,22 +676,20 @@ function render() {
     renderNodeIndex = new Map(state.map.nodes.map(node => [node.id, node]));
     renderNodeSizes = new Map();
     try {
-        renderGrid(getViewportForRender());
-        const depthMap = buildDepthMap(state.map.nodes);
+        const viewport = getViewportForRender();
+        renderGrid(viewport);
+        const depthMap = buildDepthMap(state.map.nodes, renderNodeIndex);
         const sketchPreset = isSketchPreset();
         renderConnectors(depthMap, sketchPreset);
         const connectorIds = new Set();
         for (const node of state.map.nodes) {
             const depth = depthMap.get(node.id) || 0;
-            const inputs = [node, ...Object.values(node), depth, sketchPreset, getNodeColor(node),
-                node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
-            updateCachedElement(renderCache.nodes, node.id, inputs, renderCache.layers.nodes,
-                () => renderNodeGroup(node, depth, sketchPreset));
+            updateNodeElement(node, depth, sketchPreset);
             if (node.parentId != null && renderNodeIndex.has(node.parentId)) connectorIds.add(node.id);
         }
         removeStaleElements(renderCache.nodes, new Set(renderNodeIndex.keys()));
         removeStaleElements(renderCache.connectors, connectorIds);
-        applyCanvasViewport();
+        applyCanvasViewport(viewport);
         const selectedNode = getNodeById(state.selectedNodeId);
         if (selectedNode && nodeEditorOverlay?.classList.contains("visible")) updateNodeEditorOverlay(selectedNode);
         const imageOverlayNode = getNodeById(state.imageOverlayNodeId);
@@ -800,66 +831,68 @@ function getCanvasBounds() {
     return { x: centerX - halfWidth, y: centerY - halfHeight, width: halfWidth * 2, height: halfHeight * 2 };
 }
 
-function applyCanvasViewport() {
+function applyCanvasViewport(viewport = getViewportForRender()) {
     const zoomPercent = Number(zoomInput?.value) || 100;
     const clampedZoomPercent = Math.min(MAX_ZOOM_PERCENT, Math.max(MIN_ZOOM_PERCENT, zoomPercent));
     if (zoomInput && Number(zoomInput.value) !== clampedZoomPercent) {
         zoomInput.value = String(clampedZoomPercent);
     }
     const zoomFactor = clampedZoomPercent / 100;
-    const viewport = getViewportForRender();
     const { x, y, width, height } = viewport;
+    const offsetX = appliedViewport ? (appliedViewport.x - x) * zoomFactor : 0;
+    const offsetY = appliedViewport ? (appliedViewport.y - y) * zoomFactor : 0;
+    const pixelWidth = String(Math.round(width * zoomFactor));
+    const pixelHeight = String(Math.round(height * zoomFactor));
 
-    svg.setAttribute("viewBox", `${x} ${y} ${width} ${height}`);
-    svg.setAttribute("width", String(Math.round(width * zoomFactor)));
-    svg.setAttribute("height", String(Math.round(height * zoomFactor)));
+    for (const [name, value] of [
+        ["viewBox", `${x} ${y} ${width} ${height}`],
+        ["width", pixelWidth],
+        ["height", pixelHeight]
+    ]) {
+        if (svg.getAttribute(name) !== value) svg.setAttribute(name, value);
+    }
+    // Keep the drawing scale fixed when its bounds grow, including on mobile.
+    if (svg.style.width !== `${pixelWidth}px`) svg.style.width = `${pixelWidth}px`;
+    if (svg.style.height !== `${pixelHeight}px`) svg.style.height = `${pixelHeight}px`;
+    if (svg.style.minWidth !== '0px') svg.style.minWidth = '0px';
+    appliedViewport = viewport;
+    if (canvasViewport) {
+        if (offsetX) canvasViewport.scrollLeft += offsetX;
+        if (offsetY) canvasViewport.scrollTop += offsetY;
+    }
     if (zoomValue) {
         zoomValue.textContent = `${clampedZoomPercent}%`;
     }
 }
 
-function moveTowards(current, target, maxDelta) {
-    if (Math.abs(target - current) <= maxDelta) return target;
-    return current + (target > current ? maxDelta : -maxDelta);
-}
-
 function getViewportForRender() {
-    if (!state.interactionViewport) {
-        return getCanvasBounds();
+    if (!state.workspaceViewport) state.workspaceViewport = getCanvasBounds();
+    const current = state.workspaceViewport;
+    const interaction = state.drag || state.resize;
+    const nodes = interaction ? [getNodeById(interaction.nodeId)].filter(Boolean) : state.map.nodes;
+    let left = current.x, top = current.y;
+    let right = left + current.width, bottom = top + current.height;
+    const matrix = interaction ? svg.getScreenCTM() : null;
+    const area = interaction && canvasViewport ? canvasViewport.getBoundingClientRect() : null;
+    const margin = WORKSPACE_EDGE_MARGIN / Math.max(Math.abs(matrix?.a || 1), 0.01);
+    const padding = Math.max(CANVAS_PADDING, margin * 2);
+    for (const node of nodes) {
+        const size = getLayoutNodeSize(node);
+        const nodeRight = node.x + size.width, nodeBottom = node.y + size.height;
+        // During dragging, expand only at the corresponding visible work-area edge.
+        const nearLeft = area && matrix && node.x * matrix.a + matrix.e <= area.left + WORKSPACE_EDGE_MARGIN;
+        const nearRight = area && matrix && nodeRight * matrix.a + matrix.e >= area.left + canvasViewport.clientWidth - WORKSPACE_EDGE_MARGIN;
+        const nearTop = area && matrix && node.y * matrix.d + matrix.f <= area.top + WORKSPACE_EDGE_MARGIN;
+        const nearBottom = area && matrix && nodeBottom * matrix.d + matrix.f >= area.top + canvasViewport.clientHeight - WORKSPACE_EDGE_MARGIN;
+        if (interaction ? nearLeft && node.x < left + margin : node.x < left) left = Math.min(left, node.x - padding);
+        if (interaction ? nearRight && nodeRight > right - margin : nodeRight > right) right = Math.max(right, nodeRight + padding);
+        if (interaction ? nearTop && node.y < top + margin : node.y < top) top = Math.min(top, node.y - padding);
+        if (interaction ? nearBottom && nodeBottom > bottom - margin : nodeBottom > bottom) bottom = Math.max(bottom, nodeBottom + padding);
     }
-    const target = getCanvasBounds();
-    const current = state.interactionViewport;
-    const currentRight = current.x + current.width;
-    const currentBottom = current.y + current.height;
-    const targetRight = target.x + target.width;
-    const targetBottom = target.y + target.height;
-
-    const nonShrinkingTarget = {
-        x: Math.min(current.x, target.x),
-        y: Math.min(current.y, target.y),
-        width: Math.max(currentRight, targetRight) - Math.min(current.x, target.x),
-        height: Math.max(currentBottom, targetBottom) - Math.min(current.y, target.y),
-    };
-
-    const smoothed = {
-        x: moveTowards(current.x, nonShrinkingTarget.x, INTERACTION_VIEWPORT_MAX_STEP),
-        y: moveTowards(current.y, nonShrinkingTarget.y, INTERACTION_VIEWPORT_MAX_STEP),
-        width: moveTowards(current.width, nonShrinkingTarget.width, INTERACTION_VIEWPORT_MAX_STEP),
-        height: moveTowards(current.height, nonShrinkingTarget.height, INTERACTION_VIEWPORT_MAX_STEP),
-    };
-    state.interactionViewport = smoothed;
-    return smoothed;
-}
-
-function captureInteractionViewport() {
-    if (state.interactionViewport) return;
-    const viewBox = (svg.getAttribute("viewBox") || "").trim().split(/\s+/).map(Number);
-    if (viewBox.length === 4 && viewBox.every(Number.isFinite)) {
-        const [x, y, width, height] = viewBox;
-        state.interactionViewport = { x, y, width, height };
-        return;
+    if (left !== current.x || top !== current.y || right !== current.x + current.width || bottom !== current.y + current.height) {
+        state.workspaceViewport = { x: left, y: top, width: right - left, height: bottom - top };
     }
-    state.interactionViewport = getCanvasBounds();
+    return state.workspaceViewport;
 }
 
 
@@ -1043,6 +1076,7 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
 
 function selectNode(nodeId, options = {}) {
     const showNodeOverlay = options.showNodeOverlay !== false;
+    if (state.selectedNodeId !== nodeId) formEditGroup = null;
     state.selectedNodeId = nodeId;
     const node = getNodeById(nodeId);
     if (!node) return;
@@ -1084,7 +1118,6 @@ function startDrag(event) {
     if (!node) return;
 
     const point = toSvgPoint(event);
-    captureInteractionViewport();
     state.drag = {
         nodeId,
         offsetX: point.x - node.x,
@@ -1108,7 +1141,6 @@ function startImageResize(event) {
     const nodeSize = getNodeSize(node);
     const bounds = getNodeImageBounds(node, nodeSize.width);
     const point = toSvgPoint(event);
-    captureInteractionViewport();
     state.resize = {
         mode: "image",
         nodeId,
@@ -1130,7 +1162,6 @@ function startNodeResize(event) {
     selectNode(nodeId, { showNodeOverlay: false });
     const size = getNodeSize(node);
     const point = toSvgPoint(event);
-    captureInteractionViewport();
     state.resize = {
         mode: "node",
         nodeId,
@@ -1168,53 +1199,93 @@ function snapToGrid(value) {
     return Math.round(value / gridSize) * gridSize;
 }
 
-document.addEventListener("mousemove", event => {
-    if (!state.drag) return;
-    const node = getNodeById(state.drag.nodeId);
-    if (!node) return;
-    const moved = Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY);
-    if (moved > 3) {
-        state.drag.moved = true;
+function applyPointerMove(event) {
+    if (state.drag) {
+        const node = getNodeById(state.drag.nodeId);
+        if (!node) return false;
+        const point = toSvgPoint(event);
+        if (Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY) > 3) {
+            state.drag.moved = true;
+        }
+        if (!state.drag.overlayHidden && state.drag.moved) {
+            hideNodeEditorOverlay();
+            state.drag.overlayHidden = true;
+        }
+        const x = snapToGrid(Math.round(point.x - state.drag.offsetX));
+        const y = snapToGrid(Math.round(point.y - state.drag.offsetY));
+        if (x === node.x && y === node.y) return false;
+        node.x = x;
+        node.y = y;
+        scheduleAutosave(node);
+        return true;
     }
-    if (!state.drag.overlayHidden && state.drag.moved) {
-        hideNodeEditorOverlay();
-        state.drag.overlayHidden = true;
+    if (state.resize) {
+        const node = getNodeById(state.resize.nodeId);
+        if (!node) return false;
+        const point = toSvgPoint(event);
+        if (state.resize.mode === "node") {
+            const intrinsic = getIntrinsicNodeSize(node);
+            const width = Math.max(intrinsic.width, clampNodeWidth(snapToGrid(point.x - state.resize.startX + state.resize.pointerOffsetX)));
+            const height = Math.max(intrinsic.height, clampNodeHeight(snapToGrid(point.y - state.resize.startY + state.resize.pointerOffsetY)));
+            if (width === node.nodeWidth && height === node.nodeHeight) return false;
+            node.nodeWidth = width;
+            node.nodeHeight = height;
+        } else {
+            const width = clampImageSize(snapToGrid(point.x - state.resize.anchorX + state.resize.pointerOffsetX));
+            const height = clampImageSize(snapToGrid(point.y - state.resize.anchorY + state.resize.pointerOffsetY));
+            if (width === node.imageWidth && height === node.imageHeight) return false;
+            node.imageWidth = width;
+            node.imageHeight = height;
+            if (imageWidthInput) imageWidthInput.value = width;
+            if (imageHeightInput) imageHeightInput.value = height;
+            updateImageSizeLabels();
+        }
+        scheduleAutosave(node);
+        return true;
     }
-    const point = toSvgPoint(event);
-    node.x = snapToGrid(Math.round(point.x - state.drag.offsetX));
-    node.y = snapToGrid(Math.round(point.y - state.drag.offsetY));
-    requestRender();
-    scheduleAutosave(node);
-});
+    if (state.pan && canvasViewport) {
+        canvasViewport.scrollLeft = state.pan.startScrollLeft - (event.clientX - state.pan.startClientX);
+        canvasViewport.scrollTop = state.pan.startScrollTop - (event.clientY - state.pan.startClientY);
+    }
+    return false;
+}
+
+function queuePointerMove(event) {
+    pendingPointerMove = { clientX: event.clientX, clientY: event.clientY };
+    if (interactionFrame == null) interactionFrame = requestAnimationFrame(() => flushPointerMove());
+}
+
+function panNearWorkspaceEdge(event) {
+    if (!state.drag?.moved || !canvasViewport) return false;
+    const rect = canvasViewport.getBoundingClientRect();
+    const left = rect.left + canvasViewport.clientLeft, top = rect.top + canvasViewport.clientTop;
+    const right = left + canvasViewport.clientWidth, bottom = top + canvasViewport.clientHeight;
+    if (event.clientX < left || event.clientX > right || event.clientY < top || event.clientY > bottom) return false;
+    const step = (position, min, max) => {
+        if (position < min + WORKSPACE_EDGE_MARGIN) return -WORKSPACE_PAN_STEP * (1 - (position - min) / WORKSPACE_EDGE_MARGIN);
+        if (position > max - WORKSPACE_EDGE_MARGIN) return WORKSPACE_PAN_STEP * (1 - (max - position) / WORKSPACE_EDGE_MARGIN);
+        return 0;
+    };
+    const previousLeft = canvasViewport.scrollLeft, previousTop = canvasViewport.scrollTop;
+    const dx = step(event.clientX, left, right), dy = step(event.clientY, top, bottom);
+    if (dx) canvasViewport.scrollLeft += dx;
+    if (dy) canvasViewport.scrollTop += dy;
+    return canvasViewport.scrollLeft !== previousLeft || canvasViewport.scrollTop !== previousTop;
+}
+
+function flushPointerMove(allowPan = true) {
+    if (interactionFrame != null) cancelAnimationFrame(interactionFrame);
+    interactionFrame = null;
+    const event = pendingPointerMove;
+    pendingPointerMove = null;
+    if (!event) return;
+    if (applyPointerMove(event) || edgePanActive) render();
+    edgePanActive = allowPan && panNearWorkspaceEdge(event);
+    if (edgePanActive) queuePointerMove(event);
+}
 
 document.addEventListener("mousemove", event => {
-    if (!state.pan || !canvasViewport) return;
-    const dx = event.clientX - state.pan.startClientX;
-    const dy = event.clientY - state.pan.startClientY;
-    canvasViewport.scrollLeft = state.pan.startScrollLeft - dx;
-    canvasViewport.scrollTop = state.pan.startScrollTop - dy;
-});
-
-document.addEventListener("mousemove", event => {
-    if (!state.resize) return;
-    const node = getNodeById(state.resize.nodeId);
-    if (!node) return;
-    const point = toSvgPoint(event);
-    if (state.resize.mode === "node") {
-        const intrinsic = getIntrinsicNodeSize(node);
-        node.nodeWidth = clampNodeWidth(snapToGrid(point.x - state.resize.startX + state.resize.pointerOffsetX));
-        node.nodeHeight = clampNodeHeight(snapToGrid(point.y - state.resize.startY + state.resize.pointerOffsetY));
-        node.nodeWidth = Math.max(node.nodeWidth, intrinsic.width);
-        node.nodeHeight = Math.max(node.nodeHeight, intrinsic.height);
-    } else {
-        node.imageWidth = clampImageSize(snapToGrid(point.x - state.resize.anchorX + state.resize.pointerOffsetX));
-        node.imageHeight = clampImageSize(snapToGrid(point.y - state.resize.anchorY + state.resize.pointerOffsetY));
-        if (imageWidthInput) imageWidthInput.value = node.imageWidth;
-        if (imageHeightInput) imageHeightInput.value = node.imageHeight;
-        updateImageSizeLabels();
-    }
-    requestRender();
-    scheduleAutosave(node);
+    if (state.drag || state.resize || state.pan) queuePointerMove(event);
 });
 
 function shouldHideNodeEditorAfterMouseup(wasDragging, dragMoved, justOpenedContextMenu) {
@@ -1225,7 +1296,10 @@ function resetPointerInteractionState() {
     state.drag = null;
     state.resize = null;
     state.pan = null;
-    state.interactionViewport = null;
+    edgePanActive = false;
+    pendingPointerMove = null;
+    if (interactionFrame != null) cancelAnimationFrame(interactionFrame);
+    interactionFrame = null;
     canvasViewport?.classList.remove("is-panning");
     applyCanvasViewport();
 }
@@ -1257,6 +1331,7 @@ function flushResizeAutosave(resizeState) {
 }
 
 document.addEventListener("mouseup", () => {
+    flushPointerMove(false);
     const wasDragging = !!state.drag;
     const dragMoved = !!state.drag?.moved;
     const resizeState = state.resize ? { ...state.resize } : null;
@@ -1388,13 +1463,13 @@ const autosubmitFields = [textInput, descriptionInput, ...hintInputs, nodeEmojiI
 const instantAutosubmitFields = new Set([textInput, ...hintInputs, imageUrlInput, branchColorInput, branchWidthInput, fontSizeInput]);
 for (const field of autosubmitFields) {
     const eventName = instantAutosubmitFields.has(field) ? "input" : "change";
-    field.addEventListener(eventName, () => queueAutoSubmitSelectedNode());
+    field.addEventListener(eventName, () => queueAutoSubmitSelectedNode(field));
 }
 if (imageWidthInput) imageWidthInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 if (imageHeightInput) imageHeightInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 function updateImagePreview(uri) {
     if (uri) {
-        imagePreview.src = uri;
+        if (imagePreview.getAttribute("src") !== uri) imagePreview.src = uri;
         imagePreview.style.display = "block";
     } else {
         imagePreview.removeAttribute("src");
@@ -1590,6 +1665,8 @@ async function normalizeExportImageHref(href) {
 }
 
 async function buildExportSvg() {
+    flushPointerMove(false);
+    if (renderFrame != null) render();
     if (renderFrame != null) render();
     const clone = svg.cloneNode(true);
     const viewBox = (svg.getAttribute("viewBox") || "0 0 1400 900").split(/\s+/).map(Number);
@@ -1659,6 +1736,7 @@ if (canvasViewport) {
     });
 
     globalThis.addEventListener("wheel", event => {
+        if (!event.ctrlKey && !event.metaKey) return;
         const rect = canvasViewport.getBoundingClientRect();
         const isInsideCanvasByPointer = event.clientX >= rect.left && event.clientX <= rect.right
             && event.clientY >= rect.top && event.clientY <= rect.bottom;
@@ -1670,6 +1748,7 @@ if (canvasViewport) {
 async function reorderMap() {
     pushUndoSnapshot();
     const root = applyOrganicLayout();
+    state.workspaceViewport = null;
     render();
     focusCanvasOnContent(root);
     await persistAllNodePositions();
@@ -1696,12 +1775,16 @@ async function saveNode(node) {
     if (autosaveStatus) autosaveStatus.textContent = "Modifiche salvate.";
 }
 
-function queueAutoSubmitSelectedNode() {
+function queueAutoSubmitSelectedNode(field = null) {
     const node = getNodeById(state.selectedNodeId);
     if (!node) return;
-    pushUndoSnapshot();
+    const now = performance.now();
+    if (!field || !formEditGroup || formEditGroup.nodeId !== node.id || formEditGroup.field !== field || now - formEditGroup.time > 750) {
+        pushUndoSnapshot();
+    }
+    formEditGroup = field ? { nodeId: node.id, field, time: now } : null;
     applyFormToNode(node);
-    render();
+    if (!hintInputs.includes(field)) requestRender();
     scheduleAutosave(node);
 }
 

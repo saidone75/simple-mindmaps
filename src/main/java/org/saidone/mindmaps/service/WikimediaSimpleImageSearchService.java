@@ -57,7 +57,8 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
     private final RestClient wikimediaRestClient;
     private final ObjectMapper objectMapper;
 
-    public String searchImage(String[] keywords) {
+    @Override
+    public String searchImage(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
         if (!hasKeywords(keywords)) {
             return null;
         }
@@ -77,7 +78,7 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
 
         try {
             for (val queryTerms : buildSearchQueries(normalizedKeywords)) {
-                val imageUrl = searchFirstMatchingImageUrl(queryTerms);
+                val imageUrl = searchFirstMatchingImageUrl(queryTerms, excludedImageUrls);
                 if (imageUrl != null) {
                     return imageUrl;
                 }
@@ -93,7 +94,7 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
         return keywords != null && keywords.length > 0;
     }
 
-    private String searchFirstMatchingImageUrl(String queryTerms) throws Exception {
+    private String searchFirstMatchingImageUrl(String queryTerms, Set<String> excludedImageUrls) throws Exception {
         val searchRoot = wikimediaRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("action", "query")
@@ -109,7 +110,7 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
         val searchResponse = objectMapper.readValue(searchRoot, SearchApiResponse.class);
         for (val result : searchResponse.searchResults()) {
             val imageUrl = resolveImageUrl(result.title());
-            if (imageUrl != null) {
+            if (imageUrl != null && !excludedImageUrls.contains(imageUrl)) {
                 return imageUrl;
             }
         }

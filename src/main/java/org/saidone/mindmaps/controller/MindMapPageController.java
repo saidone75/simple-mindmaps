@@ -24,10 +24,15 @@ import lombok.val;
 import org.saidone.mindmaps.dto.CreateMindMapRequest;
 import org.saidone.mindmaps.dto.MapGenerationRequestDto;
 import org.saidone.mindmaps.service.MindMapService;
+import org.saidone.mindmaps.service.MapGameService;
+import org.saidone.mindmaps.service.ai.MapGenerationTaskService;
 import org.saidone.mindmaps.service.ai.MapGenerationApplicationService;
 import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
@@ -39,8 +44,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class MindMapPageController {
 
     private final MindMapService mindMapService;
-    private final org.saidone.mindmaps.service.MapGameService mapGameService;
+    private final MapGameService mapGameService;
     private final MapGenerationApplicationService mapGenerationApplicationService;
+    private final MapGenerationTaskService mapGenerationTasks;
 
     @GetMapping
     public String list(Model model, Principal principal) {
@@ -95,6 +101,16 @@ public class MindMapPageController {
             redirectAttributes.addFlashAttribute("aiError", ex.getMessage());
             return "redirect:/maps";
         }
+    }
+
+    @GetMapping("/ai/{taskId}/open")
+    public String openGeneratedMap(@PathVariable UUID taskId, Principal principal, RedirectAttributes attributes) {
+        val progress = mapGenerationTasks.get(taskId, principal.getName());
+        if (progress.status() != MapGenerationTaskService.Status.COMPLETED) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La mappa non è ancora pronta.");
+        }
+        attributes.addFlashAttribute("autoLayoutOnOpen", true);
+        return "redirect:/maps/" + progress.mapId();
     }
 
     @GetMapping("/{id}")
