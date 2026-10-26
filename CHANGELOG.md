@@ -7,7 +7,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
-Modifiche previste per la versione **0.1.1**.
+## [0.2.0] - 2026-10-26
 
 ### Added
 
@@ -89,5 +89,6 @@ Modifiche previste per la versione **0.1.1**.
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
-[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/saidone75/simple-mindmap/releases/tag/v0.1.0
+[Unreleased]: https://github.com/saidone75/simple-mindmaps/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/saidone75/simple-mindmaps/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/saidone75/simple-mindmaps/releases/tag/v0.1.0
