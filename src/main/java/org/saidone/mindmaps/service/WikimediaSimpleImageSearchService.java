@@ -127,7 +127,8 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
                         .queryParam("action", "query")
                         .queryParam("titles", fileTitle)
                         .queryParam("prop", "imageinfo")
-                        .queryParam("iiprop", "url|mime")
+                        .queryParam("iiprop", "url|mime|thumbmime")
+                        .queryParam("iiurlwidth", "1024")
                         .queryParam("format", "json")
                         .build())
                 .retrieve()
@@ -137,6 +138,10 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
         val firstImageInfo = infoResponse.firstImageInfo();
         if (firstImageInfo == null) {
             return null;
+        }
+
+        if (WikimediaDjvuPreview.isDjvu(fileTitle, firstImageInfo.mime(), firstImageInfo.url())) {
+            return WikimediaDjvuPreview.resolve(firstImageInfo.thumburl(), firstImageInfo.thumbmime());
         }
 
         val mimeType = firstImageInfo.mime();
@@ -214,7 +219,7 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record ImageInfo(String url, String mime) {
+    private record ImageInfo(String url, String mime, String thumburl, String thumbmime) {
     }
 
 }

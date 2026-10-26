@@ -1,3 +1,3 @@
 # TODO
 
-- [ ] Valutare come visualizzare o convertire le immagini Wikimedia in formato `image/vnd.djvu`.
+- [ ] Verificare il trascinamento dei nodi, lo spostamento della vista (pan) e il ridimensionamento automatico dell’area di lavoro.
