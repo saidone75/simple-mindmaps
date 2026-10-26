@@ -15,7 +15,7 @@ Versione in sviluppo: **0.1.1-SNAPSHOT**. Ultima release: **0.1.0**. Le novità 
 - Mappe create da zero, da template o generate con AI.
 - Editor SVG con trascinamento dei nodi, disposizione automatica, zoom e salvataggio automatico.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
-- Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI.
+- Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
 - Duplicazione ed eliminazione delle mappe.
 - Esportazione in PNG e PDF nei formati A4 e A3.
 - Accesso con account e mappe private per ciascun proprietario.

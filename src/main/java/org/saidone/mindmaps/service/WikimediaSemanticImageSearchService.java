@@ -75,9 +75,9 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             .build();
 
     @Override
-    public String searchImage(String[] keywords) {
+    public String searchImage(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
         try {
-            return findMostRelevantImage(keywords);
+            return findMostRelevantImage(keywords, excludedImageUrls);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("Ricerca immagine semantica su Wikimedia interrotta: {}", e.getMessage());
@@ -90,18 +90,23 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
 
     public String findMostRelevantImage(String[] keywords)
             throws IOException, InterruptedException, TranslateException {
-        val result = findMostRelevantImageResult(keywords);
+        return findMostRelevantImage(keywords, Set.of());
+    }
+
+    private String findMostRelevantImage(String[] keywords, Set<String> excludedImageUrls)
+            throws IOException, InterruptedException, TranslateException {
+        val result = findMostRelevantImageResult(keywords, excludedImageUrls);
         return result == null ? null : result.imageUrl;
     }
 
-    private ImageResult findMostRelevantImageResult(String[] keywords)
+    private ImageResult findMostRelevantImageResult(String[] keywords, Set<String> excludedImageUrls)
             throws IOException, InterruptedException, TranslateException {
         long startedAt = System.nanoTime();
 
         val cleanedKeywords = normalizeKeywords(keywords);
         logSearchStart(keywords, cleanedKeywords);
 
-        val dedup = collectCandidates(cleanedKeywords);
+        val dedup = collectCandidates(cleanedKeywords, excludedImageUrls);
         if (dedup.isEmpty()) {
             log.info("Nessuna immagine candidata trovata per keyword: {}", cleanedKeywords);
             return null;
@@ -135,7 +140,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                 cleanedKeywords.size());
     }
 
-    private LinkedHashMap<String, Candidate> collectCandidates(List<String> cleanedKeywords)
+    private LinkedHashMap<String, Candidate> collectCandidates(List<String> cleanedKeywords, Set<String> excludedImageUrls)
             throws IOException, InterruptedException {
         val dedup = new LinkedHashMap<String, Candidate>();
         val queryBatches = buildSearchQueryBatches(cleanedKeywords);
@@ -147,7 +152,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
 
         for (int batchIndex = 0; batchIndex < queryBatches.size(); batchIndex++) {
             val batch = queryBatches.get(batchIndex);
-            executeBatch(batch, batchIndex, cleanedKeywords.size(), dedup);
+            executeBatch(batch, batchIndex, cleanedKeywords.size(), dedup, excludedImageUrls);
             if (!shouldContinueWithNextBatch(dedup, batchIndex, queryBatches.size())) {
                 break;
             }
@@ -155,21 +160,23 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         return dedup;
     }
 
-    private void executeBatch(List<SearchQuerySpec> batch, int batchIndex, int keywordCount, Map<String, Candidate> dedup)
+    private void executeBatch(List<SearchQuerySpec> batch, int batchIndex, int keywordCount, Map<String, Candidate> dedup, Set<String> excludedImageUrls)
             throws IOException, InterruptedException {
         val batchStart = System.nanoTime();
         val dedupBeforeBatch = dedup.size();
         for (int queryIndex = 0; queryIndex < batch.size(); queryIndex++) {
-            processQueryResult(executeQuery(batch, batchIndex, queryIndex, keywordCount), dedup);
+            processQueryResult(executeQuery(batch, batchIndex, queryIndex, keywordCount), dedup, excludedImageUrls);
         }
 
         logBatchSummary(batchIndex, dedup, dedupBeforeBatch, batchStart);
     }
 
-    private void processQueryResult(QueryResult queryResult, Map<String, Candidate> dedup) {
+    private void processQueryResult(QueryResult queryResult, Map<String, Candidate> dedup, Set<String> excludedImageUrls) {
         val dedupBeforeQuery = dedup.size();
         for (val c : queryResult.details()) {
-            dedup.putIfAbsent(c.title, c);
+            if (!excludedImageUrls.contains(c.imageUrl)) {
+                dedup.putIfAbsent(c.title, c);
+            }
         }
         log.debug("Query [{}] ha prodotto {} candidati, nuovi={}, deduplicatiTotali={}, elapsedMs={}",
                 queryResult.querySpec().label(),

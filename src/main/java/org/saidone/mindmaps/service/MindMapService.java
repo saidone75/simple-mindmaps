@@ -33,6 +33,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Locale;
@@ -177,6 +178,7 @@ public class MindMapService {
         val saved = mindMapRepository.save(map);
 
         val createdNodeIdsByIndex = new ArrayList<Long>();
+        val usedImageUrls = new HashSet<String>();
         for (int index = 0; index < generatedMap.getNodes().size(); index++) {
             val nodeDto = generatedMap.getNodes().get(index);
 
@@ -201,7 +203,9 @@ public class MindMapService {
             node.setEmoji(normalizeNodeEmoji(nodeDto.getEmoji()));
             node.setBranchText(normalizeBranchText(nodeDto.getBranchText()));
             if (searchWikimediaImages) {
-                node.setImageUri(normalizeImageUri(wikimediaImageSearchService.searchImage(normalizeImageKeywords(nodeDto))));
+                val imageUri = normalizeImageUri(wikimediaImageSearchService.searchImage(
+                        normalizeImageKeywords(nodeDto), null, usedImageUrls));
+                node.setImageUri(imageUri != null && usedImageUrls.add(imageUri) ? imageUri : null);
             } else {
                 node.setImageUri(normalizeImageUri(nodeDto.getImageUri()));
             }
