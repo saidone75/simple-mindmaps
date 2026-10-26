@@ -11,6 +11,7 @@ Modifiche previste per la versione **0.1.1**.
 
 ### Added
 
+- Creazione AI in background con API di avanzamento riservata al proprietario e spinner aggiornato ogni due secondi: attività corrente, nodo per cui si cerca un’immagine, numero di nodi preparati sul totale.
 - Log sul caricamento e sull’uso di `textEmbeddingModel`, con durata del ranking semantico, dimensione dei vettori e statistiche della cache.
 - Tre campi «Indizio per il gioco» per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.
 - Cinque titoli premio (`prizes`) legati al tema, generati dall’AI nella stessa richiesta della mappa e modificabili singolarmente dall’insegnante. Per le mappe manuali, da template o già esistenti senza titoli premio vengono proposti valori iniziali modificabili.

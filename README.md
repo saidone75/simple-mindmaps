@@ -12,7 +12,7 @@ Versione in sviluppo: **0.1.1-SNAPSHOT**. Ultima release: **0.1.0**. Le novità 
 
 ## Funzionalità
 
-- Mappe create da zero, da template o generate con AI.
+- Mappe create da zero, da template o generate con AI. Durante la generazione, lo spinner mostra l’attività corrente: creazione della mappa, controllo dei collegamenti, ricerca di un’immagine per ciascun nodo e salvataggio.
 - Editor SVG con trascinamento dei nodi, disposizione automatica, zoom e salvataggio automatico.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
@@ -87,6 +87,12 @@ Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `
 
 Per costruire il JAR saltando l'esecuzione dei test è disponibile `bash build.sh`.
 
+### Avanzamento della generazione AI
+
+La creazione AI prosegue sul server mentre la pagina controlla lo stato ogni **2 secondi**. Lo spinner mostra l’attività reale in corso, il nome del nodo durante la ricerca dell’immagine, il numero di nodi già preparati sul totale. Se la connessione è lenta, continua a controllare senza avviare un’altra generazione. Quando la mappa è pronta, si apre l’editor con il riordino iniziale; gli errori vengono mostrati nel modulo.
+
+Le attività sono eseguite da un gruppo di thread con una coda limitata; lo stato è temporaneo, conservato in memoria e consultabile solo dall’utente che ha avviato la richiesta. Senza JavaScript resta disponibile l’invio tradizionale del modulo.
+
 ## Gioco delle immagini
 
 ### Pubblicare una mappa
@@ -125,6 +131,8 @@ Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint d
 | `GET`  | `/maps`                     | Elenco delle proprie mappe    |
 | `GET`  | `/maps/{id}`                | Editor                        |
 | `GET`  | `/api/maps/{id}`            | Dati della mappa privata      |
+| `POST` | `/api/map-generations` | Avvia una creazione AI in background e restituisce l’identificativo |
+| `GET` | `/api/map-generations/{id}` | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
 | `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco       |
 | `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione    |
 | `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG     |

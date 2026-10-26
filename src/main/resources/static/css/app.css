@@ -685,3 +685,17 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 .publication-panel { flex-wrap: wrap; align-items: center; }
 
 .publication-panel input { min-width: 280px; }
+
+/* Current server activity stays readable while map creation runs. */
+.loading-status {
+    width: min(520px, calc(100% - 32px));
+    padding: 20px 24px;
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    box-shadow: 0 12px 32px var(--shadow);
+}
+#loading-overlay .loading-status p { margin: 0; font-size: 18px; line-height: 1.5; }
+.loading-status small { display: block; margin-top: 10px; color: var(--muted); line-height: 1.5; }
+.loading-status small[hidden] { display: none; }

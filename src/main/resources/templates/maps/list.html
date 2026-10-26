@@ -45,7 +45,7 @@
             <h2>Crea mappa con AI</h2>
             <p>Genera automaticamente una mappa di partenza con il servizio AI.</p>
         </div>
-        <form th:action="@{/maps/ai}" method="post" class="create-form home-form ai-create-form" id="ai-generate-form">
+        <form th:action="@{/maps/ai}" method="post" class="create-form home-form ai-create-form" id="ai-generate-form" th:attr="data-generation-api=@{/api/map-generations}">
             <div class="form-field form-field-main">
                 <label for="ai-topic">Argomento o descrizione breve</label>
                 <input id="ai-topic" name="topic" type="text" placeholder="Per esempio: Il ciclo dell'acqua" maxlength="160" required>
@@ -73,7 +73,7 @@
                 <button type="submit">Crea mappa con AI</button>
             </div>
         </form>
-        <div class="field-error" th:if="${aiError}" th:text="${aiError}"></div>
+        <div id="ai-generation-error" class="field-error" role="alert" th:hidden="${aiError == null}" th:text="${aiError}"></div>
     </section>
 
     <section class="section-card form-card compact-form-card">
@@ -132,7 +132,10 @@
 
 <output id="loading-overlay" aria-live="polite" aria-busy="true">
     <div class="loading-icon" aria-hidden="true">🐇</div>
-    <p>Caricamento...</p>
+    <div class="loading-status">
+        <p>Caricamento...</p>
+        <small data-loading-detail aria-live="off" hidden></small>
+    </div>
 </output>
 
 <dialog id="app-dialog" class="app-dialog" aria-labelledby="app-dialog-title">

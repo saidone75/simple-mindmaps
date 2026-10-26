@@ -29,6 +29,7 @@ import org.saidone.mindmaps.model.Node;
 import org.saidone.mindmaps.repository.MindMapRepository;
 import org.saidone.mindmaps.repository.NodeRepository;
 import org.saidone.mindmaps.security.CurrentUserService;
+import org.saidone.mindmaps.service.ai.GenerationProgress;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -164,6 +165,13 @@ public class MindMapService {
 
     @Transactional
     public MindMap createFromGeneratedMap(MindMapDto generatedMap, boolean searchWikimediaImages) {
+        return createFromGeneratedMap(generatedMap, searchWikimediaImages, GenerationProgress.NONE);
+    }
+
+    @Transactional
+    public MindMap createFromGeneratedMap(MindMapDto generatedMap, boolean searchWikimediaImages, GenerationProgress progress) {
+        val totalNodes = generatedMap.getNodes().size();
+        progress.update("Sto preparando i nodi della mappa…", 0, totalNodes);
         val title = generatedMap.getTitle() == null || generatedMap.getTitle().isBlank()
                 ? "Mappa generata con AI"
                 : generatedMap.getTitle().trim();
@@ -181,6 +189,7 @@ public class MindMapService {
         val usedImageUrls = new HashSet<String>();
         for (int index = 0; index < generatedMap.getNodes().size(); index++) {
             val nodeDto = generatedMap.getNodes().get(index);
+            progress.update("Sto preparando il nodo \"%s\"…".formatted(nodeDto.getText()), index, totalNodes);
 
             Long parentId = null;
             val parentRef = nodeDto.getParentId();
@@ -203,6 +212,7 @@ public class MindMapService {
             node.setEmoji(normalizeNodeEmoji(nodeDto.getEmoji()));
             node.setBranchText(normalizeBranchText(nodeDto.getBranchText()));
             if (searchWikimediaImages) {
+                progress.update("Sto cercando un’immagine per il nodo \"%s\"…".formatted(nodeDto.getText()), index, totalNodes);
                 val imageUri = normalizeImageUri(wikimediaImageSearchService.searchImage(
                         normalizeImageKeywords(nodeDto), null, usedImageUrls));
                 node.setImageUri(imageUri != null && usedImageUrls.add(imageUri) ? imageUri : null);
@@ -214,6 +224,7 @@ public class MindMapService {
             createdNodeIdsByIndex.add(node.getId());
         }
 
+        progress.update("Sto salvando la mappa…", totalNodes, totalNodes);
         return saved;
     }
 

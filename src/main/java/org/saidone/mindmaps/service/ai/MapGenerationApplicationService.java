@@ -44,6 +44,10 @@ public class MapGenerationApplicationService {
     private int maxAttempts;
 
     public MindMapDto generateMindMap(MapGenerationRequestDto request) {
+        return generateMindMap(request, GenerationProgress.NONE);
+    }
+
+    public MindMapDto generateMindMap(MapGenerationRequestDto request, GenerationProgress progress) {
         validateRequestLimits(request);
 
         applyReferenceTextLimit(request);
@@ -52,7 +56,10 @@ public class MapGenerationApplicationService {
         RuntimeException lastError = null;
         for (int i = 1; i <= attempts; i++) {
             try {
+                progress.update(i == 1 ? "Sto creando la mappa con l’AI…"
+                        : "Sto riprovando a creare la mappa (tentativo " + i + " di " + attempts + ")…", 0, 0);
                 val generated = mapGenerationService.generateMindMap(request);
+                progress.update("Sto controllando i nodi e i collegamenti della mappa…", 0, 0);
                 sanitize(generated);
                 enforceDepth(generated, request.getMaxDepth());
                 return generated;
