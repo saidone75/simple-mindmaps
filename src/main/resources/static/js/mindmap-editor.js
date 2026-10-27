@@ -117,6 +117,7 @@ const imageHeightInput = document.getElementById("node-image-height");
 const imageWidthValue = document.getElementById("node-image-width-value");
 const imageHeightValue = document.getElementById("node-image-height-value");
 const autosaveStatus = document.getElementById("autosave-status");
+const failedEditorRequests = new Map();
 const nodeEmojiInput = document.getElementById("node-emoji");
 const branchTextInput = document.getElementById("branch-text");
 const autoLayoutBtn = document.getElementById("auto-layout-btn");
@@ -804,11 +805,11 @@ function openContextMenu(event, nodeId) {
         const action = actionEvent.target?.dataset?.action;
         if (!action) return;
 
-        if (action === "add-child") await addChildNode(nodeId);
+        if (action === "add-child") await addChildNode(nodeId).catch(reportEditorError);
         if (action === "edit-text") await quickEdit(nodeId);
-        if (action === "edit-branch") await quickEditBranchText(nodeId);
+        if (action === "edit-branch") await quickEditBranchText(nodeId).catch(reportEditorError);
         if (action === "upload-image") startImageUploadForNode(nodeId);
-        if (action === "delete") await deleteNodeWithChecks(nodeId);
+        if (action === "delete") await deleteNodeWithChecks(nodeId).catch(reportEditorError);
 
         closeContextMenu();
     });
@@ -985,7 +986,7 @@ function renderNodeActionButtons(group, node, nodeWidth) {
             key: "add-child",
             label: "➕",
             title: "Aggiungi nodo figlio",
-            onClick: () => addChildNode(node.id)
+            onClick: () => addChildNode(node.id).catch(reportEditorError)
         },
         {
             key: "add-image",
@@ -997,13 +998,13 @@ function renderNodeActionButtons(group, node, nodeWidth) {
             key: "edit-emoji",
             label: "😀",
             title: "Emoji nodo",
-            onClick: () => quickEditEmoji(node.id)
+            onClick: () => quickEditEmoji(node.id).catch(reportEditorError)
         },
         {
             key: "delete-node",
             label: "🗑️",
             title: "Elimina nodo",
-            onClick: () => deleteNodeWithChecks(node.id)
+            onClick: () => deleteNodeWithChecks(node.id).catch(reportEditorError)
         }
     ];
 
@@ -1083,7 +1084,7 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
     label.addEventListener("mousedown", event => event.stopPropagation());
     label.addEventListener("click", async event => {
         event.stopPropagation();
-        await quickEditBranchText(node.id);
+        await quickEditBranchText(node.id).catch(reportEditorError);
     });
     target.appendChild(label);
 }
@@ -1615,15 +1616,11 @@ async function exportCanvas(format) {
     const url = isPdf
         ? `/api/maps/${state.map.id}/export/pdf?format=${pdfFormat}`
         : `/api/maps/${state.map.id}/export/png`;
-    const response = await fetch(url, {
+    const blob = await editorRequest(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ svg: svgMarkup })
-    });
-    if (!response.ok) {
-        throw new Error(`Export fallito (${response.status})`);
-    }
-    const blob = await response.blob();
+    }, isPdf ? "pdf" : "png");
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = blobUrl;
@@ -1725,12 +1722,12 @@ async function buildExportSvg() {
 if (exportPngButton) {
     exportPngButton.addEventListener("click", async event => {
         event.preventDefault();
-        await exportCanvas("png");
+        await exportCanvas("png").catch(reportEditorError);
     });
 }
 if (exportPdfButton) {
     exportPdfButton.addEventListener("click", async () => {
-        await exportCanvas("pdf");
+        await exportCanvas("pdf").catch(reportEditorError);
     });
 }
 if (zoomInput) {
@@ -1749,7 +1746,7 @@ if (gridSizeInput) {
     });
 }
 if (renameMapBtn) {
-    renameMapBtn.addEventListener("click", () => renameMap());
+    renameMapBtn.addEventListener("click", () => renameMap().catch(reportEditorError));
 }
 
 if (canvasViewport) {
@@ -1781,22 +1778,78 @@ async function reorderMap() {
     await persistAllNodePositions();
 }
 
-autoLayoutBtn.addEventListener("click", reorderMap);
+autoLayoutBtn.addEventListener("click", () => reorderMap().catch(reportEditorError));
+
+function reportEditorError(error) {
+    const message = error.message || "Operazione non riuscita. Riprova.";
+    const errorBox = document.getElementById("editor-request-error");
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+    if (autosaveStatus) autosaveStatus.textContent = "Operazione non completata.";
+}
+
+async function editorRequest(url, options = {}, format = "json") {
+    const requestKey = `${options.method || "GET"} ${url}`;
+    try {
+        let response;
+        try {
+            response = await fetch(url, options);
+        } catch {
+            throw new Error("Connessione al server non riuscita. Le modifiche potrebbero non essere salvate. Controlla la connessione e riprova.");
+        }
+        if (response.redirected || response.status === 401) {
+            throw new Error("La sessione è scaduta. Accedi di nuovo prima di continuare; conserva le modifiche non salvate.");
+        }
+        if (!response.ok) {
+            const messages = {
+                403: "Non hai il permesso di completare questa operazione.",
+                404: "La mappa o il nodo non è più disponibile.",
+                413: "Il contenuto inviato è troppo grande.",
+                429: "Troppe richieste. Attendi qualche istante e riprova."
+            };
+            throw new Error(messages[response.status] || `Operazione non riuscita (HTTP ${response.status}). Riprova; le modifiche potrebbero non essere salvate.`);
+        }
+        const contentType = response.headers.get("Content-Type") || "";
+        let result;
+        if (format === "empty") {
+            if (contentType.includes("text/html")) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
+        } else {
+            const expected = format === "json" ? /application\/(?:[\w.-]+\+)?json/i
+                : format === "png" ? /image\/png/i : /application\/pdf/i;
+            if (!expected.test(contentType)) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
+            try {
+                result = format === "json" ? await response.json() : await response.blob();
+                if (format === "json" && (!result || typeof result !== "object" || Array.isArray(result))) {
+                    throw new Error("Invalid response");
+                }
+            } catch {
+                throw new Error("Risposta del server incompleta o non valida. Controlla la connessione e riprova.");
+            }
+        }
+        failedEditorRequests.delete(requestKey);
+        const errorBox = document.getElementById("editor-request-error");
+        errorBox.hidden = failedEditorRequests.size === 0;
+        errorBox.textContent = [...failedEditorRequests.values()].join(" ");
+        return result;
+    } catch (error) {
+        failedEditorRequests.set(requestKey, error.message);
+        reportEditorError(error);
+        throw error;
+    }
+}
 
 function saveMapBackground() {
     const color = state.map.backgroundColor || "#fafbfd";
     if (autosaveStatus) autosaveStatus.textContent = "Salvataggio in corso...";
     backgroundSavePromise = backgroundSavePromise.then(async () => {
-        const response = await fetch(`/api/maps/${state.map.id}/background`, {
+        await editorRequest(`/api/maps/${state.map.id}/background`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ backgroundColor: color })
         });
-        if (!response.ok) throw new Error("Salvataggio dello sfondo non riuscito");
-        if (autosaveStatus) autosaveStatus.textContent = "Modifiche salvate.";
-    }).catch(() => {
-        if (autosaveStatus) autosaveStatus.textContent = "Sfondo non salvato. Riprova a scegliere il colore.";
-    });
+        if (autosaveStatus) autosaveStatus.textContent = failedEditorRequests.size
+        ? "Restano operazioni non completate. Controlla il messaggio di errore." : "Modifiche salvate.";
+    }).catch(reportEditorError);
     return backgroundSavePromise;
 }
 
@@ -1813,22 +1866,22 @@ mapBackgroundInput?.addEventListener("change", () => {
 });
 
 async function createNode(payload) {
-    const response = await fetch(`/api/maps/${state.map.id}/nodes`, {
+    return editorRequest(`/api/maps/${state.map.id}/nodes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     });
-    return response.json();
 }
 
 async function saveNode(node) {
     if (autosaveStatus) autosaveStatus.textContent = "Salvataggio in corso...";
-    await fetch(`/api/nodes/${node.id}`, {
+    await editorRequest(`/api/nodes/${node.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(node)
     });
-    if (autosaveStatus) autosaveStatus.textContent = "Modifiche salvate.";
+    if (autosaveStatus) autosaveStatus.textContent = failedEditorRequests.size
+        ? "Restano operazioni non completate. Controlla il messaggio di errore." : "Modifiche salvate.";
 }
 
 function queueAutoSubmitSelectedNode(field = null) {
@@ -1869,6 +1922,7 @@ function runAutosave(node) {
         }
     });
     state.autosavePromise = trackedPromise;
+    trackedPromise.catch(reportEditorError);
 
     return trackedPromise;
 }
@@ -1890,17 +1944,15 @@ async function flushAutosave() {
 }
 
 async function fetchMap() {
-    const response = await fetch(`/api/maps/${state.map.id}`);
-    return response.json();
+    return editorRequest(`/api/maps/${state.map.id}`);
 }
 
 async function updateMapTitle(title) {
-    const response = await fetch(`/api/maps/${state.map.id}/title`, {
+    return editorRequest(`/api/maps/${state.map.id}/title`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title })
     });
-    return response.json();
 }
 
 function refreshMapTitle() {
@@ -2090,7 +2142,7 @@ async function applyStylePresetToMap(presetName) {
 if (globalThis.window) {
     globalThis.window.applyMapStylePreset = async presetName => {
         pushUndoSnapshot();
-        await applyStylePresetToMap(presetName);
+        await applyStylePresetToMap(presetName).catch(reportEditorError);
     };
 }
 
@@ -2114,7 +2166,7 @@ async function deleteNodeWithChecks(nodeId) {
     if (!shouldDelete) return;
     pushUndoSnapshot();
     await flushAutosave();
-    await fetch(`/api/nodes/${node.id}`, { method: "DELETE" });
+    await editorRequest(`/api/nodes/${node.id}`, { method: "DELETE" }, "empty");
     state.map = await fetchMap();
     state.selectedNodeId = state.map.nodes[0]?.id ?? null;
     if (state.selectedNodeId) selectNode(state.selectedNodeId);
@@ -2208,13 +2260,13 @@ document.addEventListener("keydown", async event => {
 
     if (event.key === "Tab" && !event.shiftKey) {
         event.preventDefault();
-        await addChildNode(node.id);
+        await addChildNode(node.id).catch(reportEditorError);
         return;
     }
 
     if ((event.key === "Delete" || event.key === "Backspace") && !event.metaKey && !event.ctrlKey) {
         event.preventDefault();
-        await deleteNodeWithChecks(node.id);
+        await deleteNodeWithChecks(node.id).catch(reportEditorError);
         return;
     }
 
@@ -2230,7 +2282,7 @@ if (stylePresetInput) {
     stylePresetInput.value = state.map.stylePreset;
     const onPresetChange = async () => {
         pushUndoSnapshot();
-        await applyStylePresetToMap(stylePresetInput.value);
+        await applyStylePresetToMap(stylePresetInput.value).catch(reportEditorError);
     };
     stylePresetInput.addEventListener("change", onPresetChange);
     stylePresetInput.addEventListener("input", onPresetChange);
@@ -2240,6 +2292,6 @@ render();
 if (autoLayoutOnOpen) {
     reorderMap().catch(error => {
         console.error("Impossibile salvare il riordino iniziale della mappa", error);
-        if (autosaveStatus) autosaveStatus.textContent = "Riordino non salvato. Premi Riordina la mappa per riprovare.";
+        reportEditorError(error);
     });
 }

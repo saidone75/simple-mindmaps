@@ -274,3 +274,6 @@
 
 .canvas-scroll-area.is-panning,
 .canvas-scroll-area.is-panning * { cursor: grabbing; user-select: none; }
+
+#autosave-status, #editor-request-error { margin: 8px 22px; font-size: .8rem; }
+#autosave-status:empty { display: none; }
