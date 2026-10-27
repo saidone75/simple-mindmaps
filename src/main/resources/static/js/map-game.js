@@ -55,7 +55,7 @@
                 if (context.state === 'suspended') context.resume().catch(() => {});
             } catch { /* Audio must never interrupt the game. */ }
         }
-        function note(frequency, offset, duration, type = 'triangle', endFrequency = frequency) {
+        function note(frequency, offset, duration, type = 'triangle', endFrequency = frequency, volume = .09) {
             const voice = context.createOscillator();
             const envelope = context.createGain();
             const time = context.currentTime + offset;
@@ -63,7 +63,8 @@
             voice.frequency.setValueAtTime(frequency, time);
             voice.frequency.exponentialRampToValueAtTime(endFrequency, time + duration);
             envelope.gain.setValueAtTime(0, time);
-            envelope.gain.linearRampToValueAtTime(.09, time + .008);
+            envelope.gain.linearRampToValueAtTime(volume, time + (type === 'square' ? .002 : .008));
+            if (type === 'square') envelope.gain.setValueAtTime(volume * .8, time + duration - .015);
             envelope.gain.exponentialRampToValueAtTime(.001, time + duration);
             voice.connect(envelope);
             envelope.connect(context.destination);
@@ -88,8 +89,32 @@
                     note(659.25, .25, .14);
                     for (const frequency of [523.25, 659.25, 783.99]) note(frequency, .39, .65);
                 } else if (kind === 'complete') {
-                    [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5].forEach((frequency, i) => note(frequency, .12 + i * .15, .22));
-                    for (const frequency of [523.25, 659.25, 783.99, 1046.5]) note(frequency, 1.12, 1.1);
+                    // Original three-voice arcade fanfare with short, sustained pulse notes.
+                    const beat = .125;
+                    const frequency = midi => 440 * 2 ** ((midi - 69) / 12);
+                    const melody = [
+                        [72, 1], [72, 1], [79, 2], [76, 1], [79, 1], [84, 3],
+                        [83, 1], [81, 1], [79, 1], [81, 2], [77, 2],
+                        [79, 1], [81, 1], [83, 1], [86, 1], [84, 7]
+                    ];
+                    let offset = .12;
+                    for (const [pitch, beats] of melody) {
+                        const hz = frequency(pitch);
+                        note(hz, offset, beats * beat * .8, 'square', hz, .028);
+                        offset += beats * beat;
+                    }
+                    const cadence = offset - 7 * beat;
+                    for (let step = 0; .12 + step * beat < cadence - .001; step++) {
+                        const chord = step < 9 ? [48, 64, 67] : step < 15 ? [53, 65, 69] : [55, 67, 71];
+                        const bass = frequency(step % 2 ? chord[0] + 12 : chord[0]);
+                        note(bass, .12 + step * beat, beat * .65, 'square', bass, .012);
+                        const harmony = frequency(chord[1 + step % 2]);
+                        note(harmony, .12 + step * beat, beat * .7, 'square', harmony, .014);
+                    }
+                    for (const pitch of [48, 64, 67]) {
+                        const hz = frequency(pitch);
+                        note(hz, cadence, 7 * beat * .8, 'square', hz, .016);
+                    }
                 }
             } catch { /* Unsupported audio must leave visual feedback working. */ }
         }
