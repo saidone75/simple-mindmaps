@@ -60,6 +60,11 @@ public class MindMapRestController {
         return mindMapService.updateMapStyle(id, request.getStylePreset());
     }
 
+    @PutMapping("/maps/{id}/background")
+    public MindMapDto updateMapBackground(@PathVariable Long id, @RequestBody UpdateMapBackgroundRequest request) {
+        return mindMapService.updateMapBackground(id, request.getBackgroundColor());
+    }
+
     @PutMapping("/maps/{id}/title")
     public MindMapDto updateMapTitle(@PathVariable Long id, @RequestBody UpdateMapTitleRequest request) {
         return mindMapService.updateMapTitle(id, request.getTitle());

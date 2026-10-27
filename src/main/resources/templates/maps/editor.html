@@ -87,6 +87,8 @@
                     <option value="CLASSIC">Classico</option>
                     <option value="TRUE_SUMMER">True Summer</option>
                 </select>
+                <label for="map-background-color">Sfondo mappa</label>
+                <input id="map-background-color" type="color" value="#fafbfd">
                 </div><div class="editor-tool-group editor-zoom-group"><label for="zoom-control">Vista</label>
                 <input id="zoom-control" type="range" min="10" max="200" step="1" value="100">
                 <span id="zoom-value">100%</span>
@@ -120,21 +122,21 @@
                 <textarea id="node-hint-3" rows="3" maxlength="280" aria-describedby="node-hint-help" placeholder="Un terzo modo per avvicinarsi alla risposta..."></textarea>
                 <small id="node-hint-help">Dopo ogni errore ne compare uno a caso. Scrivi tre aiuti diversi, senza citare il titolo o la risposta.</small>
 
+                <fieldset class="node-colors">
+                    <legend>Colori</legend>
+                    <label for="node-text-color">Testo
+                        <input id="node-text-color" type="color" value="#314256">
+                    </label>
+                    <label for="node-color">Sfondo
+                        <input id="node-color" type="color" value="#D9D2E9">
+                    </label>
+                    <label for="branch-color">Ramo
+                        <input id="branch-color" type="color" value="#7c8a9a">
+                    </label>
+                </fieldset>
+
                 <label for="branch-text">Testo ramo</label>
                 <input id="branch-text" type="text" maxlength="120" placeholder="Etichetta del collegamento">
-
-                <label for="node-color">Colore</label>
-                <select id="node-color">
-                    <option value="#FFD966">Giallo</option>
-                    <option value="#9FC5E8">Azzurro</option>
-                    <option value="#B6D7A8">Verde</option>
-                    <option value="#F4CCCC">Rosa</option>
-                    <option value="#F9CB9C">Arancione</option>
-                    <option value="#D9D2E9">Lilla</option>
-                </select>
-
-                <label for="branch-color">Colore ramo</label>
-                <input id="branch-color" type="color" value="#7c8a9a">
 
                 <label for="branch-style">Stile ramo</label>
                 <select id="branch-style">

@@ -281,6 +281,8 @@
         finally { busy = false; }
     }
     function renderMap() {
+        const viewport = svg.closest('.game-board-scroll');
+        if (viewport) viewport.style.backgroundColor = board.map.backgroundColor || '';
         svg.replaceChildren();
         const nodes = board.map.nodes;
         const depths = nodeDepths;
@@ -335,6 +337,7 @@
             if (emoji) group.appendChild(make('text', {x:node.x+width/2,y:node.y+28,'text-anchor':'middle','dominant-baseline':'middle'},emoji));
             const firstY = imageNode ? node.y+height-16-(lines.length-1)*lineHeight : node.y+(height-(lines.length-1)*lineHeight)/2+(emoji?14:0);
             const text = make('text', {'text-anchor':'middle','dominant-baseline':'middle',class:'node-text','font-size':font});
+            if (node.textColor) text.style.fill = node.textColor;
             lines.forEach((line,i) => text.appendChild(make('tspan',{x:node.x+width/2,y:firstY+i*lineHeight,'font-size':line.isDescription?Math.max(12,Math.round(font*.78)):font,'font-weight':line.isDescription?'500':'700'},line.text)));
             group.appendChild(text); svg.appendChild(group);
         }

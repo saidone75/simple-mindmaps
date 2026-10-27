@@ -25,6 +25,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Selettori affiancati per colore del testo, sfondo del nodo e ramo; colore dello sfondo della mappa nella barra degli strumenti, con salvataggio e mantenimento nei giochi pubblicati e nelle esportazioni.
+
 - Overlay di festeggiamento a ogni nuovo livello intermedio, con il titolo conquistato.
 - Suoni del gioco con pulsante per disattivarli e preferenza salvata.
 - Supporto dei risultati Wikimedia DjVu tramite anteprima della prima pagina, nelle ricerche semplice e semantica; i documenti senza anteprima supportata vengono scartati.

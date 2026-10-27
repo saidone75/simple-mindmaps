@@ -81,6 +81,7 @@ public class MindMapService {
         dto.setTitle(map.getTitle());
         dto.setPrizes(prizes(map));
         dto.setStylePreset(normalizeStylePreset(map.getStylePreset()));
+        dto.setBackgroundColor(map.getBackgroundColor());
         dto.setNodes(nodeRepository.findByMapIdOrderByIdAsc(id).stream().map(nodeMapper::toDto).toList());
         return dto;
     }
@@ -206,6 +207,7 @@ public class MindMapService {
                     nodeDto.getY() != null ? nodeDto.getY() : 260,
                     nodeDto.getColor() != null ? nodeDto.getColor() : DEFAULT_NODE_COLOR
             );
+            node.setTextColor(nodeDto.getTextColor());
             node.setHint(normalizeNodeHint(nodeDto.getHint()));
             node.setHint2(normalizeNodeHint(nodeDto.getHint2()));
             node.setHint3(normalizeNodeHint(nodeDto.getHint3()));
@@ -245,6 +247,7 @@ public class MindMapService {
         node.setX(request.getX() == null ? 300 : request.getX());
         node.setY(request.getY() == null ? 200 : request.getY());
         node.setColor(request.getColor() == null ? DEFAULT_NODE_COLOR : request.getColor());
+        node.setTextColor(request.getTextColor());
         node.setFontSize(request.getFontSize() == null ? 18 : request.getFontSize());
         node.setShape(request.getShape() == null ? DEFAULT_SHAPE : request.getShape());
         node.setBranchColor(request.getBranchColor() == null ? DEFAULT_BRANCH_COLOR : request.getBranchColor());
@@ -289,6 +292,7 @@ public class MindMapService {
         updateIfPresent(request.getX(), node::setX);
         updateIfPresent(request.getY(), node::setY);
         updateIfPresent(request.getColor(), node::setColor);
+        updateIfPresent(request.getTextColor(), node::setTextColor);
         updateIfPresent(request.getFontSize(), node::setFontSize);
         updateIfPresent(request.getShape(), node::setShape);
         updateIfPresent(request.getBranchColor(), node::setBranchColor);
@@ -330,6 +334,7 @@ public class MindMapService {
         clonedMap.setTitle(sourceMap.getTitle() + " (Copia)");
         clonedMap.setPrizesJson(sourceMap.getPrizesJson());
         clonedMap.setStylePreset(normalizeStylePreset(sourceMap.getStylePreset()));
+        clonedMap.setBackgroundColor(sourceMap.getBackgroundColor());
         clonedMap.setOwner(sourceMap.getOwner());
         val savedMap = mindMapRepository.save(clonedMap);
         val clonedBySourceId = new ConcurrentHashMap<Long, Node>();
@@ -372,6 +377,17 @@ public class MindMapService {
     public MindMapDto updateMapStyle(Long mapId, String stylePreset) {
         val map = getMap(mapId);
         map.setStylePreset(normalizeStylePreset(stylePreset));
+        mindMapRepository.save(map);
+        return findMapWithNodes(mapId);
+    }
+
+    @Transactional
+    public MindMapDto updateMapBackground(Long mapId, String backgroundColor) {
+        val map = getMap(mapId);
+        if (backgroundColor == null || !backgroundColor.matches("#[0-9a-fA-F]{6}")) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Colore di sfondo non valido");
+        }
+        map.setBackgroundColor(backgroundColor);
         mindMapRepository.save(map);
         return findMapWithNodes(mapId);
     }

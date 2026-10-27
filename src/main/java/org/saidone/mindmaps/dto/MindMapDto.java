@@ -38,5 +38,7 @@ public class MindMapDto implements Serializable {
     @SerializedName(value = "prizes", alternate = {"gameTitles"})
     private List<String> prizes;
     private String stylePreset;
+
+    private String backgroundColor;
     private List<NodeDto> nodes;
 }

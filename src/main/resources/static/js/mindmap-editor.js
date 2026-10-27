@@ -100,6 +100,10 @@ const descriptionInput = document.getElementById("node-description");
 const hintFields = ["hint", "hint2", "hint3"];
 const hintInputs = ["node-hint", "node-hint-2", "node-hint-3"].map(id => document.getElementById(id));
 const colorInput = document.getElementById("node-color");
+const textColorInput = document.getElementById("node-text-color");
+const mapBackgroundInput = document.getElementById("map-background-color");
+let backgroundSavePromise = Promise.resolve();
+let editingBackground = false;
 const branchColorInput = document.getElementById("branch-color");
 const branchStyleInput = document.getElementById("branch-style");
 const branchWidthInput = document.getElementById("branch-width");
@@ -233,7 +237,9 @@ function snapshotEditorState() {
 function restoreEditorState(snapshot) {
     formEditGroup = null;
     state.isApplyingHistory = true;
+    const previousBackground = state.map.backgroundColor;
     state.map = structuredClone(snapshot.map);
+    if (previousBackground !== state.map.backgroundColor) saveMapBackground();
     state.selectedNodeId = snapshot.selectedNodeId;
     state.isApplyingHistory = false;
     if (state.selectedNodeId) {
@@ -378,6 +384,12 @@ function getSketchNodeSize(node) {
 }
 
 
+function colorPickerValue(value, fallback) {
+    const variable = /^var\((--[\w-]+)\)$/.exec(value || "");
+    const resolved = variable ? getComputedStyle(document.documentElement).getPropertyValue(variable[1]).trim() : value;
+    return /^#[0-9a-f]{6}$/i.test(resolved || "") ? resolved : fallback;
+}
+
 function getNodeColor(node) {
     const preset = getCurrentStylePreset();
     return node.color || (node.parentId == null ? preset.rootColor : preset.childColor);
@@ -500,6 +512,7 @@ function appendNodeText(group, node, width, height, sketchPreset, emojiValue) {
             ? node.y + ((height - ((lines.length - 1) * lineHeight)) / 2) + 14
             : node.y + ((height - ((lines.length - 1) * lineHeight)) / 2);
     text.setAttribute("class", "node-text");
+    if (node.textColor) text.style.fill = node.textColor;
     text.setAttribute("x", node.x + width / 2);
     text.setAttribute("y", firstLineY);
     text.setAttribute("text-anchor", "middle");
@@ -640,7 +653,7 @@ function updateNodeElement(node, depth, sketchPreset) {
     // Position is applied to the existing group so dragging keeps its image alive.
     const inputs = [node, node.parentId, node.text, node.description, node.emoji,
         node.fontSize, node.shape, node.imageUri, node.imageWidth, node.imageHeight,
-        node.nodeWidth, node.nodeHeight, node.branchColor, depth, sketchPreset, getNodeColor(node),
+        node.nodeWidth, node.nodeHeight, node.branchColor, node.textColor, depth, sketchPreset, getNodeColor(node),
         node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
     const previous = renderCache.nodes.get(node.id);
     const entry = updateCachedElement(renderCache.nodes, node.id, inputs, renderCache.layers.nodes,
@@ -659,6 +672,8 @@ function updateNodeElement(node, depth, sketchPreset) {
 }
 
 function render() {
+    if (canvasViewport) canvasViewport.style.backgroundColor = state.map.backgroundColor || "";
+    if (mapBackgroundInput) mapBackgroundInput.value = state.map.backgroundColor || "#fafbfd";
     if (renderFrame != null) {
         cancelAnimationFrame(renderFrame);
         renderFrame = null;
@@ -1085,8 +1100,9 @@ function selectNode(nodeId, options = {}) {
     hintInputs.forEach((input, index) => { input.value = node[hintFields[index]] || ""; });
     if (nodeEmojiInput) nodeEmojiInput.value = node.emoji || "";
     branchTextInput.value = node.branchText || "";
-    colorInput.value = getNodeColor(node);
-    branchColorInput.value = node.branchColor || "#7c8a9a";
+    colorInput.value = colorPickerValue(getNodeColor(node), "#D9D2E9");
+    textColorInput.value = colorPickerValue(node.textColor || "var(--ink)", "#314256");
+    branchColorInput.value = colorPickerValue(node.branchColor, "#7c8a9a");
     branchStyleInput.value = node.branchStyle || "SOLID";
     branchWidthInput.value = clampBranchWidth(Number(node.branchWidth));
     branchCurveInput.value = (node.branchCurve || "CUBIC").toUpperCase();
@@ -1459,8 +1475,8 @@ imageHeightInput.addEventListener("input", () => {
 });
 }
 
-const autosubmitFields = [textInput, descriptionInput, ...hintInputs, nodeEmojiInput, branchTextInput, colorInput, branchColorInput, branchStyleInput, branchWidthInput, branchCurveInput, fontSizeInput, imageUrlInput].filter(Boolean);
-const instantAutosubmitFields = new Set([textInput, ...hintInputs, imageUrlInput, branchColorInput, branchWidthInput, fontSizeInput]);
+const autosubmitFields = [textInput, descriptionInput, ...hintInputs, nodeEmojiInput, branchTextInput, colorInput, textColorInput, branchColorInput, branchStyleInput, branchWidthInput, branchCurveInput, fontSizeInput, imageUrlInput].filter(Boolean);
+const instantAutosubmitFields = new Set([textInput, ...hintInputs, imageUrlInput, colorInput, textColorInput, branchColorInput, branchWidthInput, fontSizeInput]);
 for (const field of autosubmitFields) {
     const eventName = instantAutosubmitFields.has(field) ? "input" : "change";
     field.addEventListener(eventName, () => queueAutoSubmitSelectedNode(field));
@@ -1484,6 +1500,7 @@ function applyFormToNode(node) {
     node.emoji = normalizeNodeEmoji(nodeEmojiInput?.value || "");
     node.branchText = (branchTextInput.value || "").trim();
     node.color = colorInput.value;
+    node.textColor = textColorInput.value;
     node.branchColor = branchColorInput.value;
     node.branchStyle = branchStyleInput.value;
     node.branchWidth = clampBranchWidth(Number(branchWidthInput.value));
@@ -1678,6 +1695,16 @@ async function buildExportSvg() {
     clone.setAttribute("height", String(height));
     clone.setAttribute("viewBox", svg.getAttribute("viewBox") || `0 0 ${width} ${height}`);
 
+    if (state.map.backgroundColor) {
+        const background = document.createElementNS(SVG_NS, "rect");
+        background.setAttribute("x", String(viewBox[0] || 0));
+        background.setAttribute("y", String(viewBox[1] || 0));
+        background.setAttribute("width", String(width));
+        background.setAttribute("height", String(height));
+        background.setAttribute("fill", state.map.backgroundColor);
+        clone.prepend(background);
+    }
+
     const transientControls = clone.querySelectorAll(".node-resize-handle, .image-resize-handle, .node-action-button");
     transientControls.forEach(control => control.remove());
 
@@ -1755,6 +1782,35 @@ async function reorderMap() {
 }
 
 autoLayoutBtn.addEventListener("click", reorderMap);
+
+function saveMapBackground() {
+    const color = state.map.backgroundColor || "#fafbfd";
+    if (autosaveStatus) autosaveStatus.textContent = "Salvataggio in corso...";
+    backgroundSavePromise = backgroundSavePromise.then(async () => {
+        const response = await fetch(`/api/maps/${state.map.id}/background`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ backgroundColor: color })
+        });
+        if (!response.ok) throw new Error("Salvataggio dello sfondo non riuscito");
+        if (autosaveStatus) autosaveStatus.textContent = "Modifiche salvate.";
+    }).catch(() => {
+        if (autosaveStatus) autosaveStatus.textContent = "Sfondo non salvato. Riprova a scegliere il colore.";
+    });
+    return backgroundSavePromise;
+}
+
+mapBackgroundInput?.addEventListener("input", () => {
+    if (!editingBackground) pushUndoSnapshot();
+    editingBackground = true;
+    state.map.backgroundColor = mapBackgroundInput.value;
+    requestRender();
+});
+mapBackgroundInput?.addEventListener("change", () => {
+    state.map.backgroundColor = mapBackgroundInput.value;
+    editingBackground = false;
+    saveMapBackground();
+});
 
 async function createNode(payload) {
     const response = await fetch(`/api/maps/${state.map.id}/nodes`, {

@@ -38,6 +38,8 @@ public class MindMap {
     @Column
     private String stylePreset;
 
+    private String backgroundColor;
+
     @Lob
     @Column(name = "game_titles", columnDefinition = "CLOB")
     private String prizesJson;
