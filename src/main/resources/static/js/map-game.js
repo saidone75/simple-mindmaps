@@ -32,6 +32,76 @@
     const welcome = document.getElementById('game-welcome');
     const feedbackWrap = document.querySelector('.game-feedback-wrap');
     const completion = document.getElementById('game-completion');
+    const soundButton = document.getElementById('game-sound');
+    const sounds = (() => {
+        let context, enabled = true;
+        const voices = new Set();
+        try { enabled = localStorage.getItem('game-sound') !== 'off'; } catch { /* Storage may be unavailable. */ }
+        function refreshButton() {
+            soundButton.textContent = enabled ? '🔊 Suoni attivi' : '🔇 Suoni spenti';
+            soundButton.setAttribute('aria-pressed', String(enabled));
+        }
+        function stop() {
+            for (const voice of voices) voice.stop();
+            voices.clear();
+        }
+        function unlock() {
+            if (!enabled) return;
+            try {
+                const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
+                if (!AudioContext) return;
+                context ||= new AudioContext();
+                if (context.state === 'suspended') context.resume().catch(() => {});
+            } catch { /* Audio must never interrupt the game. */ }
+        }
+        function note(frequency, offset, duration, type = 'triangle', endFrequency = frequency) {
+            const voice = context.createOscillator();
+            const envelope = context.createGain();
+            const time = context.currentTime + offset;
+            voice.type = type;
+            voice.frequency.setValueAtTime(frequency, time);
+            voice.frequency.exponentialRampToValueAtTime(endFrequency, time + duration);
+            envelope.gain.setValueAtTime(0, time);
+            envelope.gain.linearRampToValueAtTime(.09, time + .008);
+            envelope.gain.exponentialRampToValueAtTime(.001, time + duration);
+            voice.connect(envelope);
+            envelope.connect(context.destination);
+            voices.add(voice);
+            voice.onended = () => { voices.delete(voice); voice.disconnect(); envelope.disconnect(); };
+            voice.start(time);
+            voice.stop(time + duration + .02);
+        }
+        function play(kind) {
+            if (!enabled || context?.state !== 'running') return;
+            try {
+                stop();
+                if (kind !== 'error') {
+                    note(1300, 0, .065, 'triangle', 320);
+                    note(600, .015, .045, 'sine', 220);
+                }
+                if (kind === 'error') {
+                    note(330, 0, .13, 'sine', 280);
+                    note(280, .14, .18, 'sine', 240);
+                } else if (kind === 'level') {
+                    note(523.25, .12, .14);
+                    note(659.25, .25, .14);
+                    for (const frequency of [523.25, 659.25, 783.99]) note(frequency, .39, .65);
+                } else if (kind === 'complete') {
+                    [523.25, 659.25, 783.99, 1046.5, 783.99, 1046.5].forEach((frequency, i) => note(frequency, .12 + i * .15, .22));
+                    for (const frequency of [523.25, 659.25, 783.99, 1046.5]) note(frequency, 1.12, 1.1);
+                }
+            } catch { /* Unsupported audio must leave visual feedback working. */ }
+        }
+        soundButton.onclick = () => {
+            enabled = !enabled;
+            stop();
+            refreshButton();
+            try { localStorage.setItem('game-sound', enabled ? 'on' : 'off'); } catch { /* Optional preference. */ }
+            unlock();
+        };
+        refreshButton();
+        return {unlock, play, stop};
+    })();
     const endpoint = location.pathname.replace(/\/$/, '');
     let board, selected, busy = false, lastResult, finished = false;
     const matched = new Map();
@@ -140,12 +210,15 @@
     }
     async function attempt(node) {
         if (!selected || busy || finished || matched.has(node.id)) return;
+        sounds.unlock();
         busy = true;
         const cardId = selected;
         try {
             const result = await request('attempt', {runId: board.runId, imageId: cardId, nodeId: node.id});
+            const previousLevel = lastResult?.level || 1;
             lastResult = result;
             if (result.correct) {
+                sounds.play(result.level === 5 ? 'complete' : result.level > previousLevel ? 'level' : 'correct');
                 const card = board.images.find(c => c.id === cardId);
                 matched.set(node.id, card.uri);
                 [...tray.children].find(b => b.dataset.id === cardId)?.remove();
@@ -160,6 +233,7 @@
                 }
                 feedback.textContent = result.complete ? `Ce l’hai fatta! Hai completato tutta la mappa: ${result.prize}! Ogni tentativo ti ha aiutato a imparare!` : 'Ottimo lavoro! Un’immagine ha trovato la sua casella. Continua così!';
             } else {
+                sounds.play('error');
                 feedbackWrap.dataset.mood = 'hint';
                 feedback.textContent = `Bel tentativo! Proviamo insieme un’altra casella. Un piccolo indizio: ${result.hint}`;
             }
@@ -294,6 +368,8 @@
     globalThis.addEventListener?.('resize', resize);
     start.onclick = async () => {
         if (busy) return;
+        sounds.stop();
+        sounds.unlock();
         busy = true; start.disabled = true;
         if (completion.open) completion.close();
         try {

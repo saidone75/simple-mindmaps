@@ -17,6 +17,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Suoni del gioco generati nel browser: clack per gli abbinamenti corretti, suono delicato per gli errori, fanfara per un nuovo livello e jingle finale al livello massimo; pulsante per disattivarli con preferenza salvata.
 - Supporto dei risultati Wikimedia DjVu tramite anteprima della prima pagina, nelle ricerche semplice e semantica; i documenti senza anteprima supportata vengono scartati.
 
 ## [0.2.0] - 2026-10-26
