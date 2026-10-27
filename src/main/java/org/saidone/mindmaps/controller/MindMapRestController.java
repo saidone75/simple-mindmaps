@@ -55,6 +55,11 @@ public class MindMapRestController {
         return mindMapService.updateNode(nodeId, request);
     }
 
+    @PutMapping("/maps/{id}/restore")
+    public MindMapService.RestoredMap restoreMap(@PathVariable Long id, @RequestBody MindMapDto snapshot) {
+        return mindMapService.restoreMap(id, snapshot);
+    }
+
     @PutMapping("/maps/{id}/style")
     public MindMapDto updateMapStyle(@PathVariable Long id, @RequestBody UpdateMapStyleRequest request) {
         return mindMapService.updateMapStyle(id, request.getStylePreset());

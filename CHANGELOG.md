@@ -19,6 +19,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Annulla/Ripristina dell’editor sincronizzato con il server, con ripristino atomico dei nodi e riconciliazione degli ID dopo creazioni ed eliminazioni.
+
 - Avanzamento della generazione in background gestito tramite riferimento atomico, anche in caso di errore.
 - Associazione esplicita tra etichette e campi dei titoli premio nel template dell’editor, mantenendo identificativi univoci per livello.
 - Conteggio dei livelli nella generazione AI comprensivo del nodo principale: scegliendo 2 livelli si ottengono solo radice e figli, con controllo del limite anche sul server.

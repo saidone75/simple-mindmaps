@@ -34,6 +34,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Arrays;
@@ -371,6 +374,60 @@ public class MindMapService {
         getMap(id);
         nodeRepository.deleteByMapId(id);
         mindMapRepository.deleteById(id);
+    }
+
+    public record RestoredMap(MindMapDto map, Map<Long, Long> nodeIds) {}
+
+    @Transactional
+    public RestoredMap restoreMap(Long mapId, MindMapDto snapshot) {
+        val map = getMap(mapId);
+        val invalid = new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Stato della mappa non valido");
+        if (snapshot == null || snapshot.getNodes() == null || snapshot.getNodes().isEmpty()
+                || snapshot.getTitle() == null || snapshot.getTitle().isBlank()) throw invalid;
+        val sources = new LinkedHashMap<Long, NodeDto>();
+        for (val source : snapshot.getNodes()) {
+            if (source == null || source.getId() == null || sources.putIfAbsent(source.getId(), source) != null
+                    || source.getText() == null || source.getX() == null || source.getY() == null
+                    || source.getColor() == null || source.getFontSize() == null || source.getShape() == null
+                    || source.getBranchColor() == null || source.getBranchStyle() == null) throw invalid;
+        }
+        for (val source : sources.values()) {
+            val visited = new HashSet<Long>();
+            NodeDto current = source;
+            while (current != null) {
+                if (!visited.add(current.getId())) throw invalid;
+                val parent = current.getParentId();
+                if (parent != null && !sources.containsKey(parent)) throw invalid;
+                current = parent == null ? null : sources.get(parent);
+            }
+        }
+        if (snapshot.getBackgroundColor() != null && !snapshot.getBackgroundColor().matches("#[0-9a-fA-F]{6}")) throw invalid;
+        val existing = nodeRepository.findByMapIdOrderByIdAsc(mapId);
+        val byId = new HashMap<Long, Node>();
+        existing.forEach(node -> byId.put(node.getId(), node));
+        val restored = new LinkedHashMap<Long, Node>();
+        val ids = new LinkedHashMap<Long, Long>();
+        for (val source : sources.values()) {
+            // Only reuse IDs belonging to this map; deleted nodes receive fresh IDs.
+            val node = byId.getOrDefault(source.getId(), new Node());
+            nodeMapper.restore(source, node);
+            node.setMapId(mapId);
+            node.setParentId(null);
+            nodeRepository.save(node);
+            restored.put(source.getId(), node);
+            ids.put(source.getId(), node.getId());
+        }
+        for (val source : sources.values()) {
+            restored.get(source.getId()).setParentId(ids.get(source.getParentId()));
+        }
+        nodeRepository.deleteAll(existing.stream().filter(node -> !sources.containsKey(node.getId())).toList());
+        map.setTitle(snapshot.getTitle());
+        map.setStylePreset(normalizeStylePreset(snapshot.getStylePreset()));
+        map.setBackgroundColor(snapshot.getBackgroundColor());
+        if (validPrizes(snapshot.getPrizes())) map.setPrizesJson(PRIZES_JSON.toJson(normalizePrizes(snapshot.getPrizes())));
+        mindMapRepository.save(map);
+        nodeRepository.flush();
+        return new RestoredMap(findMapWithNodes(mapId), ids);
     }
 
     @Transactional

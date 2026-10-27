@@ -118,6 +118,7 @@ const imageWidthValue = document.getElementById("node-image-width-value");
 const imageHeightValue = document.getElementById("node-image-height-value");
 const autosaveStatus = document.getElementById("autosave-status");
 const failedEditorRequests = new Map();
+const activeEditorRequests = new Set();
 const nodeEmojiInput = document.getElementById("node-emoji");
 const branchTextInput = document.getElementById("branch-text");
 const autoLayoutBtn = document.getElementById("auto-layout-btn");
@@ -235,19 +236,52 @@ function snapshotEditorState() {
     };
 }
 
-function restoreEditorState(snapshot) {
-    formEditGroup = null;
-    state.isApplyingHistory = true;
-    const previousBackground = state.map.backgroundColor;
-    state.map = structuredClone(snapshot.map);
-    if (previousBackground !== state.map.backgroundColor) saveMapBackground();
-    state.selectedNodeId = snapshot.selectedNodeId;
-    state.isApplyingHistory = false;
-    if (state.selectedNodeId) {
-        selectNode(state.selectedNodeId);
-    } else {
+async function restoreEditorState(snapshot) {
+    const nodePaths = new Set([...state.map.nodes, ...snapshot.map.nodes].map(node => `/api/nodes/${node.id}`));
+    const mapPath = `/api/maps/${state.map.id}`;
+    const restored = await editorRequest(`/api/maps/${state.map.id}/restore`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(snapshot.map)
+    });
+    // A successful full restore supersedes previous failed writes to this map.
+    for (const key of failedEditorRequests.keys()) {
+        const path = key.slice(key.indexOf(" ") + 1);
+        if (nodePaths.has(path) || path === mapPath || path.startsWith(`${mapPath}/`)) failedEditorRequests.delete(key);
+    }
+    const errorBox = document.getElementById("editor-request-error");
+    errorBox.hidden = failedEditorRequests.size === 0;
+    errorBox.textContent = [...failedEditorRequests.values()].join(" ");
+    if (autosaveStatus) autosaveStatus.textContent = "Mappa ripristinata e salvata.";
+    const remap = id => id == null ? null : restored.nodeIds[id] ?? id;
+    for (const entry of [...state.undoStack, ...state.redoStack]) {
+        entry.selectedNodeId = remap(entry.selectedNodeId);
+        for (const node of entry.map.nodes) {
+            node.id = remap(node.id);
+            node.parentId = remap(node.parentId);
+        }
+    }
+    // Keep frontend-only settings until their persistence is implemented (TODO 12).
+    const localNodes = new Map(snapshot.map.nodes.map(node => [remap(node.id), node]));
+    state.map = restored.map;
+    for (const node of state.map.nodes) {
+        const local = localNodes.get(node.id);
+        if (local) {
+            node.branchWidth = local.branchWidth;
+            node.branchCurve = local.branchCurve;
+        }
+    }
+    state.selectedNodeId = remap(snapshot.selectedNodeId);
+    if (stylePresetInput) stylePresetInput.value = state.map.stylePreset;
+    refreshMapTitle();
+    closeContextMenu();
+    if (state.selectedNodeId) selectNode(state.selectedNodeId);
+    else {
+        hideNodeEditorOverlay();
+        hideImageEditorOverlay();
         render();
     }
+    return restored.nodeIds;
 }
 
 function pushUndoSnapshot() {
@@ -332,20 +366,43 @@ function openDialog({ title, message, mode = "alert", value = "" }) {
     });
 }
 
+async function applyHistory(source, destination) {
+    if (!source.length || state.isApplyingHistory || state.drag || state.resize || state.pan) return;
+    state.isApplyingHistory = true;
+    formEditGroup = null;
+    const workspace = document.querySelector(".editor-page");
+    workspace.inert = true;
+    showLoading("Sto ripristinando la mappa…");
+    try {
+        await flushAutosave();
+        await backgroundSavePromise;
+        while (activeEditorRequests.size) await Promise.all([...activeEditorRequests]);
+        const current = snapshotEditorState();
+        // Clone: ID reconciliation must not mutate the snapshot being restored.
+        const target = structuredClone(source[source.length - 1]);
+        const ids = await restoreEditorState(target);
+        current.selectedNodeId = ids[current.selectedNodeId] ?? current.selectedNodeId;
+        for (const node of current.map.nodes) {
+            node.id = ids[node.id] ?? node.id;
+            node.parentId = ids[node.parentId] ?? node.parentId;
+        }
+        source.pop();
+        destination.push(current);
+    } catch (error) {
+        reportEditorError(error);
+    } finally {
+        state.isApplyingHistory = false;
+        workspace.inert = false;
+        hideLoading();
+    }
+}
+
 function undoChange() {
-    if (!state.undoStack.length) return;
-    const current = snapshotEditorState();
-    const previous = state.undoStack.pop();
-    state.redoStack.push(current);
-    restoreEditorState(previous);
+    return applyHistory(state.undoStack, state.redoStack);
 }
 
 function redoChange() {
-    if (!state.redoStack.length) return;
-    const current = snapshotEditorState();
-    const next = state.redoStack.pop();
-    state.undoStack.push(current);
-    restoreEditorState(next);
+    return applyHistory(state.redoStack, state.undoStack);
 }
 function getNodeById(id) {
     return renderNodeIndex ? renderNodeIndex.get(id) : state.map.nodes.find(n => n.id === id);
@@ -1785,7 +1842,14 @@ function reportEditorError(error) {
     if (autosaveStatus) autosaveStatus.textContent = "Operazione non completata.";
 }
 
-async function editorRequest(url, options = {}, format = "json") {
+function editorRequest(url, options = {}, format = "json") {
+    const request = sendEditorRequest(url, options, format);
+    activeEditorRequests.add(request);
+    request.then(() => activeEditorRequests.delete(request), () => activeEditorRequests.delete(request));
+    return request;
+}
+
+async function sendEditorRequest(url, options = {}, format = "json") {
     const requestKey = `${options.method || "GET"} ${url}`;
     try {
         let response;
