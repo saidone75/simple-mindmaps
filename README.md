@@ -8,7 +8,7 @@ Un'applicazione per creare mappe mentali e trasformarle in giochi divertenti.
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 
-Ultima release stabile: **0.2.0**. Versione in sviluppo su `develop`: **0.3.0-SNAPSHOT**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
+Versione corrente: **0.2.1**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 ## Funzionalità
 
@@ -30,7 +30,7 @@ Ultima release stabile: **0.2.0**. Versione in sviluppo su `develop`: **0.3.0-SN
 - Un browser moderno.
 - Connessione a Internet al primo avvio per scaricare il modello di embedding e le librerie native richieste da DJL/PyTorch. La generazione AI e la ricerca Wikimedia richiedono inoltre accesso ai rispettivi servizi.
 
-Lo stack comprende **Spring Boot 4.1.1**, Spring Security, Spring Data JPA, Thymeleaf, SQLite e JavaScript senza framework frontend.
+Lo stack comprende **Spring Boot 4.1.2**, Spring Security, Spring Data JPA, Thymeleaf, SQLite e JavaScript senza framework frontend.
 
 ## Avvio locale
 
@@ -85,10 +85,10 @@ Per compilare e verificare il progetto con i test già presenti:
 mvn -B clean verify
 ```
 
-L'artefatto eseguibile è `target/mindmaps-0.3.0-SNAPSHOT.jar`. Con credenziali e directory dei dati già configurate:
+L'artefatto eseguibile è `target/mindmaps-0.2.1.jar`. Con credenziali e directory dei dati già configurate:
 
 ```bash
-java -jar target/mindmaps-0.3.0-SNAPSHOT.jar --spring.profiles.active=prod
+java -jar target/mindmaps-0.2.1.jar --spring.profiles.active=prod
 ```
 
 Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `./log/mindmaps.log`. I profili sono di Spring: non occorre un profilo Maven `-Pprod`.
