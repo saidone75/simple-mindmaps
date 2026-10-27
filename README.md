@@ -1,6 +1,6 @@
 # 🧠✨ Alice's Simple Mind Maps
 
-Un'applicazione per creare mappe mentali e trasformarle in giochi delle immagini per la scuola primaria.
+Un'applicazione per creare mappe mentali e trasformarle in giochi divertenti.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Java CI](https://github.com/saidone75/simple-mindmap/actions/workflows/build.yml/badge.svg)](https://github.com/saidone75/simple-mindmap/actions/workflows/build.yml)
@@ -17,7 +17,7 @@ Ultima release stabile: **0.2.0**. Versione in sviluppo su `develop`: **0.3.0-SN
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
 - Duplicazione ed eliminazione delle mappe.
-- Esportazione in PNG e PDF nei formati A4 e A3.
+- Esportazione in PNG e PDF, con formati A4 e A3 per il PDF.
 - Accesso con account e mappe private per ciascun proprietario.
 - Pubblicazione di giochi delle immagini tramite link pubblico revocabile.
 - Interfacce adattate a computer, tablet e dispositivi mobili.
@@ -25,6 +25,7 @@ Ultima release stabile: **0.2.0**. Versione in sviluppo su `develop`: **0.3.0-SN
 ## Requisiti
 
 - **JDK 21**.
+- **Linux x86_64** per il runtime nativo PyTorch incluso nel POM; altre piattaforme richiedono dipendenze native compatibili.
 - **Maven 3.6.3 o successivo**; consigliato Maven 3.9+.
 - Un browser moderno.
 - Connessione a Internet al primo avvio per scaricare il modello di embedding e le librerie native richieste da DJL/PyTorch. La generazione AI e la ricerca Wikimedia richiedono inoltre accesso ai rispettivi servizi.
@@ -69,6 +70,13 @@ In alternativa, dopo avere configurato le credenziali, `bash run.sh` avvia il pr
 
 La chiave OpenAI serve alla generazione AI; la creazione manuale delle mappe non la richiede.
 
+Per abilitare la generazione AI, imposta `OPENAI_API_KEY` nell’ambiente prima dell’avvio:
+
+```bash
+read -rsp 'Chiave API OpenAI: ' OPENAI_API_KEY; echo
+export OPENAI_API_KEY
+```
+
 ### Build e avvio del JAR
 
 Per compilare e verificare il progetto con i test già presenti:
@@ -101,9 +109,9 @@ La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti,
 
 ### Giocare
 
-Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare uno dei tre indizi del nodo, scelto a caso. Gli indizi sono modificabili nell’editor e generati automaticamente per le nuove mappe AI.
+Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare un indizio del nodo scelto a caso tra quelli compilati, oppure un incoraggiamento se non ce ne sono. Puoi scrivere fino a tre indizi per nodo nell’editor; nelle nuove mappe AI vengono generati automaticamente.
 
-Usa **− / +** per ingrandire o rimpicciolire la mappa e trascina lo sfondo con la manina per spostarti. **Vedi tutta la mappa** la adatta alla finestra.
+Usa **−** per rimpicciolire e **+** per ingrandire la mappa; trascina lo sfondo con la manina per spostarti. **Vedi tutta la mappa** la adatta alla finestra.
 
 Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personalizzabili dall’insegnante. Errori e tempo non penalizzano il bambino. Per ricominciare, premi **Giochiamo ancora ↻**.
 
@@ -119,21 +127,21 @@ Per esportare una mappa, il browser invia l'SVG corrente al backend, che produce
 
 Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint di gestione richiedono l'autenticazione.
 
-| Metodo | Percorso                    | Funzione                      |
-|--------|-----------------------------|-------------------------------|
-| `GET`  | `/login`                    | Accesso                       |
-| `GET`  | `/maps`                     | Elenco delle proprie mappe    |
-| `GET`  | `/maps/{id}`                | Editor                        |
-| `GET`  | `/api/maps/{id}`            | Dati della mappa privata      |
-| `POST` | `/api/map-generations` | Avvia una creazione AI in background e restituisce l’identificativo |
-| `GET` | `/api/map-generations/{id}` | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
-| `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco       |
-| `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione    |
-| `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG     |
-| `POST` | `/api/maps/{id}/export/pdf` | Esportazione PDF dall'SVG     |
-| `GET`  | `/play/{token}`             | Pagina pubblica del gioco     |
-| `POST` | `/play/{token}/start`       | Avvio di una partita pubblica |
-| `POST` | `/play/{token}/attempt`     | Verifica di un abbinamento    |
+| Metodo | Percorso                    | Funzione                                                                      |
+|--------|-----------------------------|-------------------------------------------------------------------------------|
+| `GET`  | `/login`                    | Accesso                                                                       |
+| `GET`  | `/maps`                     | Elenco delle proprie mappe                                                    |
+| `GET`  | `/maps/{id}`                | Editor                                                                        |
+| `GET`  | `/api/maps/{id}`            | Dati della mappa privata                                                      |
+| `POST` | `/api/map-generations`      | Avvia una creazione AI in background e restituisce l’identificativo           |
+| `GET`  | `/api/map-generations/{id}` | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
+| `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco                                                       |
+| `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione                                                    |
+| `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG                                                     |
+| `POST` | `/api/maps/{id}/export/pdf` | Esportazione PDF dall'SVG                                                     |
+| `GET`  | `/play/{token}`             | Pagina pubblica del gioco                                                     |
+| `POST` | `/play/{token}/start`       | Avvio di una partita pubblica                                                 |
+| `POST` | `/play/{token}/attempt`     | Verifica di un abbinamento                                                    |
 
 ## Contributi e licenza
 
