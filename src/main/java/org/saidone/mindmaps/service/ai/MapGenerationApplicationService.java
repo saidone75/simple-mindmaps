@@ -51,7 +51,7 @@ public class MapGenerationApplicationService {
         validateRequestLimits(request);
 
         applyReferenceTextLimit(request);
-        val attempts = Math.max(1, maxAttempts);
+        int attempts = Math.max(1, maxAttempts);
 
         RuntimeException lastError = null;
         for (int i = 1; i <= attempts; i++) {
