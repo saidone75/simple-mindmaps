@@ -9,7 +9,7 @@
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026
 
-Revisione statica ricontrollata sul codice attuale. I punti 8–17, 20, 22 e 29 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. I punti 19 e 23 includono scelte funzionali; 24–28 e 30 sono proposte di ottimizzazione o manutenzione, non tutte correzioni necessarie. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
+Revisione statica ricontrollata sul codice attuale. I punti 8–17, 22 e 29 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. I punti 19 e 23 includono scelte funzionali; 24–28 e 30 sono proposte di ottimizzazione o manutenzione, non tutte correzioni necessarie. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
 
 ### Correttezza e salvataggio — priorità alta
 
@@ -28,7 +28,6 @@ Revisione statica ricontrollata sul codice attuale. I punti 8–17, 20, 22 e 29 
 17. [ ] Ripristinare la protezione CSRF per le operazioni autenticate e passare il token nei form e nelle richieste JavaScript; definire separatamente il trattamento degli endpoint pubblici del gioco. Attualmente CSRF è disabilitato globalmente (`SecurityConfig`).
 18. [ ] Limitare dimensione del payload SVG e numero di pixel raster nell’esportazione. Verificare e rendere esplicita la policy effettiva di Batik per risorse esterne e script, senza presumere che siano tutti consentiti: il codice applicativo si limita a risolvere le variabili CSS e usa un `PNGTranscoder` con configurazione predefinita. L’accesso al file locale o alla rete tramite SVG non è stato dimostrato nella revisione (`MindMapRestController`, `MindMapExportRenderer`).
 19. [ ] Valutare il supporto a partite indipendenti in più schede: `MapGameController` conserva un solo `GameRun` per sessione, quindi avviare un altro gioco sostituisce la partita precedente. È una limitazione funzionale, non un problema di isolamento fra utenti; se si introduce una raccolta per `runId`, limitarne dimensione e durata.
-20. [ ] Allineare la proprietà dello User-Agent Wikimedia: `ApplicationConfig` legge `app.wikimedia.user-agent`, mentre la configurazione definisce `wikimedia.user-agent`; l’override documentato può quindi non essere applicato.
 21. [ ] Spostare i valori sensibili della configurazione locale in variabili d’ambiente o file esterni non versionati, per non includerli nei JAR generati. Verificato che i fallback sensibili sono nella modifica locale di `application.yml`, mentre il file in `HEAD` ha fallback vuoti: non risulta da questa verifica un segreto committato. Non riportare i valori nella documentazione.
 
 ### JavaScript — struttura, prestazioni e accessibilità
