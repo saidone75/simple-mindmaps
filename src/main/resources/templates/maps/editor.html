@@ -68,8 +68,8 @@
                 Puoi personalizzare tutti i titoli premio. Per mostrarli nel gioco condiviso, aggiorna la pubblicazione.</p>
             <form th:action="@{/maps/{id}/prizes(id=${map.id})}" method="post" class="prizes-form">
                 <div th:each="prize, level : ${map.prizes}" class="prize-field">
-                    <label th:for="${'prize-' + level.index}" th:text="${'Livello ' + level.count}">Livello</label>
-                    <input th:id="${'prize-' + level.index}" type="text" name="prizes" th:value="${prize}" required maxlength="120">
+                    <label for="prize" th:for="${'prize-' + level.index}" th:text="${'Livello ' + level.count}">Livello</label>
+                    <input id="prize" th:id="${'prize-' + level.index}" type="text" name="prizes" th:value="${prize}" required maxlength="120">
                 </div>
                 <button type="submit" class="secondary-btn small-btn">Salva i titoli premio</button>
             </form>
