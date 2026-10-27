@@ -34,6 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -66,7 +67,7 @@ public class MapGenerationTaskService {
             tasks.invalidate(task.id);
             throw new ResponseStatusException(TOO_MANY_REQUESTS, "Ci sono già molte mappe in preparazione. Riprova tra poco.");
         }
-        return task.progress;
+        return task.progress.get();
     }
 
     public Progress get(UUID id, String owner) {
@@ -74,7 +75,7 @@ public class MapGenerationTaskService {
         if (task == null || !task.owner.equalsIgnoreCase(owner)) {
             throw new ResponseStatusException(NOT_FOUND, "Attività non trovata o scaduta.");
         }
-        return task.progress;
+        return task.progress.get();
     }
 
     private void generate(Task task, MapGenerationRequestDto request) {
@@ -83,12 +84,11 @@ public class MapGenerationTaskService {
             val generated = generation.generateMindMap(request, task::update);
             val map = maps.createFromGeneratedMap(generated, Boolean.TRUE.equals(request.getIncludeWikimediaImages()), task::update);
             val total = generated.getNodes().size();
-            task.progress = new Progress(task.id, Status.COMPLETED, "La mappa è pronta! Sto aprendo l’editor…", total, total, map.getId());
+            task.progress.set(new Progress(task.id, Status.COMPLETED, "La mappa è pronta! Sto aprendo l’editor…", total, total, map.getId()));
             log.info("Mappa creata | task={} | mapId={}", task.id, map.getId());
         } catch (RuntimeException ex) {
-            val previous = task.progress;
-            task.progress = new Progress(task.id, Status.FAILED,
-                    "Non sono riuscito a completare la mappa. Riprova tra poco.", previous.completedNodes(), previous.totalNodes(), null);
+            task.progress.updateAndGet(previous -> new Progress(task.id, Status.FAILED,
+                    "Non sono riuscito a completare la mappa. Riprova tra poco.", previous.completedNodes(), previous.totalNodes(), null));
             log.error("Creazione mappa non riuscita | task={}", task.id, ex);
         }
     }
@@ -112,15 +112,15 @@ public class MapGenerationTaskService {
     private static final class Task {
         private final UUID id = UUID.randomUUID();
         private final String owner;
-        private volatile Progress progress;
+        private final AtomicReference<Progress> progress;
 
         private Task(String owner) {
             this.owner = owner;
-            this.progress = new Progress(id, Status.QUEUED, "La richiesta è in attesa. Inizierò appena possibile…", 0, 0, null);
+            this.progress = new AtomicReference<>(new Progress(id, Status.QUEUED, "La richiesta è in attesa. Inizierò appena possibile…", 0, 0, null));
         }
 
         private void update(String activity, int completedNodes, int totalNodes) {
-            progress = new Progress(id, Status.RUNNING, activity, completedNodes, totalNodes, null);
+            progress.set(new Progress(id, Status.RUNNING, activity, completedNodes, totalNodes, null));
         }
     }
 }
