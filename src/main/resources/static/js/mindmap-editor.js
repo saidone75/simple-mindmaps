@@ -34,8 +34,8 @@ const state = {
     pan: null,
     workspaceViewport: null,
     pendingImageNodeId: null,
-    autosaveTimer: null,
-    autosaveNodeId: null,
+    pendingAutosaves: new Map(),
+    autosaveCount: 0,
     autosavePromise: null,
     contextMenu: null,
     hoveredNodeId: null,
@@ -1341,9 +1341,6 @@ function flushResizeAutosave(resizeState) {
     if (!resizeState) return;
     const resizedNode = getNodeById(resizeState.nodeId);
     if (!resizedNode) return;
-    clearTimeout(state.autosaveTimer);
-    state.autosaveTimer = null;
-    state.autosaveNodeId = null;
     runAutosave(resizedNode);
 }
 
@@ -1881,7 +1878,8 @@ async function saveNode(node) {
         body: JSON.stringify(node)
     });
     if (autosaveStatus) autosaveStatus.textContent = failedEditorRequests.size
-        ? "Restano operazioni non completate. Controlla il messaggio di errore." : "Modifiche salvate.";
+        ? "Restano operazioni non completate. Controlla il messaggio di errore." : state.pendingAutosaves.size || state.autosaveCount > 1
+            ? "Altre modifiche in attesa di salvataggio..." : "Modifiche salvate.";
 }
 
 function queueAutoSubmitSelectedNode(field = null) {
@@ -1899,24 +1897,33 @@ function queueAutoSubmitSelectedNode(field = null) {
 
 function scheduleAutosave(node) {
     if (autosaveStatus) autosaveStatus.textContent = "Modifiche non ancora salvate...";
-    clearTimeout(state.autosaveTimer);
-    state.autosaveNodeId = node.id;
-    state.autosaveTimer = setTimeout(() => {
-        const pendingNode = getNodeById(state.autosaveNodeId);
-        state.autosaveTimer = null;
-        state.autosaveNodeId = null;
-        if (pendingNode) runAutosave(pendingNode);
+    const previous = state.pendingAutosaves.get(node.id);
+    if (previous) clearTimeout(previous.timer);
+    const pending = { nodeId: node.id, timer: null };
+    pending.timer = setTimeout(() => {
+        if (state.pendingAutosaves.get(node.id) !== pending) return;
+        const currentNode = getNodeById(pending.nodeId);
+        if (currentNode) runAutosave(currentNode);
+        else state.pendingAutosaves.delete(pending.nodeId);
     }, 500);
+    state.pendingAutosaves.set(node.id, pending);
 }
 
 function runAutosave(node) {
+    const pending = state.pendingAutosaves.get(node.id);
+    if (pending) {
+        clearTimeout(pending.timer);
+        state.pendingAutosaves.delete(node.id);
+    }
     const nodeSnapshot = structuredClone(node);
+    state.autosaveCount++;
     const startFrom = state.autosavePromise ?? Promise.resolve();
     const queuedPromise = startFrom
         .catch(() => {})
         .then(() => saveNode(nodeSnapshot));
 
     const trackedPromise = queuedPromise.finally(() => {
+        state.autosaveCount--;
         if (state.autosavePromise === trackedPromise) {
             state.autosavePromise = null;
         }
@@ -1927,20 +1934,18 @@ function runAutosave(node) {
     return trackedPromise;
 }
 
-
 async function flushAutosave() {
-    if (state.autosaveTimer && state.autosaveNodeId != null) {
-        clearTimeout(state.autosaveTimer);
-        const pendingNode = getNodeById(state.autosaveNodeId);
-        state.autosaveTimer = null;
-        state.autosaveNodeId = null;
-        if (pendingNode) {
-            await runAutosave(pendingNode);
+    const saves = [];
+    if (state.autosavePromise) saves.push(state.autosavePromise);
+    for (const pending of [...state.pendingAutosaves.values()]) {
+        const currentNode = getNodeById(pending.nodeId);
+        if (currentNode) saves.push(runAutosave(currentNode));
+        else {
+            clearTimeout(pending.timer);
+            state.pendingAutosaves.delete(pending.nodeId);
         }
     }
-    if (state.autosavePromise) {
-        await state.autosavePromise;
-    }
+    await Promise.all(saves);
 }
 
 async function fetchMap() {
