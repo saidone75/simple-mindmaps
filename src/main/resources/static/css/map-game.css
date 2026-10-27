@@ -96,6 +96,8 @@
 
 #start-game:disabled { opacity: .65; cursor: wait; }
 
+#game-sound { margin-inline-start: auto; }
+
 .game-progress-wrap { flex: 1; min-width: 180px; display: grid; gap: 9px; font-size: .88rem; font-weight: 700; }
 
 #game-progress {
@@ -245,6 +247,14 @@
 
 .game-welcome p { max-width: 330px; line-height: 1.7; color: #82738e; }
 
+.game-welcome #start-game {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    min-height: 76px;
+    padding: 20px 40px;
+    margin: 20px 0;
+    max-width: 100%;
+}
+
 .welcome-note { padding: 8px 14px; color: #5e886c; background: #e9f3e7; border-radius: 99px; font-size: .8rem; }
 
 .game-target { cursor: pointer; }
@@ -329,6 +339,12 @@
 #game-completion-message { margin-bottom: 24px; line-height: 1.7; }
 .game-completion-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
 .game-completion-actions button { min-height: 48px; }
+.game-level-celebration { width: min(440px, calc(100% - 28px)); }
+.game-level-celebration::backdrop { background: #35224550; backdrop-filter: blur(3px); }
+.game-level-celebration .game-completion-card { padding: 28px 24px; }
+.game-level-celebration .game-completion-trophy { font-size: 48px; margin-bottom: 8px; }
+.game-level-celebration h2 { font-size: clamp(1.5rem, 5vw, 2rem); }
+.game-level-celebration .game-completion-actions { margin-top: 20px; }
 .game-completion-confetti { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
 .game-completion-confetti span {
     position: absolute;
@@ -448,6 +464,6 @@
     #game-zoom { flex: 1; min-width: 65px; }
 }
 
-.game-level-card { margin: 0 0 18px; padding: 20px 24px; border: 1px solid #d9cdeb; border-radius: 20px; background: #f6f0fd; }
+.game-level-card { margin: 24px 0 18px; padding: 20px 24px; border: 1px solid #d9cdeb; border-radius: 20px; background: #f6f0fd; }
 .game-level-card h2 { margin: 8px 0; color: #5d427d; font-size: clamp(1.2rem, 3vw, 1.65rem); overflow-wrap: anywhere; }
 .game-level-card p { margin: 0; color: #746585; font-size: .9rem; }

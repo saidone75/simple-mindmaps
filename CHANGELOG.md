@@ -9,6 +9,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Pulsante «Giochiamo!» grande e centrato nell’area iniziale della mappa delle scoperte; dopo l’avvio, il comando per ricominciare resta nell’intestazione della mappa.
+- Scheda del livello distanziata dalla barra del gioco e pulsante dei suoni allineato a destra.
 - Ricerche Wikimedia semplice e semantica con query progressive: soggetto principale sempre presente, dettagli aggiunti uno alla volta e ampliamento senza alternative generiche in `OR`.
 
 ### Fixed
@@ -17,6 +19,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Overlay di festeggiamento a ogni nuovo livello intermedio, con il titolo conquistato e pulsante «Continuiamo!», più sobrio rispetto alla festa finale.
 - Suoni del gioco generati nel browser: clack per gli abbinamenti corretti, suono delicato per gli errori, fanfara per un nuovo livello e jingle finale al livello massimo; pulsante per disattivarli con preferenza salvata.
 - Supporto dei risultati Wikimedia DjVu tramite anteprima della prima pagina, nelle ricerche semplice e semantica; i documenti senza anteprima supportata vengono scartati.
 

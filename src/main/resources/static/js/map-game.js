@@ -32,6 +32,7 @@
     const welcome = document.getElementById('game-welcome');
     const feedbackWrap = document.querySelector('.game-feedback-wrap');
     const completion = document.getElementById('game-completion');
+    const levelCelebration = document.getElementById('game-level-celebration');
     const soundButton = document.getElementById('game-sound');
     const sounds = (() => {
         let context, enabled = true;
@@ -134,6 +135,16 @@
         progress.max = board.images.length;
         progress.value = lastResult?.matched || 0;
     }
+    function showLevelCelebration(result, previousLevel) {
+        if (!result.correct || result.complete || result.level <= previousLevel || levelCelebration.open) return;
+        document.getElementById('game-level-celebration-number').textContent = `Livello ${result.level} di 5`;
+        document.getElementById('game-level-celebration-prize').textContent = result.prize;
+        levelCelebration.showModal();
+    }
+    levelCelebration.addEventListener('close', () => {
+        const nextImage = tray.querySelector('button');
+        (nextImage || start).focus({ preventScroll: true });
+    });
     function showCompletion(result) {
         if (!result.complete || result.level !== 5 || completion.open) return;
         document.getElementById('game-completion-prize').textContent = result.prize;
@@ -239,6 +250,7 @@
             }
             finished = result.complete;
             showStats();
+            showLevelCelebration(result, previousLevel);
             showCompletion(result);
         } catch (error) { feedbackWrap.dataset.mood = 'hint'; feedback.textContent = error.message; }
         finally { busy = false; }
@@ -344,7 +356,7 @@
         if (panViewport.hasPointerCapture(pointerId)) panViewport.releasePointerCapture(pointerId);
     }
     panViewport?.addEventListener('pointerdown', event => {
-        if (!board || pan || !event.isPrimary || event.button !== 0 || event.target.closest('.game-target')) return;
+        if (!board || pan || !event.isPrimary || event.button !== 0 || event.target.closest('.game-target, button')) return;
         pan = {
             pointerId: event.pointerId,
             x: event.clientX, y: event.clientY,
@@ -372,6 +384,7 @@
         sounds.unlock();
         busy = true; start.disabled = true;
         if (completion.open) completion.close();
+        if (levelCelebration.open) levelCelebration.close();
         try {
             const next = await request('start');
             board = next; selected = null; matched.clear(); finished = false; lastResult = null;
@@ -381,6 +394,7 @@
             const sizes = board.map.nodes.map(n => ({x:n.x,y:n.y,...nodeSizes.get(n.id)}));
             const x = Math.min(...sizes.map(n=>n.x))-40, y = Math.min(...sizes.map(n=>n.y))-40;
             bounds = {x,y,w:Math.max(...sizes.map(n=>n.x+n.width))-x+40,h:Math.max(...sizes.map(n=>n.y+n.height))-y+40};
+            document.querySelector('.game-map-heading').appendChild(start);
             welcome.hidden = true;
             svg.removeAttribute('hidden');
             feedbackWrap.dataset.mood = '';
