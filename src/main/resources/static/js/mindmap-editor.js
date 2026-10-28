@@ -138,11 +138,6 @@ const canvasViewport = svg.closest(".canvas-scroll-area");
 const nodeEditorOverlay = document.getElementById("node-editor-overlay");
 const imageEditorOverlay = document.getElementById("image-editor-overlay");
 const appDialog = document.getElementById("app-dialog");
-const appDialogTitle = document.getElementById("app-dialog-title");
-const appDialogMessage = document.getElementById("app-dialog-message");
-const appDialogInput = document.getElementById("app-dialog-input");
-const appDialogCancel = document.getElementById("app-dialog-cancel");
-const appDialogConfirm = document.getElementById("app-dialog-confirm");
 const mapTitle = document.getElementById("map-title");
 const renameMapBtn = document.getElementById("rename-map-btn");
 
@@ -291,126 +286,29 @@ async function restoreEditorState(snapshot) {
     return restored.nodeIds;
 }
 
-function pushUndoSnapshot() {
-    formEditGroup = null;
-    if (state.isApplyingHistory) return;
-    state.undoStack.push(snapshotEditorState());
-    if (state.undoStack.length > 100) state.undoStack.shift();
-    state.redoStack = [];
-}
 
-function beginInteractionSnapshot() {
-    formEditGroup = null;
-    if (state.interactionSnapshot || state.isApplyingHistory) return;
-    state.interactionSnapshot = snapshotEditorState();
-}
-
-function commitInteractionSnapshot() {
-    if (!state.interactionSnapshot || state.isApplyingHistory) return;
-    state.undoStack.push(state.interactionSnapshot);
-    if (state.undoStack.length > 100) state.undoStack.shift();
-    state.redoStack = [];
-    state.interactionSnapshot = null;
-}
-
-function clearInteractionSnapshot() {
-    state.interactionSnapshot = null;
-}
-
-function openDialog({ title, message, mode = "alert", value = "" }) {
-    if (!appDialog || !appDialogTitle || !appDialogMessage || !appDialogConfirm) {
-        return Promise.resolve(mode === "alert" ? true : mode === "confirm" ? false : null);
-    }
-    return new Promise(resolve => {
-        appDialogTitle.textContent = title || "Conferma";
-        appDialogMessage.textContent = message || "";
-        appDialogConfirm.textContent = mode === "alert" ? "Ok" : "Conferma";
-        if (appDialogCancel) {
-            appDialogCancel.classList.toggle("hidden", mode === "alert");
-        }
-        if (appDialogInput) {
-            const showInput = mode === "prompt";
-            appDialogInput.classList.toggle("hidden", !showInput);
-            appDialogInput.value = showInput ? value : "";
-        }
-        if (typeof appDialog.showModal === "function") appDialog.showModal();
-        else appDialog.setAttribute("open", "open");
-
-        const close = result => {
-            if (typeof appDialog.close === "function" && appDialog.open) appDialog.close();
-            else appDialog.removeAttribute("open");
-            appDialogConfirm.removeEventListener("click", onConfirm);
-            appDialogCancel?.removeEventListener("click", onCancel);
-            appDialog.removeEventListener("click", onOverlayClick);
-            document.removeEventListener("keydown", onEscape);
-            resolve(result);
-        };
-
-        const onConfirm = () => {
-            if (mode === "prompt") close(appDialogInput?.value ?? "");
-            else close(true);
-        };
-        const onCancel = () => close(mode === "prompt" ? null : false);
-        const onOverlayClick = event => {
-            if (event.target === appDialog) onCancel();
-        };
-        const onEscape = event => {
-            if (event.key === "Escape") onCancel();
-        };
-
-        appDialogConfirm.addEventListener("click", onConfirm);
-        appDialogCancel?.addEventListener("click", onCancel);
-        appDialog.addEventListener("click", onOverlayClick);
-        document.addEventListener("keydown", onEscape);
-        if (mode === "prompt" && appDialogInput) {
-            setTimeout(() => {
-                appDialogInput.focus();
-                appDialogInput.select();
-            }, 0);
-        } else {
-            appDialogConfirm.focus();
-        }
-    });
-}
-
-async function applyHistory(source, destination) {
-    if (!source.length || state.isApplyingHistory || state.drag || state.resize || state.pan) return;
-    state.isApplyingHistory = true;
-    formEditGroup = null;
-    const workspace = document.querySelector(".editor-page");
-    workspace.inert = true;
-    showLoading("Sto ripristinando la mappa…");
-    try {
+const { pushUndoSnapshot, beginInteractionSnapshot, commitInteractionSnapshot,
+    clearInteractionSnapshot, undoChange, redoChange } = globalThis.MindMapHistory.create({
+    state,
+    snapshot: snapshotEditorState,
+    restore: restoreEditorState,
+    waitForSaves: async () => {
         await flushAutosave();
         await backgroundSavePromise;
         while (activeEditorRequests.size) await Promise.all([...activeEditorRequests]);
-        const current = snapshotEditorState();
-        // Clone: ID reconciliation must not mutate the snapshot being restored.
-        const target = structuredClone(source[source.length - 1]);
-        const ids = await restoreEditorState(target);
-        current.selectedNodeId = ids[current.selectedNodeId] ?? current.selectedNodeId;
-        for (const node of current.map.nodes) {
-            node.id = ids[node.id] ?? node.id;
-            node.parentId = ids[node.parentId] ?? node.parentId;
-        }
-        source.pop();
-        destination.push(current);
-    } catch (error) {
-        reportEditorError(error);
-    } finally {
-        state.isApplyingHistory = false;
-        workspace.inert = false;
-        hideLoading();
-    }
-}
+    },
+    setBusy: busy => {
+        document.querySelector(".editor-page").inert = busy;
+        if (busy) showLoading("Sto ripristinando la mappa…");
+        else hideLoading();
+    },
+    onError: reportEditorError,
+    onEditBoundary: () => { formEditGroup = null; }
+});
 
-function undoChange() {
-    return applyHistory(state.undoStack, state.redoStack);
-}
+const openDialog = globalThis.MindMapDialogs.open;
 
-function redoChange() {
-    return applyHistory(state.redoStack, state.undoStack);
-}
+
 function getNodeById(id) {
     return renderNodeIndex ? renderNodeIndex.get(id) : state.map.nodes.find(n => n.id === id);
 }
@@ -1796,7 +1694,6 @@ async function normalizeExportImageHref(href) {
 async function buildExportSvg() {
     flushPointerMove(false);
     if (renderFrame != null) render();
-    if (renderFrame != null) render();
     const clone = svg.cloneNode(true);
     const viewBox = (svg.getAttribute("viewBox") || "0 0 1400 900").split(/\s+/).map(Number);
     const width = Number.isFinite(viewBox[2]) ? viewBox[2] : 1400;
@@ -1913,42 +1810,16 @@ function editorRequest(url, options = {}, format = "json") {
 async function sendEditorRequest(url, options = {}, format = "json") {
     const requestKey = `${options.method || "GET"} ${url}`;
     try {
-        let response;
-        try {
-            response = await fetch(url, options);
-        } catch {
-            throw new Error("Connessione al server non riuscita. Le modifiche potrebbero non essere salvate. Controlla la connessione e riprova.");
-        }
-        if (response.redirected || response.status === 401) {
-            throw new Error("La sessione è scaduta. Accedi di nuovo prima di continuare; conserva le modifiche non salvate.");
-        }
-        if (!response.ok) {
-            const messages = {
+        const result = await globalThis.MindMapHttp.request(url, options, {
+            format,
+            messages: {
                 403: "Non hai il permesso di completare questa operazione.",
                 404: "La mappa o il nodo non è più disponibile.",
                 409: "Questa immagine è già usata da un altro nodo. Scegli un’altra alternativa e riprova il salvataggio.",
                 413: "Il contenuto inviato è troppo grande.",
                 429: "Troppe richieste. Attendi qualche istante e riprova."
-            };
-            throw new Error(messages[response.status] || `Operazione non riuscita (HTTP ${response.status}). Riprova; le modifiche potrebbero non essere salvate.`);
-        }
-        const contentType = response.headers.get("Content-Type") || "";
-        let result;
-        if (format === "empty") {
-            if (contentType.includes("text/html")) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
-        } else {
-            const expected = format === "json" ? /application\/(?:[\w.-]+\+)?json/i
-                : format === "png" ? /image\/png/i : /application\/pdf/i;
-            if (!expected.test(contentType)) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
-            try {
-                result = format === "json" ? await response.json() : await response.blob();
-                if (format === "json" && (!result || typeof result !== "object" || Array.isArray(result))) {
-                    throw new Error("Invalid response");
-                }
-            } catch {
-                throw new Error("Risposta del server incompleta o non valida. Controlla la connessione e riprova.");
             }
-        }
+        });
         failedEditorRequests.delete(requestKey);
         const errorBox = document.getElementById("editor-request-error");
         errorBox.hidden = failedEditorRequests.size === 0;

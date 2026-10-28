@@ -8,7 +8,7 @@
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026
 
-Revisione statica ricontrollata sul codice attuale. I punti 11–17 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. Il punto 19 include una scelta funzionale; 25 e 30 sono proposte di ottimizzazione o manutenzione, non tutte correzioni necessarie. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
+Revisione statica ricontrollata sul codice attuale. I punti 11–17 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. Il punto 30 è una proposta di manutenzione facoltativa. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
 
 ### Correttezza e salvataggio — priorità alta
 
@@ -23,12 +23,7 @@ Revisione statica ricontrollata sul codice attuale. I punti 11–17 descrivono p
 16. [ ] Proteggere anche sul backend l’ultimo nodo principale dall’eliminazione: il controllo è attualmente in `deleteNodeWithChecks`, mentre l’API può eliminare direttamente la radice e tutti i discendenti (`MindMapService.deleteNode`).
 17. [ ] Ripristinare la protezione CSRF per le operazioni autenticate e passare il token nei form e nelle richieste JavaScript; definire separatamente il trattamento degli endpoint pubblici del gioco. Attualmente CSRF è disabilitato globalmente (`SecurityConfig`).
 18. [ ] Limitare dimensione del payload SVG e numero di pixel raster nell’esportazione. Verificare e rendere esplicita la policy effettiva di Batik per risorse esterne e script, senza presumere che siano tutti consentiti: il codice applicativo si limita a risolvere le variabili CSS e usa un `PNGTranscoder` con configurazione predefinita. L’accesso al file locale o alla rete tramite SVG non è stato dimostrato nella revisione (`MindMapRestController`, `MindMapExportRenderer`).
-19. [ ] Valutare il supporto a partite indipendenti in più schede: `MapGameController` conserva un solo `GameRun` per sessione, quindi avviare un altro gioco sostituisce la partita precedente. È una limitazione funzionale, non un problema di isolamento fra utenti; se si introduce una raccolta per `runId`, limitarne dimensione e durata.
 21. [ ] Spostare i valori sensibili della configurazione locale in variabili d’ambiente o file esterni non versionati, per non includerli nei JAR generati. Verificato che i fallback sensibili sono nella modifica locale di `application.yml`, mentre il file in `HEAD` ha fallback vuoti: non risulta da questa verifica un segreto committato. Non riportare i valori nella documentazione.
-
-### JavaScript — struttura, prestazioni e accessibilità
-
-25. [ ] Pulizia facoltativa: estrarre progressivamente rete/salvataggio, cronologia e dialoghi in moduli condivisi, evitando una riscrittura generale dell’editor. Eliminare il secondo controllo consecutivo identico di `renderFrame` in `buildExportSvg`: il primo `render()` azzera già il frame pendente. La modularizzazione migliora la manutenzione, ma non implica da sola un guadagno prestazionale (`mindmap-editor.js`, `maps-list.js`).
 
 ### CSS — consolidamento e ottimizzazione
 
