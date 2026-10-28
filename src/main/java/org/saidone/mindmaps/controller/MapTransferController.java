@@ -22,10 +22,14 @@ import com.github.slugify.Slugify;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 import org.saidone.mindmaps.service.MapTransferService;
 import org.saidone.mindmaps.service.MindMapService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.ErrorResponse;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -35,6 +39,7 @@ import java.io.IOException;
 import static org.springframework.http.HttpStatus.PAYLOAD_TOO_LARGE;
 
 @RestController
+@Slf4j
 @RequiredArgsConstructor
 @RequestMapping("/api/maps")
 public class MapTransferController {
@@ -58,7 +63,24 @@ public class MapTransferController {
         if (request.getContentLengthLong() > MapTransferService.MAX_FILE_BYTES) throw tooLarge();
         val data = request.getInputStream().readNBytes(MapTransferService.MAX_FILE_BYTES + 1);
         if (data.length > MapTransferService.MAX_FILE_BYTES) throw tooLarge();
-        return new ImportedMap(transfer.importMap(data));
+        val id = transfer.importMap(data);
+        log.info("Mappa importata: id={}, file di {} byte.", id, data.length);
+        return new ImportedMap(id);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ProblemDetail> transferError(Exception exception, HttpServletRequest request) {
+        val status = exception instanceof ErrorResponse error ? error.getStatusCode() : HttpStatus.INTERNAL_SERVER_ERROR;
+        if (status.is5xxServerError()) {
+            log.error("Errore nel trasferimento di una mappa: {} {} (HTTP {}).",
+                    request.getMethod(), request.getRequestURI(), status.value(), exception);
+            return ResponseEntity.status(status).body(ProblemDetail.forStatusAndDetail(status,
+                    "Non riesco a completare il trasferimento della mappa. La causa è stata registrata nei log del server."));
+        }
+        val problem = ((ErrorResponse) exception).getBody();
+        log.warn("Trasferimento mappa rifiutato: {} {} (HTTP {}): {}",
+                request.getMethod(), request.getRequestURI(), status.value(), problem.getDetail());
+        return ResponseEntity.status(status).body(problem);
     }
 
     private ResponseStatusException tooLarge() {

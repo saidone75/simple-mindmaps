@@ -11,6 +11,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 - Pulsante «Cerca» nell’editor immagini per cercare immagini Wikimedia con la ricerca semantica usando il testo del nodo e il titolo della mappa come contesto. Applicazione del primo risultato, fino a nove alternative salvate, avanzamento visibile e supporto Annulla/Ripristina; i risultati non sovrascrivono un nodo modificato nel frattempo.
 
+### Fixed
+
+- Errori di importazione ed esportazione JSON registrati esplicitamente nei log, con stack trace per gli errori server e risposta leggibile nel browser; conferma nei log delle importazioni completate.
+
 ## [0.3.0] - 2026-10-28
 
 ### Changed
