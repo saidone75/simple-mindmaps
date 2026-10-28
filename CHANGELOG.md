@@ -15,7 +15,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Limite di download delle immagini esterne aumentato a 25 MB prima della normalizzazione.
 - JavaScript organizzato in componenti dedicati per dialoghi, richieste HTTP e cronologia Annulla/Ripristina, con riuso fra editor ed elenco mappe e rimozione del controllo di rendering duplicato nell’esportazione SVG.
 - Il gioco aggiorna solo l’immagine della casella completata, riusando nodi, collegamenti e listener e mantenendo il focus della tastiera; selezione e rimozione delle immagini usano indici dedicati.
-- Stili specifici dell’editor raccolti in `mindmap-editor.css`, dimensioni responsive del canvas semplificate e codice grafico sketch inattivo rimosso da CSS e JavaScript.
+- Stili specifici dell’editor raccolti in `mindmap-editor.css`, colori condivisi di pannelli e controlli estratti in variabili, regole duplicate e override responsive superflui rimossi. Dimensioni responsive del canvas semplificate e codice grafico sketch inattivo rimosso da CSS e JavaScript.
 - Trascinamento, ridimensionamento e pan dell’editor unificati tramite Pointer Events per mouse, penna e touch, con cattura del puntatore, gestione dei gesti interrotti e distinzione tra tocco e trascinamento.
 
 ### Added
