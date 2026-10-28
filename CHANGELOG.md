@@ -7,6 +7,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-10-28
+
 ### Added
 
 - Pulsante «Cerca» nell’editor immagini per cercare immagini Wikimedia con la ricerca semantica usando il testo del nodo e il titolo della mappa come contesto. Applicazione del primo risultato, fino a nove alternative salvate, avanzamento visibile e supporto Annulla/Ripristina; i risultati non sovrascrivono un nodo modificato nel frattempo.
@@ -159,7 +161,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
-[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/saidone75/simple-mindmap/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/saidone75/simple-mindmap/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/saidone75/simple-mindmap/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/saidone75/simple-mindmap/compare/v0.1.0...v0.2.0
