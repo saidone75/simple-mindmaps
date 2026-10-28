@@ -53,6 +53,7 @@
     <section class="publication-panel" aria-label="Pubblicazione gioco">
         <div class="publication-heading"><span class="publication-icon" aria-hidden="true">🧩</span><div><h2>Da mappa a gioco</h2><p>Trasforma le tue idee in una scoperta da condividere.</p></div><span class="publication-status" th:if="${publicToken != null}">● Gioco pubblicato</span></div>
         <p th:if="${publicationMessage}" th:text="${publicationMessage}" role="status"></p>
+        <p>Vuoi condividere tutti i tuoi giochi? <a class="secondary-btn small-btn" th:href="@{/play/teachers/{name}(name=${teacherPage.username})}" target="_blank" rel="noopener">Apri la tua pagina pubblica dei giochi ↗</a></p>
         <form class="publication-action" th:action="@{/maps/{id}/publish(id=${map.id})}" method="post">
             <button type="submit" th:text="${publicToken != null ? 'Aggiorna gioco pubblicato' : 'Pubblica come gioco'}">Pubblica come gioco</button>
         </form>

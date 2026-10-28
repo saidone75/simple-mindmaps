@@ -7,9 +7,13 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Added
+
+- Pagina pubblica univoca per insegnante con pulsanti per avviare i giochi pubblicati; dalla festa finale si può rigiocare o tornare alla selezione. Il link di pubblicazione continua ad aprire il singolo gioco.
+
 ### Fixed
 
-- Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate.
+- Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate. Dopo il salvataggio i form vengono inviati direttamente, evitando blocchi nell’aggiornamento e nel ritiro del gioco.
 
 ## [0.2.1] - 2026-10-27
 

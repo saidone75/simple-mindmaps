@@ -30,6 +30,7 @@
         <div>
             <h1>🐇 Alice's Simple Mind Maps</h1>
             <p>Un editor semplice da usare per creare mappe mentali colorate e stampabili.</p>
+            <a class="secondary-btn small-btn" th:href="@{/play/teachers/{name}(name=${teacherPage.username})}" target="_blank" rel="noopener">🧩 La tua pagina pubblica dei giochi ↗</a>
         </div>
         <form th:action="@{/logout}" method="post" class="logout-form">
             <span th:text="${username}">utente</span>

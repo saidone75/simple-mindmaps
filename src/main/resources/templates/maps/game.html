@@ -37,6 +37,7 @@
             <span class="game-eyebrow"><span aria-hidden="true">✦</span> Una mappa, tante scoperte</span>
             <h1 th:text="${title}">Gioco delle immagini</h1>
             <p>Ogni immagine cerca casa. La aiutiamo a trovarla?</p>
+            <a class="secondary-btn small-btn" th:if="${teacherPage != null}" th:href="@{/play/teachers/{name}(name=${teacherPage.username})}">← Scegli un altro gioco</a>
             <div class="game-instructions" aria-label="Come si gioca">
                 <span><b>1</b> Scegli un’immagine</span>
                 <span><b>2</b> Portala nella sua casella</span>
@@ -80,7 +81,7 @@
                     <span aria-hidden="true">🧩</span>
                     <h2>Mettiamo insieme le idee!</h2>
                     <p>Accompagna ogni immagine al posto giusto.</p>
-                    <button id="start-game" type="button">Giochiamo! <span aria-hidden="true">→</span></button>
+                    <button id="start-game" type="button" th:attr="data-auto-start=${autoStart == true}">Giochiamo! <span aria-hidden="true">→</span></button>
                     <span class="welcome-note">Nessuna fretta. Ogni tentativo conta.</span>
                 </div>
                 <svg id="game-board" xmlns="http://www.w3.org/2000/svg" aria-label="Mappa da completare" hidden></svg>
@@ -113,6 +114,7 @@
         <p id="game-completion-message">Hai completato la mappa! Ogni tentativo ti ha aiutato a fare una nuova scoperta.</p>
         <div class="game-completion-actions">
             <button id="game-completion-replay" type="button">Giochiamo ancora ↻</button>
+            <a class="secondary-btn" th:if="${teacherPage != null}" th:href="@{/play/teachers/{name}(name=${teacherPage.username})}">Scegli un altro gioco 🧩</a>
             <button id="game-completion-view" class="secondary-btn" type="button" autofocus>Guarda la tua mappa</button>
         </div>
     </div>

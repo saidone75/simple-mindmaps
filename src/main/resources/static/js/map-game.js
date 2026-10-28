@@ -431,4 +431,5 @@
         } catch (error) { feedbackWrap.dataset.mood = 'hint'; feedback.textContent = error.message; }
         finally { busy = false; start.disabled = false; }
     };
+    if (start.dataset.autoStart === 'true') start.click();
 })();

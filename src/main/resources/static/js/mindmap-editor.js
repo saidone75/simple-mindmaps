@@ -2062,9 +2062,10 @@ async function saveBeforeLeaving(proceed) {
 
 for (const form of document.querySelectorAll('.editor-page form')) {
     form.addEventListener('submit', event => {
-        if (allowEditorUnload) return;
         event.preventDefault();
-        saveBeforeLeaving(() => form.requestSubmit(event.submitter || undefined));
+        // The first submit already ran validation. Submit natively after saving:
+        // requestSubmit can be ignored while the browser is still dispatching that event.
+        saveBeforeLeaving(() => HTMLFormElement.prototype.submit.call(form));
     });
 }
 

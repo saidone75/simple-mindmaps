@@ -107,6 +107,8 @@ La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti,
 
 **Aggiorna gioco pubblicato** crea una nuova copia e un nuovo link, disattivando quello precedente. **Ritira pubblicazione** disabilita il link e impedisce ulteriori tentativi nelle partite già avviate.
 
+Ogni insegnante ha anche una **pagina pubblica dei giochi**, con il nome utente nell’indirizzo (per esempio `/play/teachers/alice`), raggiungibile dall’elenco delle mappe e dall’editor. Il suo indirizzo resta lo stesso quando aggiungi, aggiorni o ritiri un gioco. Mostra un pulsante grande per ogni mappa pubblicata: basta sceglierne uno per iniziare. Il link mostrato dopo la pubblicazione continua ad aprire il singolo gioco.
+
 ### Giocare
 
 Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare un indizio del nodo scelto a caso tra quelli compilati, oppure un incoraggiamento se non ce ne sono. Puoi scrivere fino a tre indizi per nodo nell’editor; nelle nuove mappe AI vengono generati automaticamente.
@@ -139,6 +141,7 @@ Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint d
 | `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione                                                    |
 | `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG                                                     |
 | `POST` | `/api/maps/{id}/export/pdf` | Esportazione PDF dall'SVG                                                     |
+| `GET`  | `/play/teachers/{teacherName}` | Pagina pubblica dei giochi dell’insegnante                                     |
 | `GET`  | `/play/{token}`             | Pagina pubblica del gioco                                                     |
 | `POST` | `/play/{token}/start`       | Avvio di una partita pubblica                                                 |
 | `POST` | `/play/{token}/attempt`     | Verifica di un abbinamento                                                    |
