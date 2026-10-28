@@ -19,6 +19,7 @@
 package org.saidone.mindmaps.dto;
 
 import lombok.Data;
+import java.util.List;
 
 @Data
 public class UpdateNodeRequest {
@@ -41,6 +42,7 @@ public class UpdateNodeRequest {
     private Integer branchWidth;
     private String branchCurve;
     private String imageUri;
+    private List<String> imageCandidates;
     private Integer imageWidth;
     private Integer imageHeight;
     private Integer nodeWidth;

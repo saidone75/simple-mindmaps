@@ -1368,6 +1368,59 @@ document.getElementById("apply-image-url-btn").addEventListener("click", () => {
     queueAutoSubmitSelectedNode();
 });
 
+const searchNodeImagesButton = document.getElementById('search-node-images-btn');
+searchNodeImagesButton.addEventListener('click', async () => {
+    const node = getNodeById(state.selectedNodeId);
+    if (!node || leavingEditor || state.isApplyingHistory || searchNodeImagesButton.disabled) return;
+    const status = document.getElementById('image-search-status');
+    searchNodeImagesButton.disabled = true;
+    searchNodeImagesButton.setAttribute('aria-busy', 'true');
+    searchNodeImagesButton.textContent = 'Cerco…';
+    status.hidden = false;
+    status.textContent = `Sto cercando immagini per "${node.text}"…`;
+    try {
+        await flushAutosave();
+        if (imageSavePromise) await imageSavePromise;
+        if (getNodeById(node.id) !== node) return;
+        const originalText = node.text;
+        const originalImage = node.imageUri;
+        const result = await globalThis.MindMapHttp.request(`/api/nodes/${node.id}/image-search`, { method: 'POST' }, {
+            serverMessages: true, httpErrorMessage: 'Non riesco a cercare immagini su Wikimedia. Riprova.'
+        });
+        if (leavingEditor || state.isApplyingHistory || getNodeById(node.id) !== node || node.text !== originalText || node.imageUri !== originalImage) {
+            status.textContent = 'Il nodo è cambiato durante la ricerca. Premi Cerca per riprovare.';
+            return;
+        }
+        const used = new Set(state.map.nodes.filter(other => other.id !== node.id).map(other => other.imageUri));
+        const images = [...new Set(result.images || [])].filter(uri => typeof uri === 'string' && !used.has(uri)).slice(0, 9);
+        if (!images.length) {
+            status.textContent = 'Non ho trovato nuove immagini adatte. Prova a rendere il testo del nodo più preciso.';
+            return;
+        }
+        pushUndoSnapshot();
+        node.imageCandidates = images;
+        node.imageUri = images[0];
+        node.emoji = '';
+        ensureNodeImageSize(node);
+        if (state.selectedNodeId === node.id) {
+            imageUrlInput.value = node.imageUri;
+            if (nodeEmojiInput) nodeEmojiInput.value = '';
+            updateImagePreview(node.imageUri);
+            renderImageCandidates(node);
+            updateImageEditorOverlay(node);
+        }
+        render();
+        await runAutosave(node);
+        status.textContent = `Ho trovato ${images.length} immagini per "${node.text}". Puoi scegliere tra le alternative qui sotto.`;
+    } catch (error) {
+        status.textContent = error.message || 'Ricerca non riuscita. Riprova.';
+    } finally {
+        searchNodeImagesButton.disabled = false;
+        searchNodeImagesButton.removeAttribute('aria-busy');
+        searchNodeImagesButton.textContent = 'Cerca';
+    }
+});
+
 document.getElementById("clear-image-btn").addEventListener("click", () => {
     imageUrlInput.value = "";
     pushUndoSnapshot();

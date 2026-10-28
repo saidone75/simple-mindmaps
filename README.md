@@ -8,7 +8,7 @@ Un'applicazione per creare mappe mentali e trasformarle in giochi divertenti.
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 
-Versione corrente: **0.3.0**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
+Versione corrente: **0.3.1**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 ## Funzionalità
 
@@ -16,6 +16,7 @@ Versione corrente: **0.3.0**. Le novità sono raccolte nel [changelog](CHANGELOG
 - Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. **Adatta alla griglia** allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
+- Nell’editor immagini, **Cerca** avvia una ricerca semantica su Wikimedia usando il testo del nodo e il titolo della mappa come contesto: applica il primo risultato e mostra fino a nove alternative.
 - Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa; quelle già usate da altri nodi non sono selezionabili.
 - Lo switch **Salva immagini**, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. I file scaricati possono pesare fino a 25 MB e vengono adattati entro 1024 × 1024 px senza ingrandirli; le GIF animate mantengono l’animazione. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
 - Duplicazione ed eliminazione delle mappe.
@@ -87,10 +88,10 @@ Per compilare e verificare il progetto con i test già presenti:
 mvn -B clean verify
 ```
 
-L'artefatto eseguibile è `target/mindmaps-0.3.0.jar`. Con credenziali e directory dei dati già configurate:
+L'artefatto eseguibile è `target/mindmaps-0.3.1.jar`. Con credenziali e directory dei dati già configurate:
 
 ```bash
-java -jar target/mindmaps-0.3.0.jar --spring.profiles.active=prod
+java -jar target/mindmaps-0.3.1.jar --spring.profiles.active=prod
 ```
 
 Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `./log/mindmaps.log`. I profili sono di Spring: non occorre un profilo Maven `-Pprod`.
