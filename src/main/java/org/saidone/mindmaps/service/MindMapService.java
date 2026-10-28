@@ -292,10 +292,29 @@ public class MindMapService {
         }
     }
 
+    public List<String> searchNodeImages(Long nodeId) {
+        val node = nodeRepository.findById(nodeId)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Nodo non trovato"));
+        val map = getMap(node.getMapId());
+        val excluded = new HashSet<String>();
+        for (val other : nodeRepository.findByMapIdOrderByIdAsc(node.getMapId())) {
+            if (!other.getId().equals(nodeId) && other.getImageUri() != null) excluded.add(other.getImageUri());
+        }
+        // Network requests and semantic ranking run without a SQLite write transaction.
+        return normalizeImageCandidates(wikimediaImageSearchService.searchImages(
+                new String[]{imageSearchSubject(node.getText()), imageSearchSubject(map.getTitle())}, "advanced", excluded));
+    }
+
+    private String imageSearchSubject(String text) {
+        // Bound progressive query count even when the node contains a long paragraph.
+        return String.join(" ", Arrays.stream(text.trim().split("\\s+")).limit(6).toList());
+    }
+
     private void applyNodeUpdate(Node node, UpdateNodeRequest request) {
         val imageUri = normalizeImageUri(request.getImageUri());
         if (imageUri != null && !imageUri.equals(node.getImageUri())
-                && node.getImageCandidates() != null && node.getImageCandidates().contains(imageUri)
+                && ((node.getImageCandidates() != null && node.getImageCandidates().contains(imageUri))
+                    || (request.getImageCandidates() != null && request.getImageCandidates().contains(imageUri)))
                 && nodeRepository.existsByMapIdAndIdNotAndImageUri(node.getMapId(), node.getId(), imageUri)) {
             throw new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
                     "Questa immagine è già usata da un altro nodo. Scegli un’altra alternativa.");
@@ -317,6 +336,7 @@ public class MindMapService {
         updateIfPresent(request.getBranchStyle(), node::setBranchStyle);
         updateIfPresent(request.getBranchWidth(), value -> node.setBranchWidth(normalizeBranchWidth(value)));
         updateIfPresent(request.getBranchCurve(), value -> node.setBranchCurve(normalizeBranchCurve(value)));
+        updateIfPresent(request.getImageCandidates(), value -> node.setImageCandidates(normalizeImageCandidates(value)));
         node.setImageUri(imageUri);
         node.setImageWidth(normalizeImageSize(request.getImageWidth()));
         node.setImageHeight(normalizeImageSize(request.getImageHeight()));

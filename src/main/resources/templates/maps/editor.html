@@ -173,10 +173,12 @@
                 <h2>Immagine nodo</h2>
                 <label for="node-image-url">Immagine (link o caricamento)</label>
                 <input id="node-image-url" type="url" placeholder="https://... oppure data:image/...">
-                <div class="inline-actions">
+                <div class="inline-actions image-link-actions">
                     <button type="button" id="apply-image-url-btn" class="secondary-btn small-btn">Usa link</button>
+                    <button type="button" id="search-node-images-btn" class="secondary-btn small-btn">Cerca</button>
                     <button type="button" id="clear-image-btn" class="secondary-btn small-btn">Rimuovi</button>
                 </div>
+                <p id="image-search-status" role="status" aria-live="polite" hidden></p>
                 <input id="node-image-upload" type="file" accept="image/*">
                 <p id="save-image-status" role="status" aria-live="polite"></p>
                 <div class="image-preview-box">
