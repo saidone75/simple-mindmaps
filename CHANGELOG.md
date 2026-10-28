@@ -9,6 +9,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Il gioco aggiorna solo l’immagine della casella completata, riusando nodi, collegamenti e listener e mantenendo il focus della tastiera; selezione e rimozione delle immagini usano indici dedicati.
 - Stili specifici dell’editor raccolti in `mindmap-editor.css`, dimensioni responsive del canvas semplificate e codice grafico sketch inattivo rimosso da CSS e JavaScript.
 - Trascinamento, ridimensionamento e pan dell’editor unificati tramite Pointer Events per mouse, penna e touch, con cattura del puntatore, gestione dei gesti interrotti e distinzione tra tocco e trascinamento.
 
@@ -19,6 +20,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Scorciatoie dell’editor rispettose del controllo selezionato e delle finestre di dialogo: Tab e Invio mantengono il comportamento dei controlli, Annulla/Ripristina nei campi di testo resta nativo del browser.
 - Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate. Dopo il salvataggio i form vengono inviati direttamente, evitando blocchi nell’aggiornamento e nel ritiro del gioco.
 
 ## [0.2.1] - 2026-10-27

@@ -131,7 +131,9 @@
     const endpoint = location.pathname.replace(/\/$/, '');
     let board, selected, busy = false, lastResult, finished = false;
     const matched = new Map();
-    let nodesById, nodeSizes, nodeDepths;
+    const cardButtons = new Map();
+    const targetElements = new Map();
+    let nodesById, nodeSizes, nodeDepths, imagesById, selectedButton;
     const levelCard = document.getElementById('game-level-card');
     const levelLabel = document.getElementById('game-level-label');
     const levelPrize = document.getElementById('game-level-prize');
@@ -202,11 +204,13 @@
         start.focus({ preventScroll: true });
     });
     function select(id) {
+        selectedButton?.setAttribute('aria-pressed', 'false');
         selected = id;
-        for (const button of tray.children) button.setAttribute('aria-pressed', String(button.dataset.id === id));
+        selectedButton = cardButtons.get(id);
+        selectedButton?.setAttribute('aria-pressed', 'true');
     }
     function celebrate(node, complete) {
-        const group = svg.querySelector(`[data-node-id="${node.id}"]`);
+        const group = targetElements.get(node.id)?.group;
         group?.classList.add('just-matched');
         setTimeout(() => group?.classList.remove('just-matched'), 1100);
         if (globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
@@ -231,6 +235,8 @@
     }
     function renderTray() {
         tray.replaceChildren();
+        cardButtons.clear();
+        selectedButton = null;
         board.images.forEach((card, index) => {
             const button = document.createElement('button');
             button.type = 'button'; button.className = 'game-image'; button.dataset.id = card.id;
@@ -241,6 +247,7 @@
             button.appendChild(img);
             button.onclick = () => select(card.id);
             button.ondragstart = event => { select(card.id); event.dataTransfer.setData('text/plain', card.id); };
+            cardButtons.set(card.id, button);
             tray.appendChild(button);
         });
     }
@@ -255,10 +262,19 @@
             lastResult = result;
             if (result.correct) {
                 sounds.play(result.level === 5 ? 'complete' : result.level > previousLevel ? 'level' : 'correct');
-                const card = board.images.find(c => c.id === cardId);
+                const card = imagesById.get(cardId);
+                const cardButton = cardButtons.get(cardId);
+                const restoreCardFocus = cardButton?.contains(document.activeElement);
                 matched.set(node.id, card.uri);
-                [...tray.children].find(b => b.dataset.id === cardId)?.remove();
-                select(null); renderMap();
+                select(null);
+                cardButton?.remove();
+                cardButtons.delete(cardId);
+                const target = targetElements.get(node.id);
+                renderImageSlot(target.imageSlot, node, card.uri);
+                target.group.classList.add('matched');
+                target.group.setAttribute('aria-label', `${node.text}, completata`);
+                target.group.setAttribute('aria-disabled', 'true');
+                if (restoreCardFocus && !result.complete) tray.querySelector('button')?.focus({ preventScroll: true });
                 celebrate(node, result.complete);
                 feedbackWrap.dataset.mood = 'success';
                 if (result.complete) {
@@ -280,10 +296,28 @@
         } catch (error) { feedbackWrap.dataset.mood = 'hint'; feedback.textContent = error.message; }
         finally { busy = false; }
     }
+    function renderImageSlot(slot, node, uri) {
+        const {width} = nodeSizes.get(node.id);
+        const box = getNodeImageBounds(node, width);
+        if (uri) {
+            const clipId = `game-image-${node.id}`;
+            const defs = make('defs');
+            const clip = make('clipPath', {id:clipId});
+            clip.appendChild(make('rect', {...box, rx:8, ry:8}));
+            defs.appendChild(clip);
+            slot.replaceChildren(defs, make('image', {...box, href:uri, preserveAspectRatio:'xMidYMid slice', 'clip-path':`url(#${clipId})`}));
+        } else {
+            slot.replaceChildren(
+                make('rect', {...box, rx:8, fill:'rgba(255,255,255,.5)', stroke:'#546170', 'stroke-dasharray':'6 4'}),
+                make('text', {x:box.x+box.width/2, y:box.y+box.height/2, 'text-anchor':'middle', 'font-size':24, fill:'#9783af'}, '✧')
+            );
+        }
+    }
     function renderMap() {
         const viewport = svg.closest('.game-board-scroll');
         if (viewport) viewport.style.backgroundColor = board.map.backgroundColor || '';
         svg.replaceChildren();
+        targetElements.clear();
         const nodes = board.map.nodes;
         const depths = nodeDepths;
         for (const node of nodes) {
@@ -307,19 +341,10 @@
             const radius = getNodeCornerRadius(node, depths.get(node.id) || 0);
             group.appendChild(make('rect', {x:node.x, y:node.y, width,height, rx:radius, fill:node.color || '#D9D2E9', stroke:'#546170', 'stroke-width':1.5}));
             if (imageNode) {
-                const box = getNodeImageBounds(node, width);
-                if (matched.has(node.id)) {
-                    const clipId = `game-image-${node.id}`;
-                    const defs = make('defs');
-                    const clip = make('clipPath', {id:clipId});
-                    clip.appendChild(make('rect', {...box,rx:8,ry:8}));
-                    defs.appendChild(clip); group.appendChild(defs);
-                    group.appendChild(make('image', {...box, href:matched.get(node.id), preserveAspectRatio:'xMidYMid slice', 'clip-path':`url(#${clipId})`}));
-                }
-                else {
-                    group.appendChild(make('rect', {...box, rx:8, fill:'rgba(255,255,255,.5)', stroke:'#546170', 'stroke-dasharray':'6 4'}));
-                    group.appendChild(make('text', {x:box.x+box.width/2, y:box.y+box.height/2, 'text-anchor':'middle', 'font-size':24, fill:'#9783af'}, '✧'));
-                }
+                const imageSlot = make('g');
+                renderImageSlot(imageSlot, node, matched.get(node.id));
+                group.appendChild(imageSlot);
+                targetElements.set(node.id, {group, imageSlot});
                 group.setAttribute('tabindex', '0'); group.setAttribute('role','button');
                 group.setAttribute('aria-label', `${node.text}${matched.has(node.id) ? ', completata' : ', inserisci immagine'}`);
                 group.onclick = () => attempt(node);
@@ -417,6 +442,7 @@
             const next = await request('start');
             board = next; selected = null; matched.clear(); finished = false; lastResult = null;
             nodesById = new Map(board.map.nodes.map(node => [node.id, node]));
+            imagesById = new Map(board.images.map(card => [card.id, card]));
             nodeSizes = new Map(board.map.nodes.map(node => [node.id, getNodeSize(node)]));
             nodeDepths = buildDepthMap(board.map.nodes, nodesById);
             const sizes = board.map.nodes.map(n => ({x:n.x,y:n.y,...nodeSizes.get(n.id)}));

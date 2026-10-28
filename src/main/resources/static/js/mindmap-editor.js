@@ -2435,14 +2435,15 @@ function slugify(value) {
         .replace(/(^-|-$)/g, "") || "mappa";
 }
 
-function isTypingTarget(target) {
-    if (!target) return false;
-    const tag = target.tagName?.toLowerCase();
-    return tag === "input" || tag === "textarea" || target.isContentEditable;
+function isInteractiveTarget(target) {
+    return !!target?.closest?.('input, textarea, select, button, a, summary, [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])');
 }
 
 document.addEventListener("keydown", async event => {
-    if (leavingEditor) return;
+    // Text fields keep native undo/redo; controls keep their normal keyboard behavior.
+    if (leavingEditor || event.defaultPrevented || event.isComposing || event.altKey
+        || appDialog?.open || isInteractiveTarget(event.target)
+        || state.isApplyingHistory || state.drag || state.resize || state.pan) return;
     const isUndoShortcut = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z";
     const isRedoShortcut = ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y")
         || ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "z");
@@ -2461,12 +2462,11 @@ document.addEventListener("keydown", async event => {
         return;
     }
 
-    if (isTypingTarget(event.target)) return;
     if (!state.selectedNodeId) return;
     const node = getNodeById(state.selectedNodeId);
     if (!node) return;
 
-    if (event.key === "Tab" && !event.shiftKey) {
+    if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
         await addChildNode(node.id).catch(reportEditorError);
         return;
