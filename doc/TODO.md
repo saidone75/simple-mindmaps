@@ -21,7 +21,3 @@ Revisione statica ricontrollata sul codice attuale. I punti 13, 15 e 17 descrivo
 ### CSS — consolidamento e ottimizzazione
 
 30. [ ] Pulizia facoltativa: estrarre variabili CSS per colori effettivamente condivisi fra pannelli, bordi e controlli dell’editor. Non accorpare automaticamente colori simili che rappresentano stati diversi: è una miglioria di manutenzione, non un problema prestazionale dimostrato (`mindmap-editor.css`).
-
-## Nuove funzionalità e manutenzione
-
-37. [ ] Nella pagina pubblica di selezione dei giochi, sostituire l’icona `teacher-game-icon` con l’immagine del nodo principale della relativa mappa pubblicata, mantenendo un’icona di riserva se manca l’immagine.

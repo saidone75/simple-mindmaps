@@ -86,14 +86,21 @@ public class MapGameService {
         return map.getOwner() == null ? null : teacherPage(map.getOwner().getId());
     }
 
-    public record PublishedGame(String token, String title) {}
+    public record PublishedGame(String token, String title, String imageUri) {}
 
     public List<PublishedGame> teacherGames(Long teacherId) {
         teacherPage(teacherId);
         return repository.findByOwnerIdAndPublicTokenIsNotNullAndPublishedSnapshotIsNotNullOrderByUpdatedAtDesc(teacherId)
                 .stream()
-                .map(map -> new PublishedGame(map.getPublicToken(),
-                        gson.fromJson(map.getPublishedSnapshot(), MindMapDto.class).getTitle()))
+                .map(map -> {
+                    val snapshot = gson.fromJson(map.getPublishedSnapshot(), MindMapDto.class);
+                    val image = snapshot.getNodes() == null ? null : snapshot.getNodes().stream()
+                            .filter(Objects::nonNull)
+                            .filter(node -> node.getParentId() == null)
+                            .findFirst().filter(MapGameService::hasImage)
+                            .map(node -> node.getImageUri().trim()).orElse(null);
+                    return new PublishedGame(map.getPublicToken(), snapshot.getTitle(), image);
+                })
                 .toList();
     }
 
