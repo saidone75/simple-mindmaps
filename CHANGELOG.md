@@ -9,6 +9,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Riordino iniziale e manuale più compatto: ogni nodo viene collocato nel punto libero più vicino lungo il proprio ramo, usando le dimensioni effettive e un margine di separazione, senza espandere uniformemente tutta la mappa. La disposizione salvata viene mantenuta nel gioco pubblicato.
 - Card dei modelli pronti spostata sotto «Le mie mappe», pulsante della pagina pubblica dei giochi distanziato dal testo introduttivo e pubblicazione del gioco richiudibile, chiusa per impostazione predefinita e aperta dopo la pubblicazione o l’aggiornamento, anche in caso di errore.
 - Toolbar dell’editor riordinata con lo switch «Salva immagini» a destra, dopo la griglia.
 - Limite di download delle immagini esterne aumentato a 25 MB prima della normalizzazione.
@@ -29,6 +30,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Immagini statiche Wikimedia oltre 40 megapixel ridotte tramite sottocampionamento prima del controllo sul raster decodificato, evitando il rifiuto degli originali ad alta risoluzione e mantenendo il limite finale di 1024 px.
+- Normalizzazione degli SVG Wikimedia con dichiarazione DOCTYPE standard, senza caricare DTD esterni né consentire definizioni XML interne; aggiunto il motivo tecnico nei log quando la preparazione di un’immagine fallisce.
 - Anteprime dei giochi pubblici con spazio fisso riservato e immagini contenute entro 96 × 96 px, per evitare sovrapposizioni con il titolo anche durante il caricamento.
 - Ricerca Wikimedia meno restrittiva: parole senza virgolette per includere varianti grammaticali, soggetti AI più brevi e ampliamento progressivo delle espressioni troppo lunghe. Foto e illustrazioni precedono copertine, frontespizi e anteprime DjVu in entrambe le modalità; nella ricerca semantica i documenti non interrompono prematuramente la raccolta delle immagini.
 - Riferimenti ai genitori dei nodi AI rimappati dopo gli scarti; i figli dei nodi scartati vengono collegati al primo antenato valido, mentre radici mancanti e riferimenti incoerenti fanno ripetere la generazione.

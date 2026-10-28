@@ -19,6 +19,7 @@
 package org.saidone.mindmaps.service;
 
 import lombok.val;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.batik.bridge.*;
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
@@ -44,6 +45,7 @@ import java.io.ByteArrayOutputStream;
 import static org.springframework.http.HttpStatus.BAD_REQUEST;
 
 @Component
+@Slf4j
 public class MapImageNormalizer {
     private static final int MAX_SIZE = 1024;
     private static final long MAX_PIXELS = 40_000_000;
@@ -60,12 +62,18 @@ public class MapImageNormalizer {
                     if (source.mediaType().equals("image/gif") && reader.getNumImages(true) > 1) return resizeAnimation(reader);
                     val width = reader.getWidth(0);
                     val height = reader.getHeight(0);
-                    checkPixels(width, height);
+                    if (width <= 0 || height <= 0) throw new IllegalArgumentException("Invalid image dimensions");
                     val scale = Math.min(1.0, (double) MAX_SIZE / Math.max(width, height));
                     val parameters = reader.getDefaultReadParam();
+                    // Validate the raster that will actually be decoded. Large Wikimedia
+                    // originals can be reduced directly by the reader without allocating
+                    // their full-resolution bitmap (especially JPEG with native subsampling).
                     val sampling = Math.max(1, Math.max(width, height) / MAX_SIZE);
+                    checkPixels((int) Math.ceil((double) width / sampling),
+                            (int) Math.ceil((double) height / sampling));
                     parameters.setSourceSubsampling(sampling, sampling, 0, 0);
                     val decoded = reader.read(0, parameters);
+                    checkPixels(decoded.getWidth(), decoded.getHeight());
                     val image = resize(decoded, Math.max(1, (int) Math.round(width * scale)),
                             Math.max(1, (int) Math.round(height * scale)), false);
                     return encode(image);
@@ -74,7 +82,8 @@ public class MapImageNormalizer {
                 }
             }
         } catch (Exception ex) {
-            throw new ResponseStatusException(BAD_REQUEST, "Non riesco a preparare questa immagine. Prova un’altra immagine.");
+            log.warn("Non riesco a normalizzare l’immagine (formato {}): {}", source.mediaType(), ex.toString());
+            throw new ResponseStatusException(BAD_REQUEST, "Non riesco a preparare questa immagine. Prova un’altra immagine.", ex);
         }
     }
 
@@ -130,12 +139,22 @@ public class MapImageNormalizer {
     private byte[] rasterizeSvg(byte[] source) throws Exception {
         val factory = DocumentBuilderFactory.newInstance();
         factory.setNamespaceAware(true);
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        // Commons SVGs may declare the standard SVG DTD. Accept the declaration
+        // without loading its contents or allowing custom entity definitions.
+        factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
+        factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+        factory.setExpandEntityReferences(false);
+        factory.setXIncludeAware(false);
         factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
         factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_DTD, "");
         factory.setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "");
         val document = factory.newDocumentBuilder().parse(new ByteArrayInputStream(source));
+        val doctype = document.getDoctype();
+        if (doctype != null && doctype.getInternalSubset() != null && !doctype.getInternalSubset().isBlank()) {
+            throw new IllegalArgumentException("Le definizioni XML interne non sono supportate nelle immagini SVG.");
+        }
+        if (doctype != null) document.removeChild(doctype);
         val transcoder = new PNGTranscoder() {
             @Override
             protected UserAgent createUserAgent() {

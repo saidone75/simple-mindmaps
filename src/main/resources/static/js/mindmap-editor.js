@@ -2232,52 +2232,56 @@ function applyOrganicLayout() {
     // Extra roots occupy their own sectors alongside the main root's branches.
     const branches = [...(childrenMap.get(root.id) || []), ...roots.slice(1)];
     const placements = [{ node: root, depth: 0, angle: 0 }];
-    const ringSizes = [diameter(root)];
-    const ringRadii = [0];
     const placeBranches = (children, startAngle, span, depth) => {
         const totalWeight = children.reduce((sum, child) => sum + weights.get(child.id), 0);
         let cursor = startAngle;
         for (const child of children) {
             const childSpan = span * weights.get(child.id) / totalWeight;
             placements.push({ node: child, depth, angle: cursor + childSpan / 2 });
-            ringSizes[depth] = Math.max(ringSizes[depth] || 0, diameter(child));
-            // Reserve enough arc length even for large images and dense subtrees.
-            ringRadii[depth] = Math.max(ringRadii[depth] || 0, diameter(child) / Math.min(childSpan, Math.PI));
             placeBranches(childrenMap.get(child.id) || [], cursor, childSpan, depth + 1);
             cursor += childSpan;
         }
     };
     placeBranches(branches, -Math.PI / 2, Math.PI * 2, 1);
-    for (let depth = 1; depth < ringSizes.length; depth += 1) {
-        ringRadii[depth] = Math.max(ringRadii[depth],
-            ringRadii[depth - 1] + (ringSizes[depth - 1] + ringSizes[depth]) / 2);
-    }
 
-    // Expand radially to resolve collisions without moving the center or turning
-    // outer nodes back towards their parents. Angles and level order stay fixed.
-    let expansion = 1;
-    for (let iteration = 0; iteration < 2; iteration += 1) {
-        for (const { node, depth, angle } of placements) {
-            const size = sizes.get(node.id);
-            const radius = ringRadii[depth] * expansion;
-            node.x = MAP_CENTER_X + Math.cos(angle) * radius - size.width / 2;
-            node.y = MAP_CENTER_Y + Math.sin(angle) * radius - size.height / 2;
+    // Pack each node at the nearest free point on its branch's ray. Place parents
+    // first; only the affected node moves outwards when a rectangle blocks it.
+    const placed = [];
+    const radii = new Map();
+    const axisInterval = (direction, offset, clearance) => {
+        if (Math.abs(direction) < 1e-10) {
+            return Math.abs(offset) < clearance ? [-Infinity, Infinity] : null;
         }
-        let requiredExpansion = 1;
-        for (let i = 0; i < placements.length; i += 1) {
-            for (let j = i + 1; j < placements.length; j += 1) {
-                const first = placements[i].node;
-                const second = placements[j].node;
-                const firstSize = sizes.get(first.id);
-                const secondSize = sizes.get(second.id);
-                const dx = Math.abs(first.x + firstSize.width / 2 - second.x - secondSize.width / 2);
-                const dy = Math.abs(first.y + firstSize.height / 2 - second.y - secondSize.height / 2);
-                const scaleX = ((firstSize.width + secondSize.width) / 2 + padding) / Math.max(dx, 0.001);
-                const scaleY = ((firstSize.height + secondSize.height) / 2 + padding) / Math.max(dy, 0.001);
-                requiredExpansion = Math.max(requiredExpansion, Math.min(scaleX, scaleY));
-            }
+        const first = (offset - clearance) / direction;
+        const last = (offset + clearance) / direction;
+        return [Math.min(first, last), Math.max(first, last)];
+    };
+    for (const { node, depth, angle } of placements.sort((a, b) => a.depth - b.depth)) {
+        const size = sizes.get(node.id);
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        let radius = depth === 0 ? 0 : (radii.get(node.parentId) || 0) + padding;
+        const blocked = [];
+        for (const other of placed) {
+            const x = axisInterval(dx, other.x - MAP_CENTER_X, (size.width + other.width) / 2 + padding);
+            const y = axisInterval(dy, other.y - MAP_CENTER_Y, (size.height + other.height) / 2 + padding);
+            if (!x || !y) continue;
+            const start = Math.max(x[0], y[0]);
+            const end = Math.min(x[1], y[1]);
+            if (start < end && end >= radius) blocked.push([start, end]);
         }
-        expansion *= requiredExpansion;
+        blocked.sort((a, b) => a[0] - b[0]);
+        for (const [start, end] of blocked) {
+            if (start > radius) break;
+            if (end >= radius) radius = end + 1;
+        }
+        const x = MAP_CENTER_X + dx * radius;
+        const y = MAP_CENTER_Y + dy * radius;
+        node.x = Math.round(x - size.width / 2);
+        node.y = Math.round(y - size.height / 2);
+        radii.set(node.id, radius);
+        // Use the rounded, persisted positions for the next collision checks too.
+        placed.push({ x: node.x + size.width / 2, y: node.y + size.height / 2, ...size });
     }
     return root;
 }
