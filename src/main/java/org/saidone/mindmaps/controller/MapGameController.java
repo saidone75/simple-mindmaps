@@ -40,9 +40,14 @@ public class MapGameController {
     private static final String RUN = MapGameController.class.getName();
 
     @GetMapping
-    public String page(@PathVariable String token, Model model, HttpServletResponse response) {
+    public String page(@PathVariable String token,
+                       @RequestParam(name = "start", defaultValue = "false") boolean autoStart,
+                       Model model, HttpServletResponse response) {
+        response.setHeader("Cache-Control", "no-store");
+        model.addAttribute("autoStart", autoStart);
         try {
             model.addAttribute("title", games.published(token).getTitle());
+            model.addAttribute("teacherPage", games.teacherPageForGame(token));
         } catch (ResponseStatusException ex) {
             response.setStatus(ex.getStatusCode().value());
             model.addAttribute("title", "Gioco non disponibile");

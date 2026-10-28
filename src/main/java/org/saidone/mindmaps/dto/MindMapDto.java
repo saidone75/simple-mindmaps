@@ -40,5 +40,6 @@ public class MindMapDto implements Serializable {
     private String stylePreset;
 
     private String backgroundColor;
+    private Boolean storeImagesLocally;
     private List<NodeDto> nodes;
 }

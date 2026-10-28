@@ -22,6 +22,7 @@ import lombok.Data;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.List;
 
 @Data
 public class NodeDto implements Serializable {
@@ -46,7 +47,10 @@ public class NodeDto implements Serializable {
     private String shape;
     private String branchColor;
     private String branchStyle;
+    private Integer branchWidth;
+    private String branchCurve;
     private String imageUri;
+    private List<String> imageCandidates;
     private Integer imageWidth;
     private Integer imageHeight;
     private Integer nodeWidth;

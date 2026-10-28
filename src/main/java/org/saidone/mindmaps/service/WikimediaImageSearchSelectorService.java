@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
 import java.util.Set;
+import java.util.List;
 import java.util.concurrent.Semaphore;
 
 @Service
@@ -43,12 +44,18 @@ public class WikimediaImageSearchSelectorService implements WikimediaImageSearch
 
     @Override
     public String searchImage(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
+        val images = searchImages(keywords, preferredMode, excludedImageUrls);
+        return images.isEmpty() ? null : images.getFirst();
+    }
+
+    @Override
+    public List<String> searchImages(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
         try {
             searchSemaphore.acquire();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("La ricerca su Wikimedia è stata interrotta mentre attendeva di poter iniziare: {}", e.getMessage());
-            return null;
+            return List.of();
         }
 
         try {
@@ -56,9 +63,9 @@ public class WikimediaImageSearchSelectorService implements WikimediaImageSearch
             log.debug("Cerco immagini su Wikimedia con la ricerca {}. Escludo {} immagini già usate nella mappa.",
                     MODE_ADVANCED.equals(mode) ? "basata sul significato dei testi" : "semplice", excludedImageUrls.size());
             if (MODE_SIMPLE.equals(mode)) {
-                return simpleImageFinderService.searchImage(keywords, mode, excludedImageUrls);
+                return simpleImageFinderService.searchImages(keywords, mode, excludedImageUrls);
             }
-            return advancedImageFinderService.searchImage(keywords, mode, excludedImageUrls);
+            return advancedImageFinderService.searchImages(keywords, mode, excludedImageUrls);
         } finally {
             searchSemaphore.release();
         }

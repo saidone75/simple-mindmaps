@@ -25,7 +25,9 @@ import lombok.val;
 import org.saidone.mindmaps.dto.MindMapDto;
 import org.saidone.mindmaps.dto.NodeDto;
 import org.saidone.mindmaps.model.MindMap;
+import org.saidone.mindmaps.model.AppUser;
 import org.saidone.mindmaps.repository.MindMapRepository;
+import org.saidone.mindmaps.repository.AppUserRepository;
 import org.saidone.mindmaps.security.CurrentUserService;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -48,6 +50,7 @@ public class MapGameService {
     private final MindMapRepository repository;
     private final MindMapService maps;
     private final CurrentUserService users;
+    private final AppUserRepository accounts;
     private final Gson gson = new Gson();
 
     private MindMap owned(Long id) {
@@ -57,6 +60,50 @@ public class MapGameService {
 
     public String publicToken(Long id) { return owned(id).getPublicToken(); }
 
+    public record TeacherPage(Long id, String username) {}
+
+    private TeacherPage publicTeacherPage(AppUser teacher) {
+        return new TeacherPage(teacher.getId(), teacher.getUsername());
+    }
+
+    public TeacherPage currentTeacherPage() { return publicTeacherPage(users.getCurrentUser()); }
+
+    public TeacherPage teacherPage(Long id) {
+        val teacher = accounts.findById(id).filter(account -> account.isEnabled())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Pagina dei giochi non disponibile"));
+        return publicTeacherPage(teacher);
+    }
+
+    public TeacherPage teacherPage(String username) {
+        val teacher = accounts.findByUsernameIgnoreCase(username).filter(account -> account.isEnabled())
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Pagina dei giochi non disponibile"));
+        return publicTeacherPage(teacher);
+    }
+
+    public TeacherPage teacherPageForGame(String token) {
+        val map = repository.findByPublicToken(token)
+                .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Gioco non disponibile"));
+        return map.getOwner() == null ? null : teacherPage(map.getOwner().getId());
+    }
+
+    public record PublishedGame(String token, String title, String imageUri) {}
+
+    public List<PublishedGame> teacherGames(Long teacherId) {
+        teacherPage(teacherId);
+        return repository.findByOwnerIdAndPublicTokenIsNotNullAndPublishedSnapshotIsNotNullOrderByUpdatedAtDesc(teacherId)
+                .stream()
+                .map(map -> {
+                    val snapshot = gson.fromJson(map.getPublishedSnapshot(), MindMapDto.class);
+                    val image = snapshot.getNodes() == null ? null : snapshot.getNodes().stream()
+                            .filter(Objects::nonNull)
+                            .filter(node -> node.getParentId() == null)
+                            .findFirst().filter(MapGameService::hasImage)
+                            .map(node -> node.getImageUri().trim()).orElse(null);
+                    return new PublishedGame(map.getPublicToken(), snapshot.getTitle(), image);
+                })
+                .toList();
+    }
+
     @Transactional
     public void publish(Long id) {
         val map = owned(id);
@@ -64,6 +111,7 @@ public class MapGameService {
         if (snapshot.getNodes().stream().noneMatch(MapGameService::hasImage)) {
             throw new IllegalArgumentException("Aggiungi almeno un'immagine alla mappa prima di pubblicare il gioco.");
         }
+        snapshot.getNodes().forEach(node -> node.setImageCandidates(null));
         map.setPublishedSnapshot(gson.toJson(snapshot));
         map.setPublicToken(UUID.randomUUID().toString());
         repository.save(map);
@@ -126,6 +174,7 @@ public class MapGameService {
                 node.setHint(null);
                 node.setHint2(null);
                 node.setHint3(null);
+                node.setImageCandidates(null);
                 if (!hasImage(node)) continue;
                 val cardId = UUID.randomUUID().toString();
                 originalImages.put(node.getId(), node.getImageUri());

@@ -16,8 +16,10 @@ Versione corrente: **0.2.1**. Le novità sono raccolte nel [changelog](CHANGELOG
 - Editor SVG con trascinamento dei nodi, disposizione automatica, zoom e salvataggio automatico.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
+- Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa; quelle già usate da altri nodi non sono selezionabili.
+- Lo switch **Salva immagini nella mappa**, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. Le immagini vengono adattate entro 1024 × 1024 px senza ingrandirle; le GIF restano animate. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
 - Duplicazione ed eliminazione delle mappe.
-- Esportazione in PNG e PDF, con formati A4 e A3 per il PDF.
+- Esportazione in PNG e PDF, con formati A4 e A3 per il PDF; importazione ed esportazione delle mappe in JSON.
 - Accesso con account e mappe private per ciascun proprietario.
 - Pubblicazione di giochi delle immagini tramite link pubblico revocabile.
 - Interfacce adattate a computer, tablet e dispositivi mobili.
@@ -107,6 +109,8 @@ La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti,
 
 **Aggiorna gioco pubblicato** crea una nuova copia e un nuovo link, disattivando quello precedente. **Ritira pubblicazione** disabilita il link e impedisce ulteriori tentativi nelle partite già avviate.
 
+Ogni insegnante ha anche una **pagina pubblica dei giochi**, con il nome utente nell’indirizzo (per esempio `/play/teachers/alice`), raggiungibile dall’elenco delle mappe e dall’editor. Il suo indirizzo resta lo stesso quando aggiungi, aggiorni o ritiri un gioco. Mostra un pulsante grande per ogni mappa pubblicata, con l’immagine del nodo principale o un’icona di riserva: basta sceglierne uno per iniziare. Il link mostrato dopo la pubblicazione continua ad aprire il singolo gioco.
+
 ### Giocare
 
 Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare un indizio del nodo scelto a caso tra quelli compilati, oppure un incoraggiamento se non ce ne sono. Puoi scrivere fino a tre indizi per nodo nell’editor; nelle nuove mappe AI vengono generati automaticamente.
@@ -117,11 +121,15 @@ Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personal
 
 ## Persistenza ed esportazione
 
-Il database SQLite è salvato in **`./data/mindmaps.db`**, rispetto alla directory da cui viene avviata l'applicazione. Non è richiesto un server database esterno. Conserva la directory `data` tra gli avvii: contiene utenti, mappe e copie pubblicate.
+Il database SQLite è salvato in **`./data/mindmaps.db`**, rispetto alla directory da cui viene avviata l'applicazione. Non è richiesto un server database esterno. Conserva le directory `data` e `upload` tra gli avvii e includile entrambe nei backup: contengono database e immagini salvate. La cartella delle immagini è configurabile con `app.upload.directory` (o `APP_UPLOAD_DIRECTORY`).
+
+Il job di pulizia delle immagini orfane viene eseguito ogni notte alle 03:00: considera mappe, alternative e copie pubblicate, ed elimina i file solo dopo il commit della rimozione dei metadati. Un’immagine deve risultare orfana da almeno sette giorni prima di essere eliminata. Il job rimuove anche i file senza metadati più vecchi del periodo di conservazione. Configurazione: `app.image-cleanup.enabled`, `app.image-cleanup.cron` e `app.image-cleanup.retention-days`.
 
 Le password degli utenti sono memorizzate come hash BCrypt. Le mappe private sono accessibili solo al proprietario; i link pubblici consentono di giocare senza accedere all'editor.
 
-Per esportare una mappa, il browser invia l'SVG corrente al backend, che produce il file PNG o PDF scaricabile. Il PDF supporta A4 e A3.
+Per trasferire o conservare una mappa modificabile, usa **Esporta** in fondo alla toolbar dell’editor: scarica un file JSON con struttura, aspetto, indizi, titoli premio e immagini salvate sul server. I link alle immagini esterne restano link. Da **Modelli pronti → Importa mappa**, seleziona il file per creare una nuova mappa privata e aprirla nell’editor, senza modificare le mappe esistenti. Sono supportati file fino a 100 MB con un massimo di 1000 nodi; le immagini incorporate vengono salvate e normalizzate sul server, mantenendo le GIF animate. La pubblicazione del gioco va eseguita nuovamente dalla mappa importata.
+
+Per esportare un’immagine della mappa, il browser invia l'SVG corrente al backend, che produce il file PNG o PDF scaricabile. Il PDF supporta A4 e A3.
 
 ## Endpoint principali
 
@@ -137,8 +145,11 @@ Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint d
 | `GET`  | `/api/map-generations/{id}` | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
 | `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco                                                       |
 | `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione                                                    |
+| `GET` | `/api/maps/{id}/export/json` | File JSON della mappa con immagini locali incorporate |
+| `POST` | `/api/maps/import` | Importazione di un file JSON in una nuova mappa privata |
 | `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG                                                     |
 | `POST` | `/api/maps/{id}/export/pdf` | Esportazione PDF dall'SVG                                                     |
+| `GET`  | `/play/teachers/{teacherName}` | Pagina pubblica dei giochi dell’insegnante                                     |
 | `GET`  | `/play/{token}`             | Pagina pubblica del gioco                                                     |
 | `POST` | `/play/{token}/start`       | Avvio di una partita pubblica                                                 |
 | `POST` | `/play/{token}/attempt`     | Verifica di un abbinamento                                                    |

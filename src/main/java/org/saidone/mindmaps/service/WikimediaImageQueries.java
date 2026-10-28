@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 
 /** Keeps the primary subject mandatory while progressively relaxing extra details. */
 final class WikimediaImageQueries {
@@ -45,7 +46,7 @@ final class WikimediaImageQueries {
         val seen = new LinkedHashSet<String>();
         val contextual = new ArrayList<String>();
         for (val detail : cleaned.subList(1, cleaned.size())) {
-            val query = String.format("filemime:image %s %s", subject, words(detail));
+            val query = String.format("filemime:image -filemime:djvu -filemime:pdf %s %s", subject, words(detail));
             if (seen.add(query)) {
                 contextual.add(query);
             }
@@ -53,23 +54,27 @@ final class WikimediaImageQueries {
         if (!contextual.isEmpty()) {
             batches.add(List.copyOf(contextual));
         }
-        val relaxed = String.format("filemime:image %s", subject);
-        if (seen.add(relaxed)) {
-            batches.add(List.of(relaxed));
+        // Drop trailing qualifiers in older, overly long subjects, retaining at least
+        // two words so the fallback does not collapse to a generic civilization name.
+        val subjectWords = subject.split("\\s+");
+        for (int count = subjectWords.length; count >= Math.min(2, subjectWords.length); count--) {
+            val relaxed = "filemime:image -filemime:djvu -filemime:pdf " + String.join(" ", Arrays.copyOf(subjectWords, count));
+            if (seen.add(relaxed)) batches.add(List.of(relaxed));
         }
+        // Documents are considered only after the searches for ordinary images.
+        batches.add(List.of("filemime:image " + subject));
         return List.copyOf(batches);
     }
 
     private static String clean(String term) {
         // Treat generated keywords as literal words, never as search operators.
-        return term.replaceAll("[^\\p{L}\\p{N}\\s]", " ").strip().replaceAll("\\s+", " ");
+        return term.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}\\s]", " ").strip().replaceAll("\\s+", " ");
     }
 
     private static String words(String term) {
-        // Require every word without requiring an exact phrase or interpreting search operators.
+        // Leave words unquoted so Commons can also match grammatical variants.
         return String.join(" ", Arrays.stream(term.split("\\s+"))
                 .distinct()
-                .map(word -> String.format("\"%s\"", word))
                 .toList());
     }
 }

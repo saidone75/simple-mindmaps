@@ -7,9 +7,39 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Changed
+
+- Riordino iniziale e manuale più compatto: ogni nodo viene collocato nel punto libero più vicino lungo il proprio ramo, usando le dimensioni effettive e un margine di separazione, senza espandere uniformemente tutta la mappa. La disposizione salvata viene mantenuta nel gioco pubblicato.
+- Card dei modelli pronti spostata sotto «Le mie mappe», pulsante della pagina pubblica dei giochi distanziato dal testo introduttivo e pubblicazione del gioco richiudibile, chiusa per impostazione predefinita e aperta dopo la pubblicazione o l’aggiornamento, anche in caso di errore.
+- Toolbar dell’editor riordinata con lo switch «Salva immagini» a destra, dopo la griglia.
+- Limite di download delle immagini esterne aumentato a 25 MB prima della normalizzazione.
+- JavaScript organizzato in componenti dedicati per dialoghi, richieste HTTP e cronologia Annulla/Ripristina, con riuso fra editor ed elenco mappe e rimozione del controllo di rendering duplicato nell’esportazione SVG.
+- Il gioco aggiorna solo l’immagine della casella completata, riusando nodi, collegamenti e listener e mantenendo il focus della tastiera; selezione e rimozione delle immagini usano indici dedicati.
+- Stili specifici dell’editor raccolti in `mindmap-editor.css`, colori condivisi di pannelli e controlli estratti in variabili, regole duplicate e override responsive superflui rimossi. Dimensioni responsive del canvas semplificate e codice grafico sketch inattivo rimosso da CSS e JavaScript.
+- Trascinamento, ridimensionamento e pan dell’editor unificati tramite Pointer Events per mouse, penna e touch, con cattura del puntatore, gestione dei gesti interrotti e distinzione tra tocco e trascinamento.
+
+### Added
+
+- Pulsante «Adatta alla griglia» nella toolbar: allinea tutti i nodi alla posizione più vicina e arrotonda larghezza e altezza a multipli della griglia, rispettando lo spazio minimo del contenuto; salvataggio automatico e supporto Annulla/Ripristina.
+- Importazione ed esportazione delle mappe in JSON, con nodi, collegamenti, stile, indizi, titoli premio e immagini locali incorporate nel file. L’importazione crea una nuova mappa privata con nuovi riferimenti alle immagini; controllo del formato e dei collegamenti, limite di 100 MB per file e 1000 nodi. Comando «Importa mappa» al primo posto a sinistra nella griglia dei modelli pronti, con le stesse dimensioni e un colore distinto, ed «Esporta» in fondo alla toolbar dell’editor, dopo lo switch delle immagini.
+- Job notturno configurabile per le immagini orfane, con controllo dei riferimenti in mappe, alternative e copie pubblicate, sette giorni di conservazione dall’individuazione e cancellazione dei file dopo il commit del database.
+
+- Switch nella toolbar dell’editor, attivo per impostazione predefinita e salvato per mappa, per scaricare e conservare le immagini esterne nella cartella del server, con metadati e riferimenti nel database. Normalizzazione entro 1024 × 1024 px senza ingrandimento, JPEG per immagini opache, PNG per trasparenze e conversione SVG; le GIF animate mantengono fotogrammi, tempi e ripetizione. Elaborazione in background, compatibilità con giochi, copie ed esportazioni e nuova tabella `map_image` per i metadati; cartella configurabile tramite `app.upload.directory`.
+- Fino a nove URL Wikimedia candidati salvati per nodo nelle nuove mappe AI, con anteprime e scelta nell’editor. Supporto alle ricerche semplice e semantica, mantenimento nelle copie e in Annulla/Ripristina, controllo delle immagini già usate da altri nodi. Aggiunta della colonna `image_candidates` alla tabella dei nodi.
+- Pagina pubblica univoca per insegnante con pulsanti illustrati dall’immagine del nodo principale della copia pubblicata, con icona di riserva se assente o non disponibile, per avviare i giochi; dalla festa finale si può rigiocare o tornare alla selezione. Il link di pubblicazione continua ad aprire il singolo gioco.
+
 ### Fixed
 
-- Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate.
+- Immagini statiche Wikimedia oltre 40 megapixel ridotte tramite sottocampionamento prima del controllo sul raster decodificato, evitando il rifiuto degli originali ad alta risoluzione e mantenendo il limite finale di 1024 px.
+- Normalizzazione degli SVG Wikimedia con dichiarazione DOCTYPE standard, senza caricare DTD esterni né consentire definizioni XML interne; aggiunto il motivo tecnico nei log quando la preparazione di un’immagine fallisce.
+- Anteprime dei giochi pubblici con spazio fisso riservato e immagini contenute entro 96 × 96 px, per evitare sovrapposizioni con il titolo anche durante il caricamento.
+- Ricerca Wikimedia meno restrittiva: parole senza virgolette per includere varianti grammaticali, soggetti AI più brevi e ampliamento progressivo delle espressioni troppo lunghe. Foto e illustrazioni precedono copertine, frontespizi e anteprime DjVu in entrambe le modalità; nella ricerca semantica i documenti non interrompono prematuramente la raccolta delle immagini.
+- Riferimenti ai genitori dei nodi AI rimappati dopo gli scarti; i figli dei nodi scartati vengono collegati al primo antenato valido, mentre radici mancanti e riferimenti incoerenti fanno ripetere la generazione.
+- Eliminazione dell’ultimo nodo principale impedita anche sul server, prima di rimuovere i discendenti.
+- Immagini conservate su file anziché come Blob, con trasferimento automatico degli eventuali contenuti binari già salvati nel database SQLite.
+- Preset della mappa salvato sul server con un solo gestore del cambio di stile e attesa dei salvataggi anche prima della pubblicazione. Spessore e curva dei rami persistiti, validati e conservati al ricaricamento, nella duplicazione, in Annulla/Ripristina e nei giochi pubblicati; aggiunte le colonne `branch_width` e `branch_curve` alla tabella dei nodi.
+- Scorciatoie dell’editor rispettose del controllo selezionato e delle finestre di dialogo: Tab e Invio mantengono il comportamento dei controlli, Annulla/Ripristina nei campi di testo resta nativo del browser.
+- Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate. Dopo il salvataggio i form vengono inviati direttamente, evitando blocchi nell’aggiornamento e nel ritiro del gioco.
 
 ## [0.2.1] - 2026-10-27
 

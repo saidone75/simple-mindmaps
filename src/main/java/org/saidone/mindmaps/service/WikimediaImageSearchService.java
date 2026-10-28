@@ -19,8 +19,16 @@
 package org.saidone.mindmaps.service;
 
 import java.util.Set;
+import java.util.List;
+import lombok.val;
 
 public interface WikimediaImageSearchService {
+    int MAX_IMAGES = 9;
+
+    default List<String> searchImages(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
+        val image = searchImage(keywords, preferredMode, excludedImageUrls);
+        return image == null ? List.of() : List.of(image);
+    }
 
     default String searchImage(String[] keywords) {
         return searchImage(keywords, null, Set.of());

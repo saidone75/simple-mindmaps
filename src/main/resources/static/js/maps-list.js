@@ -17,55 +17,7 @@
  */
 
 (function () {
-    const appDialog = document.getElementById("app-dialog");
-    const appDialogTitle = document.getElementById("app-dialog-title");
-    const appDialogMessage = document.getElementById("app-dialog-message");
-    const appDialogInput = document.getElementById("app-dialog-input");
-    const appDialogCancel = document.getElementById("app-dialog-cancel");
-    const appDialogConfirm = document.getElementById("app-dialog-confirm");
-
-    function openDialog({ title, message, mode = "alert" }) {
-        if (!appDialog || !appDialogTitle || !appDialogMessage || !appDialogConfirm || !appDialogCancel) {
-            return Promise.resolve(mode !== "confirm");
-        }
-        return new Promise((resolve) => {
-            appDialogTitle.textContent = title ?? "";
-            appDialogMessage.textContent = message ?? "";
-            appDialogConfirm.textContent = mode === "alert" ? "Ok" : "Conferma";
-            appDialogCancel.classList.toggle("hidden", mode === "alert");
-            if (appDialogInput) appDialogInput.classList.add("hidden");
-
-            const cleanup = () => {
-                if (appDialog.open && typeof appDialog.close === "function") appDialog.close();
-                else appDialog.removeAttribute("open");
-                appDialogConfirm.removeEventListener("click", onConfirm);
-                appDialogCancel.removeEventListener("click", onCancel);
-                appDialog.removeEventListener("click", onOverlayClick);
-                document.removeEventListener("keydown", onEscape);
-            };
-            const onConfirm = () => {
-                cleanup();
-                resolve(true);
-            };
-            const onCancel = () => {
-                cleanup();
-                resolve(false);
-            };
-            const onOverlayClick = (event) => {
-                if (event.target === appDialog) onCancel();
-            };
-            const onEscape = (event) => {
-                if (event.key === "Escape") onCancel();
-            };
-
-            appDialogConfirm.addEventListener("click", onConfirm);
-            appDialogCancel.addEventListener("click", onCancel);
-            appDialog.addEventListener("click", onOverlayClick);
-            document.addEventListener("keydown", onEscape);
-            if (typeof appDialog.showModal === "function") appDialog.showModal();
-            else appDialog.setAttribute("open", "open");
-        });
-    }
+    const openDialog = globalThis.MindMapDialogs.open;
 
     const bindAiGenerateLoading = function () {
         const form = document.getElementById('ai-generate-form');
@@ -103,22 +55,15 @@
             activeRequest = controller;
             const timeout = setTimeout(() => controller.abort(), 10000);
             try {
-                const response = await fetch(url, {
+                return await globalThis.MindMapHttp.request(url, {
                     ...options, signal: controller.signal, cache: 'no-store',
                     headers: { Accept: 'application/json', ...options.headers }
+                }, {
+                    sessionStatuses: [401, 403],
+                    sessionMessage: 'La sessione è scaduta. Accedi di nuovo per continuare.',
+                    serverMessages: true,
+                    httpErrorMessage: 'Non riesco ad avviare la creazione della mappa. Riprova tra poco.'
                 });
-                if (response.redirected || response.status === 401 || response.status === 403) {
-                    const error = new Error('La sessione è scaduta. Accedi di nuovo per continuare.');
-                    error.status = 401;
-                    throw error;
-                }
-                if (!response.ok) {
-                    const body = await response.json().catch(() => ({}));
-                    const error = new Error(body.detail || body.message || 'Non riesco ad avviare la creazione della mappa. Riprova tra poco.');
-                    error.status = response.status;
-                    throw error;
-                }
-                return await response.json();
             } finally {
                 clearTimeout(timeout);
                 if (activeRequest === controller) activeRequest = null;
@@ -233,4 +178,37 @@
         bindCloneMapConfirm();
         bindDeleteMapConfirm();
     }
+    const importButton = document.getElementById('import-map-btn');
+    const importFile = document.getElementById('import-map-file');
+    const importError = document.getElementById('import-map-error');
+    importButton?.addEventListener('click', () => importFile.click());
+    importFile?.addEventListener('change', async () => {
+        const file = importFile.files[0];
+        if (!file) return;
+        importFile.value = '';
+        importError.hidden = true;
+        if (file.size > 100 * 1024 * 1024) {
+            importError.textContent = 'Il file della mappa supera il limite di 100 MB.';
+            importError.hidden = false;
+            return;
+        }
+        importButton.disabled = true;
+        globalThis.showLoading('Sto importando la mappa…');
+        try {
+            const result = await globalThis.MindMapHttp.request('/api/maps/import', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: file
+            }, {
+                serverMessages: true,
+                messages: { 400: 'Il file non contiene una mappa valida o completa.', 413: 'Il file della mappa supera il limite di 100 MB.' },
+                httpErrorMessage: 'Non riesco a importare la mappa. Riprova.'
+            });
+            if (!Number.isSafeInteger(result.id) || result.id <= 0) throw new Error('Risposta del server non valida.');
+            location.assign(`/maps/${result.id}`);
+        } catch (error) {
+            importError.textContent = error.message;
+            importError.hidden = false;
+            importButton.disabled = false;
+            globalThis.hideLoading();
+        }
+    });
 })();

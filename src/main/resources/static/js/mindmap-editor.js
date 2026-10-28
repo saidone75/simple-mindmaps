@@ -58,6 +58,8 @@ let renderFrame = null;
 let interactionFrame = null;
 let pendingPointerMove = null;
 let edgePanActive = false;
+let interactionPointerId = null;
+let suppressPointerClick = false;
 let appliedViewport = null;
 let formEditGroup = null;
 let renderNodeIndex = null;
@@ -103,6 +105,9 @@ const colorInput = document.getElementById("node-color");
 const textColorInput = document.getElementById("node-text-color");
 const mapBackgroundInput = document.getElementById("map-background-color");
 let backgroundSavePromise = Promise.resolve();
+let styleSavePromise = Promise.resolve();
+let pendingStyleChanges = 0;
+let imageSavePromise = null;
 let editingBackground = false;
 const branchColorInput = document.getElementById("branch-color");
 const branchStyleInput = document.getElementById("branch-style");
@@ -112,6 +117,12 @@ const fontSizeInput = document.getElementById("node-font-size");
 const imageUrlInput = document.getElementById("node-image-url");
 const imageUploadInput = document.getElementById("node-image-upload");
 const imagePreview = document.getElementById("node-image-preview");
+const imageStorageSwitch = document.getElementById("store-images-switch");
+const imageSaveFailures = new Set();
+let imagePolicyPromise = Promise.resolve();
+const saveImageStatus = document.getElementById("save-image-status");
+const imageAlternatives = document.getElementById("node-image-alternatives");
+const imageCandidates = document.getElementById("node-image-candidates");
 const imageWidthInput = document.getElementById("node-image-width");
 const imageHeightInput = document.getElementById("node-image-height");
 const imageWidthValue = document.getElementById("node-image-width-value");
@@ -134,11 +145,6 @@ const canvasViewport = svg.closest(".canvas-scroll-area");
 const nodeEditorOverlay = document.getElementById("node-editor-overlay");
 const imageEditorOverlay = document.getElementById("image-editor-overlay");
 const appDialog = document.getElementById("app-dialog");
-const appDialogTitle = document.getElementById("app-dialog-title");
-const appDialogMessage = document.getElementById("app-dialog-message");
-const appDialogInput = document.getElementById("app-dialog-input");
-const appDialogCancel = document.getElementById("app-dialog-cancel");
-const appDialogConfirm = document.getElementById("app-dialog-confirm");
 const mapTitle = document.getElementById("map-title");
 const renameMapBtn = document.getElementById("rename-map-btn");
 
@@ -200,6 +206,7 @@ function showImageEditorOverlay(node) {
     state.imageOverlayNodeId = node.id;
     imageEditorOverlay.classList.add("visible");
     updateImagePreview(node.imageUri || "");
+    renderImageCandidates(node);
     updateImageEditorOverlay(node);
 }
 
@@ -263,16 +270,8 @@ async function restoreEditorState(snapshot) {
             node.parentId = remap(node.parentId);
         }
     }
-    // Keep frontend-only settings until their persistence is implemented (TODO 12).
-    const localNodes = new Map(snapshot.map.nodes.map(node => [remap(node.id), node]));
     state.map = restored.map;
-    for (const node of state.map.nodes) {
-        const local = localNodes.get(node.id);
-        if (local) {
-            node.branchWidth = local.branchWidth;
-            node.branchCurve = local.branchCurve;
-        }
-    }
+    imageStorageSwitch.checked = state.map.storeImagesLocally !== false;
     state.selectedNodeId = remap(snapshot.selectedNodeId);
     if (stylePresetInput) stylePresetInput.value = state.map.stylePreset;
     refreshMapTitle();
@@ -286,126 +285,32 @@ async function restoreEditorState(snapshot) {
     return restored.nodeIds;
 }
 
-function pushUndoSnapshot() {
-    formEditGroup = null;
-    if (state.isApplyingHistory) return;
-    state.undoStack.push(snapshotEditorState());
-    if (state.undoStack.length > 100) state.undoStack.shift();
-    state.redoStack = [];
-}
 
-function beginInteractionSnapshot() {
-    formEditGroup = null;
-    if (state.interactionSnapshot || state.isApplyingHistory) return;
-    state.interactionSnapshot = snapshotEditorState();
-}
-
-function commitInteractionSnapshot() {
-    if (!state.interactionSnapshot || state.isApplyingHistory) return;
-    state.undoStack.push(state.interactionSnapshot);
-    if (state.undoStack.length > 100) state.undoStack.shift();
-    state.redoStack = [];
-    state.interactionSnapshot = null;
-}
-
-function clearInteractionSnapshot() {
-    state.interactionSnapshot = null;
-}
-
-function openDialog({ title, message, mode = "alert", value = "" }) {
-    if (!appDialog || !appDialogTitle || !appDialogMessage || !appDialogConfirm) {
-        return Promise.resolve(mode === "alert" ? true : mode === "confirm" ? false : null);
-    }
-    return new Promise(resolve => {
-        appDialogTitle.textContent = title || "Conferma";
-        appDialogMessage.textContent = message || "";
-        appDialogConfirm.textContent = mode === "alert" ? "Ok" : "Conferma";
-        if (appDialogCancel) {
-            appDialogCancel.classList.toggle("hidden", mode === "alert");
-        }
-        if (appDialogInput) {
-            const showInput = mode === "prompt";
-            appDialogInput.classList.toggle("hidden", !showInput);
-            appDialogInput.value = showInput ? value : "";
-        }
-        if (typeof appDialog.showModal === "function") appDialog.showModal();
-        else appDialog.setAttribute("open", "open");
-
-        const close = result => {
-            if (typeof appDialog.close === "function" && appDialog.open) appDialog.close();
-            else appDialog.removeAttribute("open");
-            appDialogConfirm.removeEventListener("click", onConfirm);
-            appDialogCancel?.removeEventListener("click", onCancel);
-            appDialog.removeEventListener("click", onOverlayClick);
-            document.removeEventListener("keydown", onEscape);
-            resolve(result);
-        };
-
-        const onConfirm = () => {
-            if (mode === "prompt") close(appDialogInput?.value ?? "");
-            else close(true);
-        };
-        const onCancel = () => close(mode === "prompt" ? null : false);
-        const onOverlayClick = event => {
-            if (event.target === appDialog) onCancel();
-        };
-        const onEscape = event => {
-            if (event.key === "Escape") onCancel();
-        };
-
-        appDialogConfirm.addEventListener("click", onConfirm);
-        appDialogCancel?.addEventListener("click", onCancel);
-        appDialog.addEventListener("click", onOverlayClick);
-        document.addEventListener("keydown", onEscape);
-        if (mode === "prompt" && appDialogInput) {
-            setTimeout(() => {
-                appDialogInput.focus();
-                appDialogInput.select();
-            }, 0);
-        } else {
-            appDialogConfirm.focus();
-        }
-    });
-}
-
-async function applyHistory(source, destination) {
-    if (!source.length || state.isApplyingHistory || state.drag || state.resize || state.pan) return;
-    state.isApplyingHistory = true;
-    formEditGroup = null;
-    const workspace = document.querySelector(".editor-page");
-    workspace.inert = true;
-    showLoading("Sto ripristinando la mappa…");
-    try {
+const { pushUndoSnapshot, beginInteractionSnapshot, commitInteractionSnapshot,
+    clearInteractionSnapshot, undoChange, redoChange } = globalThis.MindMapHistory.create({
+    state,
+    snapshot: snapshotEditorState,
+    restore: restoreEditorState,
+    waitForSaves: async () => {
+        if (imageSavePromise) await imageSavePromise;
+        await styleSavePromise;
+        await imagePolicyPromise;
         await flushAutosave();
         await backgroundSavePromise;
         while (activeEditorRequests.size) await Promise.all([...activeEditorRequests]);
-        const current = snapshotEditorState();
-        // Clone: ID reconciliation must not mutate the snapshot being restored.
-        const target = structuredClone(source[source.length - 1]);
-        const ids = await restoreEditorState(target);
-        current.selectedNodeId = ids[current.selectedNodeId] ?? current.selectedNodeId;
-        for (const node of current.map.nodes) {
-            node.id = ids[node.id] ?? node.id;
-            node.parentId = ids[node.parentId] ?? node.parentId;
-        }
-        source.pop();
-        destination.push(current);
-    } catch (error) {
-        reportEditorError(error);
-    } finally {
-        state.isApplyingHistory = false;
-        workspace.inert = false;
-        hideLoading();
-    }
-}
+    },
+    setBusy: busy => {
+        document.querySelector(".editor-page").inert = busy;
+        if (busy) showLoading("Sto ripristinando la mappa…");
+        else { hideLoading(); queueMicrotask(queueImageStorage); }
+    },
+    onError: reportEditorError,
+    onEditBoundary: () => { formEditGroup = null; }
+});
 
-function undoChange() {
-    return applyHistory(state.undoStack, state.redoStack);
-}
+const openDialog = globalThis.MindMapDialogs.open;
 
-function redoChange() {
-    return applyHistory(state.redoStack, state.undoStack);
-}
+
 function getNodeById(id) {
     return renderNodeIndex ? renderNodeIndex.get(id) : state.map.nodes.find(n => n.id === id);
 }
@@ -415,10 +320,6 @@ function hasNodeEmoji(node) {
     return !!normalizeNodeEmoji(node.emoji);
 }
 
-
-function isSketchPreset() {
-    return false;
-}
 
 const STYLE_PRESETS = {
     CLASSIC: { rootColor: "#D9D2E9", childColor: "#9FC5E8", shape: "ROUNDED", branchColor: "#7c8a9a", branchStyle: "SOLID", branchWidth: 4, branchCurve: "CUBIC" },
@@ -432,15 +333,6 @@ function getCurrentStylePresetName() {
 
 function getCurrentStylePreset() {
     return STYLE_PRESETS[getCurrentStylePresetName()];
-}
-
-function getSketchNodeSize(node) {
-    const lines = getNodeDisplayLines(node, 24);
-    const longest = lines.reduce((max, line) => Math.max(max, (line.text || "").length), 0);
-    const fontSize = Number(node.fontSize) || 18;
-    const width = Math.max(120, (longest * (fontSize * 0.65)) + 36);
-    const height = Math.max(56, (lines.length * (fontSize * 1.2)) + 28);
-    return { width, height };
 }
 
 
@@ -526,7 +418,7 @@ function renderGrid(viewport) {
     }
 }
 
-function renderConnectors(depthMap, sketchPreset) {
+function renderConnectors(depthMap) {
     for (const node of state.map.nodes) {
         if (node.parentId == null) continue;
         const parent = getNodeById(node.parentId);
@@ -539,7 +431,7 @@ function renderConnectors(depthMap, sketchPreset) {
         const x2 = node.x + nodeSize.width / 2;
         const y2 = node.y + nodeSize.height / 2;
         const depth = depthMap.get(node.id) || 1;
-        const inputs = [node, x1, y1, x2, y2, depth, sketchPreset,
+        const inputs = [node, x1, y1, x2, y2, depth,
             node.branchColor, node.branchStyle, node.branchWidth, node.branchCurve, node.branchText];
         updateCachedElement(renderCache.connectors, node.id, inputs, renderCache.layers.connectors, () => {
             const group = document.createElementNS(SVG_NS, "g");
@@ -547,13 +439,6 @@ function renderConnectors(depthMap, sketchPreset) {
             path.setAttribute("class", "connector");
             path.setAttribute("d", buildConnectorPath(node, x1, y1, x2, y2));
             applyBranchStyle(path, node, depth);
-            if (sketchPreset) {
-                path.classList.add("connector-sketch");
-                path.removeAttribute("marker-end");
-                const sketchStrokeWidth = String(Math.max(2.5, 5.5 - Math.min(depth, 3)));
-                path.style.strokeWidth = sketchStrokeWidth;
-                path.setAttribute("stroke-width", sketchStrokeWidth);
-            }
             group.appendChild(path);
             renderBranchLabel(node, (x1 + x2) / 2, (y1 + y2) / 2, x1, y1, x2, y2, group);
             return group;
@@ -561,14 +446,14 @@ function renderConnectors(depthMap, sketchPreset) {
     }
 }
 
-function appendNodeText(group, node, width, height, sketchPreset, emojiValue) {
+function appendNodeText(group, node, width, height, emojiValue) {
     const text = document.createElementNS(SVG_NS, "text");
-    const lines = getNodeDisplayLines(node, sketchPreset ? 24 : (hasNodeImage(node) ? 18 : 20));
+    const lines = getNodeDisplayLines(node, hasNodeImage(node) ? 18 : 20);
     const fontSize = Number(node.fontSize) || 18;
     const lineHeight = Math.max(16, Math.round(fontSize * 1.2));
-    const firstLineY = hasNodeImage(node) && !sketchPreset
+    const firstLineY = hasNodeImage(node)
         ? node.y + height - 16 - ((lines.length - 1) * lineHeight)
-        : emojiValue && !sketchPreset
+        : emojiValue
             ? node.y + ((height - ((lines.length - 1) * lineHeight)) / 2) + 14
             : node.y + ((height - ((lines.length - 1) * lineHeight)) / 2);
     text.setAttribute("class", "node-text");
@@ -598,7 +483,7 @@ function appendNodeText(group, node, width, height, sketchPreset, emojiValue) {
 }
 
 function bindNodeGroupEvents(group, node) {
-    group.addEventListener("mousedown", startDrag);
+    group.addEventListener("pointerdown", startDrag);
     group.addEventListener("click", () => selectNode(node.id));
     group.addEventListener("dblclick", () => quickEdit(node.id));
     group.addEventListener("mouseenter", () => {
@@ -622,46 +507,45 @@ function bindNodeGroupEvents(group, node) {
     group.addEventListener("contextmenu", event => openContextMenu(event, node.id));
 }
 
-function createNodeGroupElement(node, sketchPreset) {
+function createNodeGroupElement(node) {
     const group = document.createElementNS(SVG_NS, "g");
     const selectedClass = node.id === state.selectedNodeId ? " selected" : "";
-    group.setAttribute("class", `node-group${selectedClass}${sketchPreset ? " sketch-node" : ""}`);
+    group.setAttribute("class", `node-group${selectedClass}`);
     group.dataset.id = node.id;
     return group;
 }
 
 
-function appendNodeBackground(group, node, width, height, depth, sketchPreset) {
+function appendNodeBackground(group, node, width, height, depth) {
     const rect = document.createElementNS(SVG_NS, "rect");
-    const radius = getNodeCornerRadius(node, depth, sketchPreset);
+    const radius = getNodeCornerRadius(node, depth);
     rect.setAttribute("x", node.x);
     rect.setAttribute("y", node.y);
     rect.setAttribute("rx", radius);
     rect.setAttribute("ry", radius);
     rect.setAttribute("width", width);
     rect.setAttribute("height", height);
-    rect.setAttribute("fill", sketchPreset ? "rgba(255,255,255,0.001)" : getNodeColor(node));
-    rect.setAttribute("stroke", sketchPreset ? "transparent" : "#546170");
-    rect.setAttribute("stroke-width", sketchPreset ? "0" : "1.5");
+    rect.setAttribute("fill", getNodeColor(node));
+    rect.setAttribute("stroke", "#546170");
+    rect.setAttribute("stroke-width", "1.5");
     group.appendChild(rect);
 }
 
-function appendNodeImageContent(group, node, width, sketchPreset) {
-    if (sketchPreset || !hasNodeImage(node)) return;
+function appendNodeImageContent(group, node, width) {
+    if (!hasNodeImage(node)) return;
     renderNodeImage(group, node, width);
     if (node.id === state.selectedNodeId) renderImageResizeHandle(group, node, width);
 }
 
-function appendNodeInteractionControls(group, node, width, height, sketchPreset) {
-    if (sketchPreset) return;
+function appendNodeInteractionControls(group, node, width, height) {
     if (node.id === state.hoveredNodeId) renderNodeActionButtons(group, node, width);
     if (node.id === state.selectedNodeId || node.id === state.hoveredNodeId) {
         renderNodeResizeHandle(group, node, width, height);
     }
 }
 
-function appendNodeEmoji(group, node, width, emojiValue, sketchPreset) {
-    if (!emojiValue || sketchPreset) return;
+function appendNodeEmoji(group, node, width, emojiValue) {
+    if (!emojiValue) return;
 
     const emoji = document.createElementNS(SVG_NS, "text");
     emoji.setAttribute("class", "node-emoji");
@@ -677,47 +561,30 @@ function appendNodeEmoji(group, node, width, emojiValue, sketchPreset) {
     group.appendChild(emoji);
 }
 
-function appendSketchUnderline(group, node, width, height, depth, sketchPreset) {
-    if (!sketchPreset) return;
-
-    const underline = document.createElementNS(SVG_NS, "path");
-    const underlineY = node.y + height - 10;
-    const left = node.x + 10;
-    const right = node.x + width - 10;
-    const mid = (left + right) / 2;
-    underline.setAttribute("d", `M ${left} ${underlineY} Q ${mid} ${underlineY + 8} ${right} ${underlineY}`);
-    underline.setAttribute("stroke", node.branchColor || "#2f855a");
-    underline.setAttribute("stroke-width", depth === 0 ? "3.8" : "2.6");
-    underline.setAttribute("fill", "none");
-    underline.setAttribute("stroke-linecap", "round");
-    group.appendChild(underline);
-}
-
-function renderNodeGroup(node, depth, sketchPreset) {
+function renderNodeGroup(node, depth) {
     const { width, height } = getLayoutNodeSize(node);
-    const group = createNodeGroupElement(node, sketchPreset);
+    const group = createNodeGroupElement(node);
     const emojiValue = hasNodeImage(node) ? "" : normalizeNodeEmoji(node.emoji);
 
-    appendNodeBackground(group, node, width, height, depth, sketchPreset);
-    appendNodeImageContent(group, node, width, sketchPreset);
-    appendNodeInteractionControls(group, node, width, height, sketchPreset);
-    appendNodeEmoji(group, node, width, emojiValue, sketchPreset);
-    appendNodeText(group, node, width, height, sketchPreset, emojiValue);
-    appendSketchUnderline(group, node, width, height, depth, sketchPreset);
+    appendNodeBackground(group, node, width, height, depth);
+    appendNodeImageContent(group, node, width);
+    appendNodeInteractionControls(group, node, width, height);
+    appendNodeEmoji(group, node, width, emojiValue);
+    appendNodeText(group, node, width, height, emojiValue);
 
     bindNodeGroupEvents(group, node);
     return group;
 }
 
-function updateNodeElement(node, depth, sketchPreset) {
+function updateNodeElement(node, depth) {
     // Position is applied to the existing group so dragging keeps its image alive.
     const inputs = [node, node.parentId, node.text, node.description, node.emoji,
         node.fontSize, node.shape, node.imageUri, node.imageWidth, node.imageHeight,
-        node.nodeWidth, node.nodeHeight, node.branchColor, node.textColor, depth, sketchPreset, getNodeColor(node),
+        node.nodeWidth, node.nodeHeight, node.branchColor, node.textColor, depth, getNodeColor(node),
         node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
     const previous = renderCache.nodes.get(node.id);
     const entry = updateCachedElement(renderCache.nodes, node.id, inputs, renderCache.layers.nodes,
-        () => renderNodeGroup(node, depth, sketchPreset));
+        () => renderNodeGroup(node, depth));
     if (entry !== previous) {
         entry.x = node.x;
         entry.y = node.y;
@@ -754,12 +621,11 @@ function render() {
         const viewport = getViewportForRender();
         renderGrid(viewport);
         const depthMap = buildDepthMap(state.map.nodes, renderNodeIndex);
-        const sketchPreset = isSketchPreset();
-        renderConnectors(depthMap, sketchPreset);
+        renderConnectors(depthMap);
         const connectorIds = new Set();
         for (const node of state.map.nodes) {
             const depth = depthMap.get(node.id) || 0;
-            updateNodeElement(node, depth, sketchPreset);
+            updateNodeElement(node, depth);
             if (node.parentId != null && renderNodeIndex.has(node.parentId)) connectorIds.add(node.id);
         }
         removeStaleElements(renderCache.nodes, new Set(renderNodeIndex.keys()));
@@ -929,7 +795,6 @@ function applyCanvasViewport(viewport = getViewportForRender()) {
     // Keep the drawing scale fixed when its bounds grow, including on mobile.
     if (svg.style.width !== `${pixelWidth}px`) svg.style.width = `${pixelWidth}px`;
     if (svg.style.height !== `${pixelHeight}px`) svg.style.height = `${pixelHeight}px`;
-    if (svg.style.minWidth !== '0px') svg.style.minWidth = '0px';
     appliedViewport = viewport;
     if (canvasViewport) {
         if (offsetX) canvasViewport.scrollLeft += offsetX;
@@ -1015,7 +880,7 @@ function renderNodeImage(group, node, width) {
     image.setAttribute("preserveAspectRatio", "xMidYMid slice");
     image.setAttribute("clip-path", `url(#${clipId})`);
     image.style.pointerEvents = "all";
-    image.addEventListener("mousedown", event => {
+    image.addEventListener("pointerdown", event => {
         event.stopPropagation();
     });
     image.addEventListener("click", event => {
@@ -1035,7 +900,7 @@ function renderImageResizeHandle(group, node, nodeWidth) {
     handle.setAttribute("cy", bounds.y + bounds.height);
     handle.setAttribute("r", "7");
     handle.dataset.nodeId = node.id;
-    handle.addEventListener("mousedown", startImageResize);
+    handle.addEventListener("pointerdown", startImageResize);
     group.appendChild(handle);
 }
 
@@ -1078,7 +943,7 @@ function renderNodeActionButtons(group, node, nodeWidth) {
         button.dataset.nodeId = node.id;
         button.dataset.action = action.key;
         button.setAttribute("transform", `translate(${x}, ${actionRowY})`);
-        button.addEventListener("mousedown", event => {
+        button.addEventListener("pointerdown", event => {
             event.stopPropagation();
             event.preventDefault();
         });
@@ -1122,7 +987,7 @@ function renderNodeResizeHandle(group, node, nodeWidth, nodeHeight) {
     handle.setAttribute("cy", node.y + nodeHeight - 3);
     handle.setAttribute("r", "8");
     handle.dataset.nodeId = node.id;
-    handle.addEventListener("mousedown", startNodeResize);
+    handle.addEventListener("pointerdown", startNodeResize);
     group.appendChild(handle);
 }
 
@@ -1135,12 +1000,9 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
     label.setAttribute("y", String(cy - 6));
     label.setAttribute("text-anchor", "middle");
     label.textContent = truncate(branchText, 26);
-    if (isSketchPreset()) {
-        label.classList.add("branch-label-sketch");
-    }
     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     label.setAttribute("transform", `rotate(${Math.max(-24, Math.min(24, angle))}, ${cx}, ${cy - 6})`);
-    label.addEventListener("mousedown", event => event.stopPropagation());
+    label.addEventListener("pointerdown", event => event.stopPropagation());
     label.addEventListener("click", async event => {
         event.stopPropagation();
         await quickEditBranchText(node.id).catch(reportEditorError);
@@ -1184,15 +1046,26 @@ function selectNode(nodeId, options = {}) {
     hideImageEditorOverlay();
 }
 
+function canStartPointerInteraction(event) {
+    return event.isPrimary && event.button === 0 && interactionPointerId === null
+        && !state.isApplyingHistory && !leavingEditor;
+}
+
+function captureInteractionPointer() {
+    if (interactionPointerId !== null && !canvasViewport.hasPointerCapture(interactionPointerId)) {
+        canvasViewport.setPointerCapture(interactionPointerId);
+    }
+}
+
 function startDrag(event) {
-    if (state.resize) return;
+    if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
     const nodeId = Number(event.currentTarget.dataset.id);
-    beginInteractionSnapshot();
-    selectNode(nodeId, { showNodeOverlay: false });
     const node = getNodeById(nodeId);
     if (!node) return;
 
+    beginInteractionSnapshot();
+    interactionPointerId = event.pointerId;
     const point = toSvgPoint(event);
     state.drag = {
         nodeId,
@@ -1206,12 +1079,15 @@ function startDrag(event) {
 }
 
 function startImageResize(event) {
+    if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
     event.preventDefault();
     const nodeId = Number(event.currentTarget.dataset.nodeId);
     const node = getNodeById(nodeId);
     if (!node) return;
 
+    interactionPointerId = event.pointerId;
+    captureInteractionPointer();
     beginInteractionSnapshot();
     selectNode(nodeId, { showNodeOverlay: false });
     const nodeSize = getNodeSize(node);
@@ -1228,12 +1104,15 @@ function startImageResize(event) {
 }
 
 function startNodeResize(event) {
+    if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
     event.preventDefault();
     const nodeId = Number(event.currentTarget.dataset.nodeId);
     const node = getNodeById(nodeId);
     if (!node) return;
 
+    interactionPointerId = event.pointerId;
+    captureInteractionPointer();
     beginInteractionSnapshot();
     selectNode(nodeId, { showNodeOverlay: false });
     const size = getNodeSize(node);
@@ -1249,14 +1128,16 @@ function startNodeResize(event) {
 }
 
 function startCanvasPan(event) {
-    if (!canvasViewport || event.button !== 0) return;
-    if (state.drag || state.resize) return;
-    if (event.target.closest(".node-group") || event.target.closest(".node-action-button") || event.target.closest(".node-resize-handle") || event.target.closest(".image-resize-handle")) return;
+    if (!canvasViewport || !canStartPointerInteraction(event)) return;
+    if (event.target.closest('.node-group, .branch-label, button, input, select, textarea, a, [contenteditable]')) return;
+    interactionPointerId = event.pointerId;
+    captureInteractionPointer();
     state.pan = {
         startClientX: event.clientX,
         startClientY: event.clientY,
         startScrollLeft: canvasViewport.scrollLeft,
         startScrollTop: canvasViewport.scrollTop,
+        moved: false,
     };
     canvasViewport.classList.add("is-panning");
     event.preventDefault();
@@ -1277,12 +1158,10 @@ function snapToGrid(value) {
 
 function applyPointerMove(event) {
     if (state.drag) {
+        if (!state.drag.moved) return false;
         const node = getNodeById(state.drag.nodeId);
         if (!node) return false;
         const point = toSvgPoint(event);
-        if (Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY) > 3) {
-            state.drag.moved = true;
-        }
         if (!state.drag.overlayHidden && state.drag.moved) {
             hideNodeEditorOverlay();
             state.drag.overlayHidden = true;
@@ -1320,6 +1199,7 @@ function applyPointerMove(event) {
         return true;
     }
     if (state.pan && canvasViewport) {
+        if (Math.hypot(event.clientX - state.pan.startClientX, event.clientY - state.pan.startClientY) > 3) state.pan.moved = true;
         canvasViewport.scrollLeft = state.pan.startScrollLeft - (event.clientX - state.pan.startClientX);
         canvasViewport.scrollTop = state.pan.startScrollTop - (event.clientY - state.pan.startClientY);
     }
@@ -1360,15 +1240,25 @@ function flushPointerMove(allowPan = true) {
     if (edgePanActive) queuePointerMove(event);
 }
 
-document.addEventListener("mousemove", event => {
-    if (state.drag || state.resize || state.pan) queuePointerMove(event);
+document.addEventListener("pointermove", event => {
+    if (event.pointerId !== interactionPointerId) return;
+    if (state.drag && !state.drag.moved) {
+        if (Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY) <= 3) return;
+        // Capture on a stable ancestor only once a tap becomes a drag.
+        captureInteractionPointer();
+        state.drag.moved = true;
+        selectNode(state.drag.nodeId, { showNodeOverlay: false });
+    }
+    queuePointerMove(event);
 });
 
-function shouldHideNodeEditorAfterMouseup(wasDragging, dragMoved, justOpenedContextMenu) {
+function shouldHideNodeEditorAfterPointerEnd(wasDragging, dragMoved, justOpenedContextMenu) {
     return (wasDragging && dragMoved) || justOpenedContextMenu;
 }
 
 function resetPointerInteractionState() {
+    const pointerId = interactionPointerId;
+    interactionPointerId = null;
     state.drag = null;
     state.resize = null;
     state.pan = null;
@@ -1377,14 +1267,15 @@ function resetPointerInteractionState() {
     if (interactionFrame != null) cancelAnimationFrame(interactionFrame);
     interactionFrame = null;
     canvasViewport?.classList.remove("is-panning");
+    if (pointerId !== null && canvasViewport.hasPointerCapture(pointerId)) canvasViewport.releasePointerCapture(pointerId);
     applyCanvasViewport();
 }
 
-function refreshOverlaysAfterMouseup(wasDragging, dragMoved) {
+function refreshOverlaysAfterPointerEnd(wasDragging, dragMoved) {
     const selectedNode = getNodeById(state.selectedNodeId);
     const justOpenedContextMenu = state.contextMenu && (Date.now() - state.contextMenu.openedAt) < 250;
     if (selectedNode) {
-        if (shouldHideNodeEditorAfterMouseup(wasDragging, dragMoved, justOpenedContextMenu)) {
+        if (shouldHideNodeEditorAfterPointerEnd(wasDragging, dragMoved, justOpenedContextMenu)) {
             hideNodeEditorOverlay();
         } else {
             if (nodeEditorOverlay) nodeEditorOverlay.classList.add("visible");
@@ -1403,19 +1294,41 @@ function flushResizeAutosave(resizeState) {
     runAutosave(resizedNode);
 }
 
-document.addEventListener("mouseup", () => {
+function finishPointerInteraction(event, cancelled = false) {
+    if (interactionPointerId === null || (event && event.pointerId !== interactionPointerId)) return;
+    if (!cancelled && event) queuePointerMove(event);
     flushPointerMove(false);
     const wasDragging = !!state.drag;
     const dragMoved = !!state.drag?.moved;
     const resizeState = state.resize ? { ...state.resize } : null;
 
-    if (state.drag || state.resize) commitInteractionSnapshot();
+    const interacted = dragMoved || !!resizeState || !!state.pan?.moved;
+    suppressPointerClick = interacted;
+    if (dragMoved || resizeState) commitInteractionSnapshot();
+    else clearInteractionSnapshot();
 
     if (renderFrame != null) render();
     resetPointerInteractionState();
-    refreshOverlaysAfterMouseup(wasDragging, dragMoved);
+    if (interacted) refreshOverlaysAfterPointerEnd(wasDragging, dragMoved);
     flushResizeAutosave(resizeState);
+}
+
+document.addEventListener('pointerup', event => finishPointerInteraction(event));
+document.addEventListener('pointercancel', event => finishPointerInteraction(event, true));
+canvasViewport.addEventListener('lostpointercapture', event => {
+    if (event.target === canvasViewport) finishPointerInteraction(event, true);
 });
+globalThis.addEventListener('blur', () => finishPointerInteraction(null, true));
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) finishPointerInteraction(null, true);
+});
+document.addEventListener('pointerdown', () => { suppressPointerClick = false; }, true);
+document.addEventListener('click', event => {
+    if (!suppressPointerClick || event.detail === 0) return;
+    suppressPointerClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+}, true);
 
 document.addEventListener("click", event => {
     const justOpenedContextMenu = state.contextMenu && (Date.now() - state.contextMenu.openedAt) < 200;
@@ -1541,6 +1454,8 @@ for (const field of autosubmitFields) {
 if (imageWidthInput) imageWidthInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 if (imageHeightInput) imageHeightInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 function updateImagePreview(uri) {
+    updateImageStorageControl(uri);
+    for (const option of imageCandidates.children) option.setAttribute('aria-pressed', String(option.dataset.uri === uri));
     if (uri) {
         if (imagePreview.getAttribute("src") !== uri) imagePreview.src = uri;
         imagePreview.style.display = "block";
@@ -1548,6 +1463,140 @@ function updateImagePreview(uri) {
         imagePreview.removeAttribute("src");
         imagePreview.style.display = "none";
     }
+}
+
+function updateImageStorageControl(uri) {
+    if (imageSavePromise) return;
+    saveImageStatus.textContent = /^\/images\/[a-f0-9-]{36}$/.test(uri || '')
+        ? 'Questa immagine è conservata nella mappa.'
+        : imageStorageSwitch.checked ? 'Le immagini esterne vengono salvate e adattate automaticamente.'
+            : 'Il salvataggio automatico delle immagini è disattivato.';
+}
+
+function nextImageToStore() {
+    return state.map.nodes.find(node => /^https?:\/\//i.test(node.imageUri || '')
+        && !imageSaveFailures.has(`${node.id}:${node.imageUri}`));
+}
+
+function queueImageStorage() {
+    if (imageSavePromise || !imageStorageSwitch.checked || state.isApplyingHistory || !nextImageToStore()) return;
+    let interrupted = false;
+    imageSavePromise = (async () => {
+        await imagePolicyPromise;
+        await styleSavePromise;
+        while (imageStorageSwitch.checked) {
+            await flushAutosave();
+            const node = nextImageToStore();
+            if (!node) break;
+            const source = node.imageUri;
+            const message = `Sto salvando l’immagine del nodo "${node.text}"…`;
+            saveImageStatus.textContent = message;
+            if (autosaveStatus) autosaveStatus.textContent = message;
+            try {
+                const saved = await editorRequest(`/api/nodes/${node.id}/image`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUri: source })
+                }, 'json', {
+                    serverMessages: true,
+                    messages: {
+                        400: 'Non riesco a preparare l’immagine. Scegli un altro link o formato.',
+                        409: 'L’immagine è cambiata durante il salvataggio.',
+                        413: 'L’immagine supera il limite di 25 MB.',
+                        502: 'Non riesco a scaricare questa immagine. Controlla il link.'
+                    }
+                });
+                if (getNodeById(node.id) !== node || node.imageUri !== source) continue;
+                // Only update the image: text and geometry may have changed during the download.
+                node.imageUri = saved.imageUri;
+                for (const other of state.map.nodes) {
+                    if (other.imageCandidates) other.imageCandidates = other.imageCandidates.map(uri => uri === source ? saved.imageUri : uri);
+                }
+                // Automatic storage is not a user edit; history keeps the same image reference.
+                for (const snapshot of [...state.undoStack, ...state.redoStack, state.interactionSnapshot].filter(Boolean)) {
+                    for (const previous of snapshot.map.nodes) {
+                        if (previous.id === node.id && previous.imageUri === source) previous.imageUri = saved.imageUri;
+                        if (previous.imageCandidates) previous.imageCandidates = previous.imageCandidates.map(uri => uri === source ? saved.imageUri : uri);
+                    }
+                }
+                if (state.selectedNodeId === node.id) {
+                    imageUrlInput.value = saved.imageUri;
+                    updateImagePreview(saved.imageUri);
+                    if (state.imageOverlayNodeId === node.id) renderImageCandidates(node);
+                }
+                requestRender();
+                // This follows any autosaves queued during the download, preserving the internal reference.
+                await runAutosave(node);
+            } catch (error) {
+                imageSaveFailures.add(`${node.id}:${source}`);
+                // Download failure leaves the original image intact and does not block publication.
+                failedEditorRequests.delete(`POST /api/nodes/${node.id}/image`);
+                reportEditorError(error);
+                saveImageStatus.textContent = `Immagine non salvata: ${node.text}. Il link originale resta disponibile.`;
+            }
+        }
+    })().catch(error => { interrupted = true; reportEditorError(error); }).finally(() => {
+        imageSavePromise = null;
+        if (autosaveStatus && !hasFailedSaves()) autosaveStatus.textContent = imageSaveFailures.size
+            ? 'Alcune immagini restano collegate al sito originale. Disattiva e riattiva il salvataggio per riprovare.'
+            : 'Modifiche salvate.';
+        updateImageStorageControl(getNodeById(state.selectedNodeId)?.imageUri);
+        if (!interrupted && imageStorageSwitch.checked && nextImageToStore()) queueMicrotask(queueImageStorage);
+    });
+}
+
+imageStorageSwitch.addEventListener('change', () => {
+    const enabled = imageStorageSwitch.checked;
+    state.map.storeImagesLocally = enabled;
+    imageSaveFailures.clear();
+    imagePolicyPromise = imagePolicyPromise.then(() => editorRequest(`/api/maps/${state.map.id}/image-storage`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled })
+    })).catch(reportEditorError);
+    imagePolicyPromise.then(() => { if (enabled) queueImageStorage(); });
+    updateImageStorageControl(getNodeById(state.selectedNodeId)?.imageUri);
+});
+
+function renderImageCandidates(node) {
+    const candidates = [...new Set(node.imageCandidates || [])].slice(0, 9);
+    imageAlternatives.hidden = candidates.length === 0;
+    imageCandidates.replaceChildren();
+    const usedImages = new Set(state.map.nodes.filter(other => other.id !== node.id).map(other => other.imageUri));
+    candidates.forEach((uri, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'image-candidate';
+        button.dataset.uri = uri;
+        button.disabled = usedImages.has(uri);
+        button.setAttribute('aria-label', `Immagine alternativa ${index + 1}${button.disabled ? ', già usata da un altro nodo' : ''}`);
+        button.setAttribute('aria-pressed', String(uri === node.imageUri));
+        const image = document.createElement('img');
+        image.src = uri;
+        image.alt = '';
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        image.addEventListener('error', () => {
+            button.disabled = true;
+            button.setAttribute('aria-label', `Immagine alternativa ${index + 1} non disponibile`);
+        }, { once: true });
+        button.appendChild(image);
+        button.addEventListener('click', () => {
+            const current = getNodeById(node.id);
+            if (!current || current.imageUri === uri) return;
+            if (state.map.nodes.some(other => other.id !== current.id && other.imageUri === uri)) {
+                renderImageCandidates(current);
+                return;
+            }
+            pushUndoSnapshot();
+            current.imageUri = uri;
+            current.emoji = '';
+            if (nodeEmojiInput) nodeEmojiInput.value = '';
+            imageUrlInput.value = uri;
+            ensureNodeImageSize(current);
+            updateImagePreview(uri);
+            requestRender();
+            updateImageEditorOverlay(current);
+            scheduleAutosave(current);
+        });
+        imageCandidates.appendChild(button);
+    });
 }
 
 function applyFormToNode(node) {
@@ -1571,11 +1620,13 @@ function applyFormToNode(node) {
     } else if (hasNodeEmoji(node)) {
         node.imageUri = null;
     }
+    updateImageStorageControl(node.imageUri);
 }
 
 function normalizeImageUri(value) {
     const trimmed = (value || "").trim();
     if (!trimmed.length) return null;
+    if (/^\/images\/[a-f0-9-]{36}$/.test(trimmed)) return trimmed;
     if (trimmed.startsWith("data:image/")) return trimmed;
     if (!URL.canParse(trimmed)) return null;
     const parsed = new URL(trimmed);
@@ -1728,6 +1779,15 @@ async function normalizeExportImageHref(href) {
     if (!href) return "";
     const trimmed = href.trim();
     if (!trimmed) return "";
+    if (/^\/images\/[a-f0-9-]{36}$/.test(trimmed)) {
+        const blob = await editorRequest(trimmed, {}, 'image');
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Non riesco a preparare l’immagine salvata per l’esportazione.'));
+            reader.readAsDataURL(blob);
+        });
+    }
     if (trimmed.toLowerCase().startsWith("data:image/webp")) {
         return await convertWebpDataUriToPng(trimmed);
     }
@@ -1736,7 +1796,6 @@ async function normalizeExportImageHref(href) {
 
 async function buildExportSvg() {
     flushPointerMove(false);
-    if (renderFrame != null) render();
     if (renderFrame != null) render();
     const clone = svg.cloneNode(true);
     const viewBox = (svg.getAttribute("viewBox") || "0 0 1400 900").split(/\s+/).map(Number);
@@ -1801,12 +1860,42 @@ if (gridSizeInput) {
         render();
     });
 }
+document.getElementById("snap-map-to-grid-btn")?.addEventListener("click", () => {
+    if (leavingEditor || state.isApplyingHistory || state.drag || state.resize || pendingStyleChanges) return;
+    const step = Math.max(5, Number(state.gridSize) || DEFAULT_GRID_SIZE);
+    const nearest = value => Math.round(value / step) * step;
+    const changes = state.map.nodes.map(node => {
+        const size = getLayoutNodeSize(node);
+        const intrinsic = getIntrinsicNodeSize(node);
+        // Keep image and text bounds inside the node when the closest multiple is too small.
+        const dimension = (value, minimum, maximum) => Math.min(Math.floor(maximum / step) * step,
+            Math.max(nearest(value), Math.ceil(minimum / step) * step));
+        return {
+            node, x: nearest(node.x), y: nearest(node.y),
+            width: dimension(size.width, Math.max(MIN_NODE_WIDTH, intrinsic.width), MAX_NODE_WIDTH),
+            height: dimension(size.height, Math.max(MIN_NODE_HEIGHT, intrinsic.height), MAX_NODE_HEIGHT)
+        };
+    }).filter(({ node, x, y, width, height }) => {
+        const size = getLayoutNodeSize(node);
+        return node.x !== x || node.y !== y || size.width !== width || size.height !== height;
+    });
+    if (!changes.length) return;
+    pushUndoSnapshot();
+    for (const { node, x, y, width, height } of changes) {
+        node.x = x;
+        node.y = y;
+        node.nodeWidth = width;
+        node.nodeHeight = height;
+        scheduleAutosave(node);
+    }
+    render();
+});
 if (renameMapBtn) {
     renameMapBtn.addEventListener("click", () => renameMap().catch(reportEditorError));
 }
 
 if (canvasViewport) {
-    canvasViewport.addEventListener("mousedown", startCanvasPan);
+    canvasViewport.addEventListener("pointerdown", startCanvasPan);
 
     canvasViewport.addEventListener("scroll", () => {
         const selectedNode = getNodeById(state.selectedNodeId);
@@ -1844,51 +1933,28 @@ function reportEditorError(error) {
     if (autosaveStatus) autosaveStatus.textContent = "Operazione non completata.";
 }
 
-function editorRequest(url, options = {}, format = "json") {
-    const request = sendEditorRequest(url, options, format);
+function editorRequest(url, options = {}, format = "json", settings = {}) {
+    const request = sendEditorRequest(url, options, format, settings);
     activeEditorRequests.add(request);
     request.then(() => activeEditorRequests.delete(request), () => activeEditorRequests.delete(request));
     return request;
 }
 
-async function sendEditorRequest(url, options = {}, format = "json") {
+async function sendEditorRequest(url, options = {}, format = "json", settings = {}) {
     const requestKey = `${options.method || "GET"} ${url}`;
     try {
-        let response;
-        try {
-            response = await fetch(url, options);
-        } catch {
-            throw new Error("Connessione al server non riuscita. Le modifiche potrebbero non essere salvate. Controlla la connessione e riprova.");
-        }
-        if (response.redirected || response.status === 401) {
-            throw new Error("La sessione è scaduta. Accedi di nuovo prima di continuare; conserva le modifiche non salvate.");
-        }
-        if (!response.ok) {
-            const messages = {
+        const result = await globalThis.MindMapHttp.request(url, options, {
+            ...settings,
+            format,
+            messages: {
                 403: "Non hai il permesso di completare questa operazione.",
                 404: "La mappa o il nodo non è più disponibile.",
+                409: "Questa immagine è già usata da un altro nodo. Scegli un’altra alternativa e riprova il salvataggio.",
                 413: "Il contenuto inviato è troppo grande.",
-                429: "Troppe richieste. Attendi qualche istante e riprova."
-            };
-            throw new Error(messages[response.status] || `Operazione non riuscita (HTTP ${response.status}). Riprova; le modifiche potrebbero non essere salvate.`);
-        }
-        const contentType = response.headers.get("Content-Type") || "";
-        let result;
-        if (format === "empty") {
-            if (contentType.includes("text/html")) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
-        } else {
-            const expected = format === "json" ? /application\/(?:[\w.-]+\+)?json/i
-                : format === "png" ? /image\/png/i : /application\/pdf/i;
-            if (!expected.test(contentType)) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
-            try {
-                result = format === "json" ? await response.json() : await response.blob();
-                if (format === "json" && (!result || typeof result !== "object" || Array.isArray(result))) {
-                    throw new Error("Invalid response");
-                }
-            } catch {
-                throw new Error("Risposta del server incompleta o non valida. Controlla la connessione e riprova.");
+                429: "Troppe richieste. Attendi qualche istante e riprova.",
+                ...settings.messages
             }
-        }
+        });
         failedEditorRequests.delete(requestKey);
         const errorBox = document.getElementById("editor-request-error");
         errorBox.hidden = failedEditorRequests.size === 0;
@@ -1946,6 +2012,7 @@ async function saveNode(node) {
     if (autosaveStatus) autosaveStatus.textContent = failedEditorRequests.size
         ? "Restano operazioni non completate. Controlla il messaggio di errore." : state.pendingAutosaves.size || state.autosaveCount > 1
             ? "Altre modifiche in attesa di salvataggio..." : "Modifiche salvate.";
+    if (/^https?:\/\//i.test(node.imageUri || "")) queueMicrotask(queueImageStorage);
 }
 
 function queueAutoSubmitSelectedNode(field = null) {
@@ -2019,7 +2086,7 @@ function hasFailedSaves() {
 }
 
 function hasUnsavedChanges() {
-    return editingBackground || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
+    return !!imageSavePromise || editingBackground || pendingStyleChanges > 0 || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
         || activeEditorRequests.size > 0 || state.isApplyingHistory || hasFailedSaves();
 }
 
@@ -2040,16 +2107,16 @@ async function saveBeforeLeaving(proceed) {
         let saveError;
         do {
             const results = await Promise.allSettled([
-                flushAutosave(), backgroundSavePromise, ...activeEditorRequests
+                flushAutosave(), backgroundSavePromise, styleSavePromise, imagePolicyPromise, imageSavePromise, ...activeEditorRequests
             ]);
             const failed = results.find(result => result.status === 'rejected');
             if (failed && !saveError) saveError = failed.reason;
-        } while (state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
+        } while (imageSavePromise || pendingStyleChanges || state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
         if (saveError) throw saveError;
         // Background saves report errors without rejecting their queue promise.
         if (hasFailedSaves()) throw new Error('Ci sono modifiche non salvate. Controlla il messaggio di errore e riprova prima di continuare.');
         allowEditorUnload = true;
-        proceed();
+        await proceed();
     } catch (error) {
         leavingEditor = false;
         allowEditorUnload = false;
@@ -2062,9 +2129,10 @@ async function saveBeforeLeaving(proceed) {
 
 for (const form of document.querySelectorAll('.editor-page form')) {
     form.addEventListener('submit', event => {
-        if (allowEditorUnload) return;
         event.preventDefault();
-        saveBeforeLeaving(() => form.requestSubmit(event.submitter || undefined));
+        // The first submit already ran validation. Submit natively after saving:
+        // requestSubmit can be ignored while the browser is still dispatching that event.
+        saveBeforeLeaving(() => HTMLFormElement.prototype.submit.call(form));
     });
 }
 
@@ -2164,65 +2232,68 @@ function applyOrganicLayout() {
     // Extra roots occupy their own sectors alongside the main root's branches.
     const branches = [...(childrenMap.get(root.id) || []), ...roots.slice(1)];
     const placements = [{ node: root, depth: 0, angle: 0 }];
-    const ringSizes = [diameter(root)];
-    const ringRadii = [0];
     const placeBranches = (children, startAngle, span, depth) => {
         const totalWeight = children.reduce((sum, child) => sum + weights.get(child.id), 0);
         let cursor = startAngle;
         for (const child of children) {
             const childSpan = span * weights.get(child.id) / totalWeight;
             placements.push({ node: child, depth, angle: cursor + childSpan / 2 });
-            ringSizes[depth] = Math.max(ringSizes[depth] || 0, diameter(child));
-            // Reserve enough arc length even for large images and dense subtrees.
-            ringRadii[depth] = Math.max(ringRadii[depth] || 0, diameter(child) / Math.min(childSpan, Math.PI));
             placeBranches(childrenMap.get(child.id) || [], cursor, childSpan, depth + 1);
             cursor += childSpan;
         }
     };
     placeBranches(branches, -Math.PI / 2, Math.PI * 2, 1);
-    for (let depth = 1; depth < ringSizes.length; depth += 1) {
-        ringRadii[depth] = Math.max(ringRadii[depth],
-            ringRadii[depth - 1] + (ringSizes[depth - 1] + ringSizes[depth]) / 2);
-    }
 
-    // Expand radially to resolve collisions without moving the center or turning
-    // outer nodes back towards their parents. Angles and level order stay fixed.
-    let expansion = 1;
-    for (let iteration = 0; iteration < 2; iteration += 1) {
-        for (const { node, depth, angle } of placements) {
-            const size = sizes.get(node.id);
-            const radius = ringRadii[depth] * expansion;
-            node.x = MAP_CENTER_X + Math.cos(angle) * radius - size.width / 2;
-            node.y = MAP_CENTER_Y + Math.sin(angle) * radius - size.height / 2;
+    // Pack each node at the nearest free point on its branch's ray. Place parents
+    // first; only the affected node moves outwards when a rectangle blocks it.
+    const placed = [];
+    const radii = new Map();
+    const axisInterval = (direction, offset, clearance) => {
+        if (Math.abs(direction) < 1e-10) {
+            return Math.abs(offset) < clearance ? [-Infinity, Infinity] : null;
         }
-        let requiredExpansion = 1;
-        for (let i = 0; i < placements.length; i += 1) {
-            for (let j = i + 1; j < placements.length; j += 1) {
-                const first = placements[i].node;
-                const second = placements[j].node;
-                const firstSize = sizes.get(first.id);
-                const secondSize = sizes.get(second.id);
-                const dx = Math.abs(first.x + firstSize.width / 2 - second.x - secondSize.width / 2);
-                const dy = Math.abs(first.y + firstSize.height / 2 - second.y - secondSize.height / 2);
-                const scaleX = ((firstSize.width + secondSize.width) / 2 + padding) / Math.max(dx, 0.001);
-                const scaleY = ((firstSize.height + secondSize.height) / 2 + padding) / Math.max(dy, 0.001);
-                requiredExpansion = Math.max(requiredExpansion, Math.min(scaleX, scaleY));
-            }
+        const first = (offset - clearance) / direction;
+        const last = (offset + clearance) / direction;
+        return [Math.min(first, last), Math.max(first, last)];
+    };
+    for (const { node, depth, angle } of placements.sort((a, b) => a.depth - b.depth)) {
+        const size = sizes.get(node.id);
+        const dx = Math.cos(angle);
+        const dy = Math.sin(angle);
+        let radius = depth === 0 ? 0 : (radii.get(node.parentId) || 0) + padding;
+        const blocked = [];
+        for (const other of placed) {
+            const x = axisInterval(dx, other.x - MAP_CENTER_X, (size.width + other.width) / 2 + padding);
+            const y = axisInterval(dy, other.y - MAP_CENTER_Y, (size.height + other.height) / 2 + padding);
+            if (!x || !y) continue;
+            const start = Math.max(x[0], y[0]);
+            const end = Math.min(x[1], y[1]);
+            if (start < end && end >= radius) blocked.push([start, end]);
         }
-        expansion *= requiredExpansion;
+        blocked.sort((a, b) => a[0] - b[0]);
+        for (const [start, end] of blocked) {
+            if (start > radius) break;
+            if (end >= radius) radius = end + 1;
+        }
+        const x = MAP_CENTER_X + dx * radius;
+        const y = MAP_CENTER_Y + dy * radius;
+        node.x = Math.round(x - size.width / 2);
+        node.y = Math.round(y - size.height / 2);
+        radii.set(node.id, radius);
+        // Use the rounded, persisted positions for the next collision checks too.
+        placed.push({ x: node.x + size.width / 2, y: node.y + size.height / 2, ...size });
     }
     return root;
 }
 
 function getLayoutNodeSize(node) {
     if (renderNodeSizes?.has(node.id)) return renderNodeSizes.get(node.id);
-    const sketchPreset = isSketchPreset();
-    const inputs = [sketchPreset, node.text, node.description, node.fontSize, node.imageUri,
+    const inputs = [node.text, node.description, node.fontSize, node.imageUri,
         node.imageWidth, node.imageHeight, node.nodeWidth, node.nodeHeight];
     const cached = layoutSizeCache.get(node);
     const size = cached && sameRenderInputs(cached.inputs, inputs)
         ? cached.size
-        : sketchPreset ? getSketchNodeSize(node) : getNodeSize(node);
+        : getNodeSize(node);
     if (size !== cached?.size) layoutSizeCache.set(node, { inputs, size });
     renderNodeSizes?.set(node.id, size);
     return size;
@@ -2265,32 +2336,38 @@ async function addChildNode(parentId) {
     render();
 }
 
-async function applyStylePresetToMap(presetName) {
-    const normalized = (presetName || "CLASSIC").toUpperCase();
-    const preset = STYLE_PRESETS[normalized] || STYLE_PRESETS.CLASSIC;
-    state.map.stylePreset = normalized;
-    if (stylePresetInput) stylePresetInput.value = normalized;
-
-    await flushAutosave();
-    for (const node of state.map.nodes) {
-        node.shape = preset.shape;
-        node.branchColor = preset.branchColor;
-        node.branchStyle = preset.branchStyle;
-        node.branchWidth = preset.branchWidth;
-        node.branchCurve = preset.branchCurve;
-        node.color = node.parentId == null ? preset.rootColor : preset.childColor;
-    }
-
-    render();
-    selectNode(state.selectedNodeId, { showNodeOverlay: false });
-    await Promise.all(state.map.nodes.map(node => saveNode(node)));
-}
-
-if (globalThis.window) {
-    globalThis.window.applyMapStylePreset = async presetName => {
+function applyStylePresetToMap(presetName) {
+    const requested = (presetName || "CLASSIC").toUpperCase();
+    const normalized = STYLE_PRESETS[requested] ? requested : "CLASSIC";
+    pendingStyleChanges++;
+    const queued = styleSavePromise.then(async () => {
+        await flushAutosave();
         pushUndoSnapshot();
-        await applyStylePresetToMap(presetName).catch(reportEditorError);
-    };
+        const preset = STYLE_PRESETS[normalized];
+        state.map.stylePreset = normalized;
+        if (stylePresetInput) stylePresetInput.value = normalized;
+        for (const node of state.map.nodes) {
+            node.shape = preset.shape;
+            node.branchColor = preset.branchColor;
+            node.branchStyle = preset.branchStyle;
+            node.branchWidth = preset.branchWidth;
+            node.branchCurve = preset.branchCurve;
+            node.color = node.parentId == null ? preset.rootColor : preset.childColor;
+        }
+        render();
+        selectNode(state.selectedNodeId, { showNodeOverlay: false });
+        await editorRequest(`/api/maps/${state.map.id}/style`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stylePreset: normalized })
+        });
+        await Promise.all(state.map.nodes.map(node => runAutosave(node)));
+    });
+    const tracked = queued.finally(() => { pendingStyleChanges--; });
+    // Keep the queue usable after a failure; request errors still block publication
+    // until retried or superseded by a successful full history restore.
+    styleSavePromise = tracked.catch(() => {});
+    return tracked;
 }
 
 async function deleteNodeWithChecks(nodeId) {
@@ -2375,14 +2452,15 @@ function slugify(value) {
         .replace(/(^-|-$)/g, "") || "mappa";
 }
 
-function isTypingTarget(target) {
-    if (!target) return false;
-    const tag = target.tagName?.toLowerCase();
-    return tag === "input" || tag === "textarea" || target.isContentEditable;
+function isInteractiveTarget(target) {
+    return !!target?.closest?.('input, textarea, select, button, a, summary, [role="button"], [role="textbox"], [contenteditable]:not([contenteditable="false"])');
 }
 
 document.addEventListener("keydown", async event => {
-    if (leavingEditor) return;
+    // Text fields keep native undo/redo; controls keep their normal keyboard behavior.
+    if (leavingEditor || pendingStyleChanges || event.defaultPrevented || event.isComposing || event.altKey
+        || appDialog?.open || isInteractiveTarget(event.target)
+        || state.isApplyingHistory || state.drag || state.resize || state.pan) return;
     const isUndoShortcut = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z";
     const isRedoShortcut = ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y")
         || ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "z");
@@ -2401,12 +2479,11 @@ document.addEventListener("keydown", async event => {
         return;
     }
 
-    if (isTypingTarget(event.target)) return;
     if (!state.selectedNodeId) return;
     const node = getNodeById(state.selectedNodeId);
     if (!node) return;
 
-    if (event.key === "Tab" && !event.shiftKey) {
+    if (event.key === "Tab" && !event.shiftKey && !event.ctrlKey && !event.metaKey) {
         event.preventDefault();
         await addChildNode(node.id).catch(reportEditorError);
         return;
@@ -2424,16 +2501,15 @@ document.addEventListener("keydown", async event => {
     }
 });
 
+imageStorageSwitch.checked = state.map.storeImagesLocally !== false;
 state.map.stylePreset = getCurrentStylePresetName();
 refreshMapTitle();
 if (stylePresetInput) {
     stylePresetInput.value = state.map.stylePreset;
     const onPresetChange = async () => {
-        pushUndoSnapshot();
         await applyStylePresetToMap(stylePresetInput.value).catch(reportEditorError);
     };
     stylePresetInput.addEventListener("change", onPresetChange);
-    stylePresetInput.addEventListener("input", onPresetChange);
 }
 selectNode(null);
 render();
@@ -2441,5 +2517,29 @@ if (autoLayoutOnOpen) {
     reorderMap().catch(error => {
         console.error("Impossibile salvare il riordino iniziale della mappa", error);
         reportEditorError(error);
-    });
+    }).finally(queueImageStorage);
+} else {
+    queueImageStorage();
 }
+
+// Flush and lock the editor while producing a portable snapshot, then resume editing.
+document.getElementById('export-json-btn')?.addEventListener('click', () => {
+    saveBeforeLeaving(async () => {
+        try {
+            const blob = await globalThis.MindMapHttp.request(`/api/maps/${state.map.id}/export/json`, {}, {
+                format: 'json-file', serverMessages: true, httpErrorMessage: 'Non riesco a esportare la mappa. Riprova.'
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${state.map.title.replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 80) || 'mappa'}.json`;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } finally {
+            leavingEditor = false;
+            allowEditorUnload = false;
+            document.querySelector('.editor-page').inert = false;
+            hideLoading();
+        }
+    });
+});

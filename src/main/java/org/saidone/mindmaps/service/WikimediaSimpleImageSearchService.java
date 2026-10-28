@@ -59,8 +59,14 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
 
     @Override
     public String searchImage(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
+        val images = searchImages(keywords, preferredMode, excludedImageUrls);
+        return images.isEmpty() ? null : images.getFirst();
+    }
+
+    @Override
+    public List<String> searchImages(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
         if (!hasKeywords(keywords)) {
-            return null;
+            return List.of();
         }
 
         val normalizedKeywords = Arrays.stream(keywords)
@@ -71,30 +77,33 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
                 .toArray(String[]::new);
 
         if (normalizedKeywords.length == 0) {
-            return null;
+            return List.of();
         }
 
         log.debug("Ricerca immagine per: {}", String.join(", ", keywords));
 
+        val images = new LinkedHashSet<String>();
+        val seenFiles = new HashSet<String>();
+        val fallbackImages = new LinkedHashSet<String>();
         try {
             for (val queryTerms : buildSearchQueries(normalizedKeywords)) {
-                val imageUrl = searchFirstMatchingImageUrl(queryTerms, excludedImageUrls);
-                if (imageUrl != null) {
-                    return imageUrl;
-                }
+                images.addAll(searchMatchingImageUrls(queryTerms, excludedImageUrls, MAX_IMAGES - images.size(), seenFiles, fallbackImages));
+                if (images.size() >= MAX_IMAGES) break;
             }
-            return null;
         } catch (Exception e) {
             log.warn("Errore durante la ricerca immagine su Wikimedia: {}", e.getMessage());
-            return null;
         }
+        log.debug("Ho trovato {} foto o illustrazioni e {} copertine o anteprime di documenti, tenute come ultima alternativa.",
+                images.size(), fallbackImages.size());
+        images.addAll(fallbackImages);
+        return images.stream().limit(MAX_IMAGES).toList();
     }
 
     private boolean hasKeywords(String[] keywords) {
         return keywords != null && keywords.length > 0;
     }
 
-    private String searchFirstMatchingImageUrl(String queryTerms, Set<String> excludedImageUrls) throws Exception {
+    private List<String> searchMatchingImageUrls(String queryTerms, Set<String> excludedImageUrls, int limit, Set<String> seenFiles, Set<String> fallbackImages) throws Exception {
         val searchRoot = wikimediaRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("action", "query")
@@ -108,16 +117,22 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
                 .body(String.class);
 
         val searchResponse = objectMapper.readValue(searchRoot, SearchApiResponse.class);
+        val images = new LinkedHashSet<String>();
         for (val result : searchResponse.searchResults()) {
-            val imageUrl = resolveImageUrl(result.title());
-            if (imageUrl != null && !excludedImageUrls.contains(imageUrl)) {
-                return imageUrl;
+            if (!seenFiles.add(result.title())) continue;
+            val image = resolveImageUrl(result.title());
+            if (image != null && !excludedImageUrls.contains(image.url())) {
+                if (image.fallback()) fallbackImages.add(image.url());
+                else images.add(image.url());
+                if (images.size() >= limit) break;
             }
         }
-        return null;
+        return List.copyOf(images);
     }
 
-    private String resolveImageUrl(String fileTitle) throws Exception {
+    private record ResolvedImage(String url, boolean fallback) {}
+
+    private ResolvedImage resolveImageUrl(String fileTitle) throws Exception {
         if (!StringUtils.hasText(fileTitle)) {
             return null;
         }
@@ -141,12 +156,14 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
         }
 
         if (WikimediaDjvuPreview.isDjvu(fileTitle, firstImageInfo.mime(), firstImageInfo.url())) {
-            return WikimediaDjvuPreview.resolve(firstImageInfo.thumburl(), firstImageInfo.thumbmime());
+            val preview = WikimediaDjvuPreview.resolve(firstImageInfo.thumburl(), firstImageInfo.thumbmime());
+            return preview == null ? null : new ResolvedImage(preview, true);
         }
 
         val mimeType = firstImageInfo.mime();
         val imageUrl = firstImageInfo.url();
-        return isWebImage(mimeType, imageUrl) ? imageUrl : null;
+        return isWebImage(mimeType, imageUrl) ? new ResolvedImage(imageUrl,
+                WikimediaImagePreference.isFallback(fileTitle, mimeType, imageUrl, null)) : null;
     }
 
     private List<String> buildSearchQueries(String[] normalizedKeywords) {

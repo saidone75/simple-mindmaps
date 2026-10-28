@@ -50,9 +50,11 @@
         </div>
     </header>
 
-    <section class="publication-panel" aria-label="Pubblicazione gioco">
-        <div class="publication-heading"><span class="publication-icon" aria-hidden="true">🧩</span><div><h2>Da mappa a gioco</h2><p>Trasforma le tue idee in una scoperta da condividere.</p></div><span class="publication-status" th:if="${publicToken != null}">● Gioco pubblicato</span></div>
-        <p th:if="${publicationMessage}" th:text="${publicationMessage}" role="status"></p>
+    <p th:if="${publicationMessage}" th:text="${publicationMessage}" role="status"></p>
+    <details class="publication-card" aria-label="Pubblicazione gioco" th:open="${publicationMessage != null}">
+        <summary class="publication-heading"><span class="publication-icon" aria-hidden="true">🧩</span><span><strong class="publication-title">Da mappa a gioco</strong><span class="publication-subtitle">Trasforma le tue idee in una scoperta da condividere.</span></span><span class="publication-status" th:if="${publicToken != null}">● Gioco pubblicato</span></summary>
+        <div class="publication-panel">
+        <p>Vuoi condividere tutti i tuoi giochi? <a class="secondary-btn small-btn" th:href="@{/play/teachers/{name}(name=${teacherPage.username})}" target="_blank" rel="noopener">Apri la tua pagina pubblica dei giochi ↗</a></p>
         <form class="publication-action" th:action="@{/maps/{id}/publish(id=${map.id})}" method="post">
             <button type="submit" th:text="${publicToken != null ? 'Aggiorna gioco pubblicato' : 'Pubblica come gioco'}">Pubblica come gioco</button>
         </form>
@@ -75,7 +77,8 @@
             </form>
         </details>
         <small>La pubblicazione salva una copia della mappa. Aggiornandola, il vecchio link viene disattivato.</small>
-    </section>
+        </div>
+    </details>
     <script>document.addEventListener('DOMContentLoaded', () => { const link = document.getElementById('public-game-link'); if (link) { link.value = new URL(link.value, location.origin).href; link.onclick = () => link.select(); } });</script>
     <main class="editor-layout">
         <section class="canvas-panel">
@@ -83,13 +86,13 @@
             <div class="canvas-toolbar">
                 <div class="editor-tool-group"><button type="button" id="auto-layout-btn" class="secondary-btn small-btn">✦ Riordina la mappa</button>
                 <label for="style-preset-control">Stile</label>
-                <select id="style-preset-control" onchange="window.applyMapStylePreset && window.applyMapStylePreset(this.value)">
+                <select id="style-preset-control">
                     <option value="CLASSIC">Classico</option>
                     <option value="TRUE_SUMMER">True Summer</option>
                 </select>
-                <label for="map-background-color">Sfondo mappa</label>
+                <label for="map-background-color">Sfondo</label>
                 <input id="map-background-color" type="color" value="#fafbfd">
-                </div><div class="editor-tool-group editor-zoom-group"><label for="zoom-control">Vista</label>
+                </div><div class="editor-tool-group editor-zoom-group"><label for="zoom-control">Zoom</label>
                 <input id="zoom-control" type="range" min="10" max="200" step="1" value="100">
                 <span id="zoom-value">100%</span>
                 </div><div class="editor-tool-group"><label class="toolbar-checkbox" for="grid-enabled">
@@ -101,7 +104,13 @@
                     <option value="10">Fine</option>
                     <option value="20" selected>Media</option>
                     <option value="40">Grande</option>
-                </select></div>
+                </select>
+                <button type="button" id="snap-map-to-grid-btn" class="secondary-btn small-btn">Adatta alla griglia</button>
+                </div>
+                <div class="editor-tool-group editor-file-tools">
+                <label class="toolbar-checkbox" for="store-images-switch"><input id="store-images-switch" type="checkbox" role="switch" th:checked="${map.storeImagesLocally != false}"> Salva immagini</label>
+                    <button type="button" id="export-json-btn" class="secondary-btn small-btn">Esporta</button>
+                </div>
             </div>
             <p id="autosave-status" role="status" aria-live="polite"></p>
             <p id="editor-request-error" class="field-error" role="alert" hidden></p>
@@ -169,9 +178,15 @@
                     <button type="button" id="clear-image-btn" class="secondary-btn small-btn">Rimuovi</button>
                 </div>
                 <input id="node-image-upload" type="file" accept="image/*">
+                <p id="save-image-status" role="status" aria-live="polite"></p>
                 <div class="image-preview-box">
                     <img id="node-image-preview" alt="Anteprima immagine nodo" />
                 </div>
+                <section id="node-image-alternatives" class="image-alternatives" aria-labelledby="image-alternatives-title" hidden>
+                    <h3 id="image-alternatives-title">Scegli un’altra immagine</h3>
+                    <p>Le immagini già usate da altri nodi non sono selezionabili.</p>
+                    <div id="node-image-candidates" class="image-candidates" role="group" aria-label="Immagini Wikimedia disponibili"></div>
+                </section>
             </div>
         </section>
     </main>
@@ -196,6 +211,9 @@
 <script src="https://cdn.jsdelivr.net/npm/@floating-ui/core@1.7.5/dist/floating-ui.core.umd.min.js" integrity="sha256-/AzKIabPLvDJyQj77eBhTcryhejr/tINDhRPr8Lr8Fk=" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/@floating-ui/dom@1.7.6/dist/floating-ui.dom.umd.min.js" integrity="sha256-IUteAZ9w/aNsfwo15es6qE+lNEjA+MrE96TB4m5xSYw=" crossorigin="anonymous"></script>
 <script th:src="@{/js/loading-overlay.js}"></script>
+<script th:src="@{/js/app-dialog.js}"></script>
+<script th:src="@{/js/app-http.js}"></script>
+<script th:src="@{/js/editor-history.js}"></script>
 <script th:src="@{/js/map-geometry.js}"></script>
 <script th:src="@{/js/mindmap-editor.js}"></script>
 </body>

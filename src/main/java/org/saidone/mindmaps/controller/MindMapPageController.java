@@ -55,6 +55,7 @@ public class MindMapPageController {
             model.addAttribute("mapForm", new CreateMindMapRequest());
         }
         model.addAttribute("maps", mindMapService.findAll());
+        model.addAttribute("teacherPage", mapGameService.currentTeacherPage());
         return "maps/list";
     }
 
@@ -67,6 +68,7 @@ public class MindMapPageController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("username", principal.getName());
             model.addAttribute("maps", mindMapService.findAll());
+            model.addAttribute("teacherPage", mapGameService.currentTeacherPage());
             return "maps/list";
         }
         val map = mindMapService.create(mapForm);
@@ -118,6 +120,7 @@ public class MindMapPageController {
         model.addAttribute("username", principal.getName());
         model.addAttribute("map", mindMapService.findMapWithNodes(id));
         model.addAttribute("publicToken", mapGameService.publicToken(id));
+        model.addAttribute("teacherPage", mapGameService.currentTeacherPage());
         return "maps/editor";
     }
 

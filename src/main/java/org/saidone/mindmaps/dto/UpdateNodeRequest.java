@@ -38,6 +38,8 @@ public class UpdateNodeRequest {
     private String shape;
     private String branchColor;
     private String branchStyle;
+    private Integer branchWidth;
+    private String branchCurve;
     private String imageUri;
     private Integer imageWidth;
     private Integer imageHeight;

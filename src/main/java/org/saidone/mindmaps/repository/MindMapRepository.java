@@ -26,6 +26,7 @@ import java.util.Optional;
 
 public interface MindMapRepository extends JpaRepository<MindMap, Long> {
     Optional<MindMap> findByPublicToken(String publicToken);
+    List<MindMap> findByOwnerIdAndPublicTokenIsNotNullAndPublishedSnapshotIsNotNullOrderByUpdatedAtDesc(Long ownerId);
     List<MindMap> findByOwnerUsernameIgnoreCaseOrderByUpdatedAtDesc(String username);
     Optional<MindMap> findByIdAndOwnerUsernameIgnoreCase(Long id, String username);
 }

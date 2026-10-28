@@ -30,6 +30,7 @@
         <div>
             <h1>🐇 Alice's Simple Mind Maps</h1>
             <p>Un editor semplice da usare per creare mappe mentali colorate e stampabili.</p>
+            <a class="secondary-btn small-btn" th:href="@{/play/teachers/{name}(name=${teacherPage.username})}" target="_blank" rel="noopener">🧩 La tua pagina pubblica dei giochi ↗</a>
         </div>
         <form th:action="@{/logout}" method="post" class="logout-form">
             <span th:text="${username}">utente</span>
@@ -93,18 +94,6 @@
         </form>
     </section>
 
-    <section class="section-card form-card template-section-card">
-        <div class="section-intro">
-            <span class="section-kicker">🚀 Partenza rapida</span>
-            <h2>Modelli pronti</h2>
-        </div>
-        <div class="template-grid">
-            <form th:action="@{/maps/template/italiano}" method="post"><button class="template-btn" type="submit">Italiano</button></form>
-            <form th:action="@{/maps/template/scienze}" method="post"><button class="template-btn" type="submit">Scienze</button></form>
-            <form th:action="@{/maps/template/storia}" method="post"><button class="template-btn" type="submit">Storia</button></form>
-            <form th:action="@{/maps/template/geografia}" method="post"><button class="template-btn" type="submit">Geografia</button></form>
-        </div>
-    </section>
 
     <section class="section-card">
         <div class="section-header">
@@ -127,6 +116,22 @@
             </article>
         </div>
         <p th:if="${#lists.isEmpty(maps)}">Non ci sono ancora mappe salvate.</p>
+    </section>
+
+    <section class="section-card form-card template-section-card">
+        <div class="section-intro">
+            <span class="section-kicker">🚀 Partenza rapida</span>
+            <h2>Modelli pronti</h2>
+            <input id="import-map-file" type="file" accept=".json,application/json" hidden aria-label="File della mappa da importare">
+            <p id="import-map-error" class="field-error" role="alert" hidden></p>
+        </div>
+        <div class="template-grid">
+            <button type="button" id="import-map-btn" class="template-btn import-map-btn">Importa mappa</button>
+            <form th:action="@{/maps/template/italiano}" method="post"><button class="template-btn" type="submit">Italiano</button></form>
+            <form th:action="@{/maps/template/scienze}" method="post"><button class="template-btn" type="submit">Scienze</button></form>
+            <form th:action="@{/maps/template/storia}" method="post"><button class="template-btn" type="submit">Storia</button></form>
+            <form th:action="@{/maps/template/geografia}" method="post"><button class="template-btn" type="submit">Geografia</button></form>
+        </div>
     </section>
 </div>
 
@@ -152,6 +157,8 @@
 </dialog>
 
 <script th:src="@{/js/loading-overlay.js}"></script>
+<script th:src="@{/js/app-dialog.js}"></script>
+<script th:src="@{/js/app-http.js}"></script>
 <script th:src="@{/js/maps-list.js}"></script>
 </body>
 </html>

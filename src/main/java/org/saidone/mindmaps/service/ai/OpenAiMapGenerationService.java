@@ -161,13 +161,17 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                   cercare immagini su Wikimedia Commons. Per OGNI nodo, anche quelli più profondi, collega
                   sempre il soggetto del nodo all'argomento principale della mappa: includi un riferimento
                   esplicito al tema centrale (civiltà, epoca, luogo, ambiente o ambito pertinente).
-                  Il primo elemento identifica il soggetto specifico del nodo già contestualizzato al tema;
-                  gli altri precisano il contesto e dettagli visivi utili. Usa anche il ramo di appartenenza
+                  Il primo elemento identifica il soggetto visivo specifico in 1-3 parole, preferibilmente
+                  un nome concreto (es. "cuneiform tablet", "irrigation canals", "Hammurabi stele").
+                  Non accumulare civiltà, epoca, soggetto e dettagli nel primo elemento: gli altri
+                  elementi precisano separatamente il contesto e i dettagli visivi utili. Usa anche il ramo di appartenenza
                   per disambiguare il soggetto, senza perdere il riferimento al tema principale.
                   Evita parole generiche isolate che potrebbero portare a immagini di altri argomenti.
                   Esempio: nella mappa sulla Mesopotamia, per il nodo "Scrittura" usa
-                  ["Mesopotamian cuneiform", "clay tablet", "Sumerian writing"], per "Case" usa
-                  ["Mesopotamian houses", "mud brick dwelling", "ancient Mesopotamia"].
+                  ["cuneiform tablet", "Mesopotamia", "Sumerian writing"], per "Case" usa
+                  ["mud brick house", "Mesopotamia", "ancient dwelling"].
+                  Cerca fotografie di oggetti, luoghi o illustrazioni: evita libri, copertine,
+                  frontespizi e pagine di testo come soggetti delle immagini.
                   Adatta sempre il contesto all'argomento richiesto; non copiare questi esempi per altri temi.
                 - parentId: null solo per il nodo principale (primo elemento).
                 - Per gli altri nodi, parentId deve contenere l'indice (0-based) di un nodo precedente nella lista.
