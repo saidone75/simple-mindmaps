@@ -74,15 +74,22 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
 
     @Override
     public String searchImage(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
+        val images = searchImages(keywords, preferredMode, excludedImageUrls);
+        return images.isEmpty() ? null : images.getFirst();
+    }
+
+    @Override
+    public List<String> searchImages(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
         try {
-            return findMostRelevantImage(keywords, excludedImageUrls);
+            val result = findMostRelevantImageResult(keywords, excludedImageUrls);
+            return result == null ? List.of() : result.imageUrls();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             log.warn("La ricerca di immagini su Wikimedia è stata interrotta: {}", e.getMessage());
-            return null;
+            return List.of();
         } catch (Exception e) {
             log.warn("Non riesco a completare la ricerca di immagini su Wikimedia: {}", e.getMessage());
-            return null;
+            return List.of();
         }
     }
 
@@ -304,7 +311,8 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                 best.descriptionSemanticScore,
                 best.semanticScore,
                 best.totalScore,
-                best.rationale
+                best.rationale,
+                candidates.stream().map(candidate -> candidate.imageUrl).filter(Objects::nonNull).distinct().limit(MAX_IMAGES).toList()
         );
     }
 
@@ -700,7 +708,8 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             double descriptionSemanticScore,
             double semanticScore,
             double totalScore,
-            String rationale
+            String rationale,
+            List<String> imageUrls
     ) {
     }
 }

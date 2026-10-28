@@ -16,6 +16,7 @@ Versione corrente: **0.2.1**. Le novità sono raccolte nel [changelog](CHANGELOG
 - Editor SVG con trascinamento dei nodi, disposizione automatica, zoom e salvataggio automatico.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
+- Nelle nuove mappe AI vengono salvate fino a sei immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa; quelle già usate da altri nodi non sono selezionabili.
 - Duplicazione ed eliminazione delle mappe.
 - Esportazione in PNG e PDF, con formati A4 e A3 per il PDF.
 - Accesso con account e mappe private per ciascun proprietario.

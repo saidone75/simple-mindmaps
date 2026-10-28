@@ -104,6 +104,7 @@ public class MapGameService {
         if (snapshot.getNodes().stream().noneMatch(MapGameService::hasImage)) {
             throw new IllegalArgumentException("Aggiungi almeno un'immagine alla mappa prima di pubblicare il gioco.");
         }
+        snapshot.getNodes().forEach(node -> node.setImageCandidates(null));
         map.setPublishedSnapshot(gson.toJson(snapshot));
         map.setPublicToken(UUID.randomUUID().toString());
         repository.save(map);
@@ -166,6 +167,7 @@ public class MapGameService {
                 node.setHint(null);
                 node.setHint2(null);
                 node.setHint3(null);
+                node.setImageCandidates(null);
                 if (!hasImage(node)) continue;
                 val cardId = UUID.randomUUID().toString();
                 originalImages.put(node.getId(), node.getImageUri());

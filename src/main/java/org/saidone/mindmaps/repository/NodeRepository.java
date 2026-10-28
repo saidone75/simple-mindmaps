@@ -24,6 +24,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface NodeRepository extends JpaRepository<Node, Long> {
+    boolean existsByMapIdAndIdNotAndImageUri(Long mapId, Long id, String imageUri);
     List<Node> findByMapIdOrderByIdAsc(Long mapId);
     void deleteByMapId(Long mapId);
 }

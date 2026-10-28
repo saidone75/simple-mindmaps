@@ -20,6 +20,7 @@ package org.saidone.mindmaps.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.util.List;
 
 @Data
 @Entity
@@ -80,6 +81,10 @@ public class Node {
     @Lob
     @Column(columnDefinition = "CLOB")
     private String imageUri;
+
+    @Convert(converter = ImageCandidatesConverter.class)
+    @Column(columnDefinition = "CLOB")
+    private List<String> imageCandidates;
 
     private Integer imageWidth;
 

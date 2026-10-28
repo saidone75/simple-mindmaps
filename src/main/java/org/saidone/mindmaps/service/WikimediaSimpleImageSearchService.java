@@ -59,8 +59,14 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
 
     @Override
     public String searchImage(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
+        val images = searchImages(keywords, preferredMode, excludedImageUrls);
+        return images.isEmpty() ? null : images.getFirst();
+    }
+
+    @Override
+    public List<String> searchImages(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
         if (!hasKeywords(keywords)) {
-            return null;
+            return List.of();
         }
 
         val normalizedKeywords = Arrays.stream(keywords)
@@ -71,30 +77,29 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
                 .toArray(String[]::new);
 
         if (normalizedKeywords.length == 0) {
-            return null;
+            return List.of();
         }
 
         log.debug("Ricerca immagine per: {}", String.join(", ", keywords));
 
+        val images = new LinkedHashSet<String>();
+        val seenFiles = new HashSet<String>();
         try {
             for (val queryTerms : buildSearchQueries(normalizedKeywords)) {
-                val imageUrl = searchFirstMatchingImageUrl(queryTerms, excludedImageUrls);
-                if (imageUrl != null) {
-                    return imageUrl;
-                }
+                images.addAll(searchMatchingImageUrls(queryTerms, excludedImageUrls, MAX_IMAGES - images.size(), seenFiles));
+                if (images.size() >= MAX_IMAGES) break;
             }
-            return null;
         } catch (Exception e) {
             log.warn("Errore durante la ricerca immagine su Wikimedia: {}", e.getMessage());
-            return null;
         }
+        return List.copyOf(images);
     }
 
     private boolean hasKeywords(String[] keywords) {
         return keywords != null && keywords.length > 0;
     }
 
-    private String searchFirstMatchingImageUrl(String queryTerms, Set<String> excludedImageUrls) throws Exception {
+    private List<String> searchMatchingImageUrls(String queryTerms, Set<String> excludedImageUrls, int limit, Set<String> seenFiles) throws Exception {
         val searchRoot = wikimediaRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("action", "query")
@@ -108,13 +113,16 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
                 .body(String.class);
 
         val searchResponse = objectMapper.readValue(searchRoot, SearchApiResponse.class);
+        val images = new LinkedHashSet<String>();
         for (val result : searchResponse.searchResults()) {
+            if (!seenFiles.add(result.title())) continue;
             val imageUrl = resolveImageUrl(result.title());
             if (imageUrl != null && !excludedImageUrls.contains(imageUrl)) {
-                return imageUrl;
+                images.add(imageUrl);
+                if (images.size() >= limit) break;
             }
         }
-        return null;
+        return List.copyOf(images);
     }
 
     private String resolveImageUrl(String fileTitle) throws Exception {

@@ -41,6 +41,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -218,8 +219,10 @@ public class MindMapService {
             node.setBranchText(normalizeBranchText(nodeDto.getBranchText()));
             if (searchWikimediaImages) {
                 progress.update("Sto cercando un’immagine per il nodo \"%s\"…".formatted(nodeDto.getText()), index, totalNodes);
-                val imageUri = normalizeImageUri(wikimediaImageSearchService.searchImage(
+                val candidates = normalizeImageCandidates(wikimediaImageSearchService.searchImages(
                         normalizeImageKeywords(nodeDto), null, usedImageUrls));
+                node.setImageCandidates(candidates);
+                val imageUri = candidates.isEmpty() ? null : candidates.getFirst();
                 node.setImageUri(imageUri != null && usedImageUrls.add(imageUri) ? imageUri : null);
             } else {
                 node.setImageUri(normalizeImageUri(nodeDto.getImageUri()));
@@ -285,6 +288,13 @@ public class MindMapService {
     }
 
     private void applyNodeUpdate(Node node, UpdateNodeRequest request) {
+        val imageUri = normalizeImageUri(request.getImageUri());
+        if (imageUri != null && !imageUri.equals(node.getImageUri())
+                && node.getImageCandidates() != null && node.getImageCandidates().contains(imageUri)
+                && nodeRepository.existsByMapIdAndIdNotAndImageUri(node.getMapId(), node.getId(), imageUri)) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                    "Questa immagine è già usata da un altro nodo. Scegli un’altra alternativa.");
+        }
         updateIfPresent(request.getText(), value -> node.setText(normalizeNodeText(value)));
         updateIfPresent(request.getDescription(), value -> node.setDescription(normalizeNodeDescription(value)));
         updateIfPresent(request.getHint(), value -> node.setHint(normalizeNodeHint(value)));
@@ -300,7 +310,7 @@ public class MindMapService {
         updateIfPresent(request.getShape(), node::setShape);
         updateIfPresent(request.getBranchColor(), node::setBranchColor);
         updateIfPresent(request.getBranchStyle(), node::setBranchStyle);
-        node.setImageUri(normalizeImageUri(request.getImageUri()));
+        node.setImageUri(imageUri);
         node.setImageWidth(normalizeImageSize(request.getImageWidth()));
         node.setImageHeight(normalizeImageSize(request.getImageHeight()));
         updateIfPresent(request.getNodeWidth(), value -> node.setNodeWidth(normalizeNodeWidth(value)));
@@ -411,6 +421,7 @@ public class MindMapService {
             // Only reuse IDs belonging to this map; deleted nodes receive fresh IDs.
             val node = byId.getOrDefault(source.getId(), new Node());
             nodeMapper.restore(source, node);
+            node.setImageCandidates(normalizeImageCandidates(source.getImageCandidates()));
             node.setMapId(mapId);
             node.setParentId(null);
             nodeRepository.save(node);
@@ -544,6 +555,13 @@ public class MindMapService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Mappa non trovata"));
     }
 
+
+    private List<String> normalizeImageCandidates(List<String> candidates) {
+        if (candidates == null) return List.of();
+        return candidates.stream().filter(Objects::nonNull).map(String::trim)
+                .filter(url -> url.startsWith("https://")).distinct()
+                .limit(WikimediaImageSearchService.MAX_IMAGES).toList();
+    }
 
     private String normalizeImageUri(String imageUri) {
         if (imageUri == null) return null;

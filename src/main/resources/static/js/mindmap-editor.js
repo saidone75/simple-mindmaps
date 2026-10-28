@@ -114,6 +114,8 @@ const fontSizeInput = document.getElementById("node-font-size");
 const imageUrlInput = document.getElementById("node-image-url");
 const imageUploadInput = document.getElementById("node-image-upload");
 const imagePreview = document.getElementById("node-image-preview");
+const imageAlternatives = document.getElementById("node-image-alternatives");
+const imageCandidates = document.getElementById("node-image-candidates");
 const imageWidthInput = document.getElementById("node-image-width");
 const imageHeightInput = document.getElementById("node-image-height");
 const imageWidthValue = document.getElementById("node-image-width-value");
@@ -202,6 +204,7 @@ function showImageEditorOverlay(node) {
     state.imageOverlayNodeId = node.id;
     imageEditorOverlay.classList.add("visible");
     updateImagePreview(node.imageUri || "");
+    renderImageCandidates(node);
     updateImageEditorOverlay(node);
 }
 
@@ -1594,6 +1597,7 @@ for (const field of autosubmitFields) {
 if (imageWidthInput) imageWidthInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 if (imageHeightInput) imageHeightInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 function updateImagePreview(uri) {
+    for (const option of imageCandidates.children) option.setAttribute('aria-pressed', String(option.dataset.uri === uri));
     if (uri) {
         if (imagePreview.getAttribute("src") !== uri) imagePreview.src = uri;
         imagePreview.style.display = "block";
@@ -1601,6 +1605,51 @@ function updateImagePreview(uri) {
         imagePreview.removeAttribute("src");
         imagePreview.style.display = "none";
     }
+}
+
+function renderImageCandidates(node) {
+    const candidates = [...new Set(node.imageCandidates || [])].slice(0, 6);
+    imageAlternatives.hidden = candidates.length === 0;
+    imageCandidates.replaceChildren();
+    const usedImages = new Set(state.map.nodes.filter(other => other.id !== node.id).map(other => other.imageUri));
+    candidates.forEach((uri, index) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'image-candidate';
+        button.dataset.uri = uri;
+        button.disabled = usedImages.has(uri);
+        button.setAttribute('aria-label', `Immagine alternativa ${index + 1}${button.disabled ? ', già usata da un altro nodo' : ''}`);
+        button.setAttribute('aria-pressed', String(uri === node.imageUri));
+        const image = document.createElement('img');
+        image.src = uri;
+        image.alt = '';
+        image.loading = 'lazy';
+        image.decoding = 'async';
+        image.addEventListener('error', () => {
+            button.disabled = true;
+            button.setAttribute('aria-label', `Immagine alternativa ${index + 1} non disponibile`);
+        }, { once: true });
+        button.appendChild(image);
+        button.addEventListener('click', () => {
+            const current = getNodeById(node.id);
+            if (!current || current.imageUri === uri) return;
+            if (state.map.nodes.some(other => other.id !== current.id && other.imageUri === uri)) {
+                renderImageCandidates(current);
+                return;
+            }
+            pushUndoSnapshot();
+            current.imageUri = uri;
+            current.emoji = '';
+            if (nodeEmojiInput) nodeEmojiInput.value = '';
+            imageUrlInput.value = uri;
+            ensureNodeImageSize(current);
+            updateImagePreview(uri);
+            requestRender();
+            updateImageEditorOverlay(current);
+            scheduleAutosave(current);
+        });
+        imageCandidates.appendChild(button);
+    });
 }
 
 function applyFormToNode(node) {
@@ -1920,6 +1969,7 @@ async function sendEditorRequest(url, options = {}, format = "json") {
             const messages = {
                 403: "Non hai il permesso di completare questa operazione.",
                 404: "La mappa o il nodo non è più disponibile.",
+                409: "Questa immagine è già usata da un altro nodo. Scegli un’altra alternativa e riprova il salvataggio.",
                 413: "Il contenuto inviato è troppo grande.",
                 429: "Troppe richieste. Attendi qualche istante e riprova."
             };

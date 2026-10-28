@@ -39,7 +39,3 @@ Revisione statica ricontrollata sul codice attuale. I punti 11–17 e 29 descriv
 28. [ ] Rimuovere o isolare il percorso grafico sketch non attivo: `isSketchPreset` restituisce sempre `false`, ma restano rendering condizionali e selettori `.sketch-node`, `.connector-sketch` e `.branch-label-sketch`. Conservare le risorse ancora condivise: per esempio `--sketch-ink` è usata anche dal testo dello spinner (`mindmap-editor.js`, `app.css`).
 29. [ ] Estendere `prefers-reduced-motion` al coniglietto dello spinner: in `app.css` la regola disattiva soltanto le animazioni del login, mentre `#loading-overlay .loading-icon` continua ad animarsi.
 30. [ ] Pulizia facoltativa: estrarre variabili CSS per colori effettivamente condivisi fra pannelli, bordi e controlli dell’editor. Non accorpare automaticamente colori simili che rappresentano stati diversi: è una miglioria di manutenzione, non un problema prestazionale dimostrato (`mindmap-editor.css`).
-
-## Nuove funzionalità da valutare
-
-31. [ ] Durante la ricerca immagini su Wikimedia, salvare fino a 5 URL di immagini candidate per nodo e mostrarne le anteprime quando si seleziona la foto del nodo, così l’utente può scegliere un’immagine alternativa.

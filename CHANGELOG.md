@@ -13,6 +13,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Fino a sei URL Wikimedia candidati salvati per nodo nelle nuove mappe AI, con anteprime e scelta nell’editor. Supporto alle ricerche semplice e semantica, mantenimento nelle copie e in Annulla/Ripristina, controllo delle immagini già usate da altri nodi. Aggiunta della colonna `image_candidates` alla tabella dei nodi.
 - Pagina pubblica univoca per insegnante con pulsanti per avviare i giochi pubblicati; dalla festa finale si può rigiocare o tornare alla selezione. Il link di pubblicazione continua ad aprire il singolo gioco.
 
 ### Fixed

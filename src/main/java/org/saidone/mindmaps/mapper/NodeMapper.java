@@ -33,6 +33,7 @@ public interface NodeMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "mapId", ignore = true)
     @Mapping(target = "parentId", ignore = true)
+    @Mapping(target = "imageCandidates", ignore = true)
     void restore(NodeDto source, @MappingTarget Node target);
 
 }
