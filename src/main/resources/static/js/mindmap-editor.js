@@ -1860,6 +1860,36 @@ if (gridSizeInput) {
         render();
     });
 }
+document.getElementById("snap-map-to-grid-btn")?.addEventListener("click", () => {
+    if (leavingEditor || state.isApplyingHistory || state.drag || state.resize || pendingStyleChanges) return;
+    const step = Math.max(5, Number(state.gridSize) || DEFAULT_GRID_SIZE);
+    const nearest = value => Math.round(value / step) * step;
+    const changes = state.map.nodes.map(node => {
+        const size = getLayoutNodeSize(node);
+        const intrinsic = getIntrinsicNodeSize(node);
+        // Keep image and text bounds inside the node when the closest multiple is too small.
+        const dimension = (value, minimum, maximum) => Math.min(Math.floor(maximum / step) * step,
+            Math.max(nearest(value), Math.ceil(minimum / step) * step));
+        return {
+            node, x: nearest(node.x), y: nearest(node.y),
+            width: dimension(size.width, Math.max(MIN_NODE_WIDTH, intrinsic.width), MAX_NODE_WIDTH),
+            height: dimension(size.height, Math.max(MIN_NODE_HEIGHT, intrinsic.height), MAX_NODE_HEIGHT)
+        };
+    }).filter(({ node, x, y, width, height }) => {
+        const size = getLayoutNodeSize(node);
+        return node.x !== x || node.y !== y || size.width !== width || size.height !== height;
+    });
+    if (!changes.length) return;
+    pushUndoSnapshot();
+    for (const { node, x, y, width, height } of changes) {
+        node.x = x;
+        node.y = y;
+        node.nodeWidth = width;
+        node.nodeHeight = height;
+        scheduleAutosave(node);
+    }
+    render();
+});
 if (renameMapBtn) {
     renameMapBtn.addEventListener("click", () => renameMap().catch(reportEditorError));
 }

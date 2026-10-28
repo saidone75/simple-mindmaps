@@ -1,6 +1,7 @@
 # TODO
 
 1. [ ] Verificare il trascinamento dei nodi, lo spostamento della vista (pan) e il ridimensionamento automatico dell’area di lavoro.
+40. [ ] Esportare e importare le mappe in formato ZIP.
 6. [ ] Aggiungere un gioco con una linea del tempo in cui collocare le immagini nelle tappe corrette.
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026

@@ -26,9 +26,9 @@ const DEFAULT_IMAGE_SIZE = 128;
 const MIN_IMAGE_SIZE = 24;
 const MAX_IMAGE_SIZE = 800;
 const MIN_NODE_WIDTH = 120;
-const MAX_NODE_WIDTH = 720;
+const MAX_NODE_WIDTH = 1000;
 const MIN_NODE_HEIGHT = 60;
-const MAX_NODE_HEIGHT = 420;
+const MAX_NODE_HEIGHT = 1000;
 const nodeTextLines = new WeakMap();
 
 

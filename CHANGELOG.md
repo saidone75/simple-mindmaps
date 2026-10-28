@@ -19,6 +19,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Pulsante «Adatta alla griglia» nella toolbar: allinea tutti i nodi alla posizione più vicina e arrotonda larghezza e altezza a multipli della griglia, rispettando lo spazio minimo del contenuto; salvataggio automatico e supporto Annulla/Ripristina.
 - Importazione ed esportazione delle mappe in JSON, con nodi, collegamenti, stile, indizi, titoli premio e immagini locali incorporate nel file. L’importazione crea una nuova mappa privata con nuovi riferimenti alle immagini; controllo del formato e dei collegamenti, limite di 100 MB per file e 1000 nodi. Comando «Importa mappa» al primo posto a sinistra nella griglia dei modelli pronti, con le stesse dimensioni e un colore distinto, ed «Esporta» in fondo alla toolbar dell’editor, dopo lo switch delle immagini.
 - Job notturno configurabile per le immagini orfane, con controllo dei riferimenti in mappe, alternative e copie pubblicate, sette giorni di conservazione dall’individuazione e cancellazione dei file dopo il commit del database.
 
