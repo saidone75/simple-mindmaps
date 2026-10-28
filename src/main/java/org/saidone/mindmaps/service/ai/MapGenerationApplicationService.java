@@ -29,6 +29,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 @Service
 @RequiredArgsConstructor
@@ -113,14 +115,45 @@ public class MapGenerationApplicationService {
         }
         generated.setPrizes(prizes.stream().map(String::strip).toList());
 
-        generated.setNodes(generated.getNodes().stream()
-                .filter(this::hasValidNode)
-                .map(this::normalizeNodeDescription)
-                .toList());
-
-        if (generated.getNodes().isEmpty()) {
-            throw new IllegalStateException("L'IA non ha generato nodi utilizzabili.");
+        val original = generated.getNodes();
+        if (!hasValidNode(original.getFirst())) {
+            throw new IllegalStateException("L’AI non ha generato un nodo principale valido.");
         }
+        val indices = new int[original.size()];
+        Arrays.fill(indices, -1);
+        val retained = new ArrayList<NodeDto>();
+        for (int i = 0; i < original.size(); i++) {
+            if (!hasValidNode(original.get(i))) continue;
+            indices[i] = retained.size();
+            retained.add(normalizeNodeDescription(original.get(i)));
+        }
+        for (int i = 0; i < original.size(); i++) {
+            if (indices[i] < 0) continue;
+            val node = original.get(i);
+            if (i == 0) {
+                node.setParentId(null);
+                continue;
+            }
+            Long parent = node.getParentId();
+            int cursor = i;
+            // References use the original indices. Skip discarded ancestors without
+            // ever interpreting an old index as an index into the compacted list.
+            while (parent != null) {
+                if (parent < 0 || parent >= cursor) {
+                    throw new IllegalStateException("L’AI ha generato collegamenti tra nodi non validi.");
+                }
+                val index = parent.intValue();
+                if (indices[index] >= 0) break;
+                val ancestor = original.get(index);
+                if (ancestor == null) {
+                    throw new IllegalStateException("L’AI ha collegato un nodo a un genitore mancante.");
+                }
+                cursor = index;
+                parent = ancestor.getParentId();
+            }
+            node.setParentId(parent == null ? 0L : (long) indices[parent.intValue()]);
+        }
+        generated.setNodes(retained);
     }
 
 

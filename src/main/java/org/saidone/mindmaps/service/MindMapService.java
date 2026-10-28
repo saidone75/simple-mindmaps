@@ -342,6 +342,10 @@ public class MindMapService {
         getMap(node.getMapId());
 
         val mapNodes = nodeRepository.findByMapIdOrderByIdAsc(node.getMapId());
+        if (node.getParentId() == null && mapNodes.stream().filter(candidate -> candidate.getParentId() == null).count() <= 1) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST,
+                    "Non puoi eliminare l’ultimo nodo principale della mappa.");
+        }
         deleteRecursive(nodeId, mapNodes);
     }
 

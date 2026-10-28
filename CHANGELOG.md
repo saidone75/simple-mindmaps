@@ -25,6 +25,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Riferimenti ai genitori dei nodi AI rimappati dopo gli scarti; i figli dei nodi scartati vengono collegati al primo antenato valido, mentre radici mancanti e riferimenti incoerenti fanno ripetere la generazione.
+- Eliminazione dell’ultimo nodo principale impedita anche sul server, prima di rimuovere i discendenti.
 - Immagini conservate su file anziché come Blob, con trasferimento automatico degli eventuali contenuti binari già salvati nel database SQLite.
 - Preset della mappa salvato sul server con un solo gestore del cambio di stile e attesa dei salvataggi anche prima della pubblicazione. Spessore e curva dei rami persistiti, validati e conservati al ricaricamento, nella duplicazione, in Annulla/Ripristina e nei giochi pubblicati; aggiunte le colonne `branch_width` e `branch_curve` alla tabella dei nodi.
 - Scorciatoie dell’editor rispettose del controllo selezionato e delle finestre di dialogo: Tab e Invio mantengono il comportamento dei controlli, Annulla/Ripristina nei campi di testo resta nativo del browser.
