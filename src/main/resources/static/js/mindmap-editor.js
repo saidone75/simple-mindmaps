@@ -2300,9 +2300,9 @@ function getLayoutNodeSize(node) {
 }
 
 async function persistAllNodePositions() {
-    for (const node of state.map.nodes) {
-        await saveNode(node);
-    }
+    // Capture every position now and serialize writes with pending autosaves.
+    // Navigation, publication and undo must wait for the whole reorder too.
+    await Promise.all(state.map.nodes.map(node => runAutosave(node)));
 }
 
 async function addChildNode(parentId) {

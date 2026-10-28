@@ -13,11 +13,11 @@ Versione corrente: **0.2.1**. Le novità sono raccolte nel [changelog](CHANGELOG
 ## Funzionalità
 
 - Mappe create da zero, da template o generate con AI. Durante la generazione, lo spinner mostra l’attività corrente: creazione della mappa, controllo dei collegamenti, ricerca di un’immagine per ciascun nodo e salvataggio.
-- Editor SVG con trascinamento dei nodi, disposizione automatica, zoom e salvataggio automatico.
+- Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. **Adatta alla griglia** allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
 - Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa; quelle già usate da altri nodi non sono selezionabili.
-- Lo switch **Salva immagini nella mappa**, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. Le immagini vengono adattate entro 1024 × 1024 px senza ingrandirle; le GIF restano animate. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
+- Lo switch **Salva immagini**, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. I file scaricati possono pesare fino a 25 MB e vengono adattati entro 1024 × 1024 px senza ingrandirli; le GIF animate mantengono l’animazione. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
 - Duplicazione ed eliminazione delle mappe.
 - Esportazione in PNG e PDF, con formati A4 e A3 per il PDF; importazione ed esportazione delle mappe in JSON.
 - Accesso con account e mappe private per ciascun proprietario.
@@ -102,7 +102,7 @@ Per costruire il JAR saltando l'esecuzione dei test è disponibile `bash build.s
 ### Pubblicare una mappa
 
 1. Nell'editor, aggiungi almeno un'immagine ai nodi.
-2. Premi **Pubblica come gioco**.
+2. Apri la card **Da mappa a gioco**, chiusa per impostazione predefinita, e premi **Pubblica come gioco**.
 3. Copia il link pubblico e condividilo con i bambini: non occorre un account per giocare.
 
 La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti, colori, disposizione e dimensioni dei nodi. Le modifiche successive nell'editor non cambiano il gioco già pubblicato.
@@ -113,11 +113,11 @@ Ogni insegnante ha anche una **pagina pubblica dei giochi**, con il nome utente 
 
 ### Giocare
 
-Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare un indizio del nodo scelto a caso tra quelli compilati, oppure un incoraggiamento se non ce ne sono. Puoi scrivere fino a tre indizi per nodo nell’editor; nelle nuove mappe AI vengono generati automaticamente.
+Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare uno degli indizi associati all’immagine trascinata, scelto a caso, oppure un incoraggiamento se non ce ne sono. Puoi scrivere fino a tre indizi per nodo nell’editor; nelle nuove mappe AI vengono generati automaticamente.
 
 Usa **−** per rimpicciolire e **+** per ingrandire la mappa; trascina lo sfondo con la manina per spostarti. **Vedi tutta la mappa** la adatta alla finestra.
 
-Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personalizzabili dall’insegnante. Errori e tempo non penalizzano il bambino. Per ricominciare, premi **Giochiamo ancora ↻**.
+Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personalizzabili dall’insegnante. Errori e tempo non penalizzano il bambino. Alla fine puoi premere **Giochiamo ancora ↻** oppure **Scegli un altro gioco** per tornare alla pagina dell’insegnante. Il pulsante **Suoni attivi** permette di attivare o disattivare l’audio.
 
 ## Persistenza ed esportazione
 
