@@ -150,6 +150,8 @@ button.login-card-bunny:hover,
 
 .page-shell .hero-card p { max-width: 640px; }
 
+.page-shell .hero-card p + .secondary-btn { margin-top: 16px; }
+
 .page-shell .section-card { padding: 22px; }
 
 .page-shell .section-intro { margin-bottom: 18px; }
@@ -290,6 +292,10 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 .login-submit { background: linear-gradient(135deg, var(--accent), var(--accent-dark)); box-shadow: 0 12px 24px var(--shadow); }
 
 .template-btn { width: 100%; min-height: 72px; font-size: 1.05rem; }
+
+.import-map-btn { background: linear-gradient(135deg, #277d78, #1c605c); }
+
+.import-map-btn:hover { background: #174f4c; }
 
 .map-card { background: var(--surface); }
 

@@ -122,11 +122,11 @@
         <div class="section-intro">
             <span class="section-kicker">🚀 Partenza rapida</span>
             <h2>Modelli pronti</h2>
-            <button type="button" id="import-map-btn" class="secondary-btn">Importa mappa</button>
             <input id="import-map-file" type="file" accept=".json,application/json" hidden aria-label="File della mappa da importare">
             <p id="import-map-error" class="field-error" role="alert" hidden></p>
         </div>
         <div class="template-grid">
+            <button type="button" id="import-map-btn" class="template-btn import-map-btn">Importa mappa</button>
             <form th:action="@{/maps/template/italiano}" method="post"><button class="template-btn" type="submit">Italiano</button></form>
             <form th:action="@{/maps/template/scienze}" method="post"><button class="template-btn" type="submit">Scienze</button></form>
             <form th:action="@{/maps/template/storia}" method="post"><button class="template-btn" type="submit">Storia</button></form>

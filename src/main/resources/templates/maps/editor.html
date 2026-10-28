@@ -51,7 +51,7 @@
     </header>
 
     <p th:if="${publicationMessage}" th:text="${publicationMessage}" role="status"></p>
-    <details class="publication-card" aria-label="Pubblicazione gioco">
+    <details class="publication-card" aria-label="Pubblicazione gioco" th:open="${publicationMessage != null}">
         <summary class="publication-heading"><span class="publication-icon" aria-hidden="true">🧩</span><span><strong class="publication-title">Da mappa a gioco</strong><span class="publication-subtitle">Trasforma le tue idee in una scoperta da condividere.</span></span><span class="publication-status" th:if="${publicToken != null}">● Gioco pubblicato</span></summary>
         <div class="publication-panel">
         <p>Vuoi condividere tutti i tuoi giochi? <a class="secondary-btn small-btn" th:href="@{/play/teachers/{name}(name=${teacherPage.username})}" target="_blank" rel="noopener">Apri la tua pagina pubblica dei giochi ↗</a></p>
