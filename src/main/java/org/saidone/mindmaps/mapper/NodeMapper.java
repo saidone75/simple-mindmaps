@@ -20,6 +20,7 @@ package org.saidone.mindmaps.mapper;
 
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
 import org.saidone.mindmaps.dto.NodeDto;
 import org.saidone.mindmaps.model.Node;
 
@@ -28,5 +29,10 @@ public interface NodeMapper {
 
     @Mapping(target = "imageKeywords", ignore = true)
     NodeDto toDto(Node node);
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "mapId", ignore = true)
+    @Mapping(target = "parentId", ignore = true)
+    void restore(NodeDto source, @MappingTarget Node target);
 
 }

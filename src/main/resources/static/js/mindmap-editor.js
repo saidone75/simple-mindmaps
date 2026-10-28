@@ -34,8 +34,8 @@ const state = {
     pan: null,
     workspaceViewport: null,
     pendingImageNodeId: null,
-    autosaveTimer: null,
-    autosaveNodeId: null,
+    pendingAutosaves: new Map(),
+    autosaveCount: 0,
     autosavePromise: null,
     contextMenu: null,
     hoveredNodeId: null,
@@ -100,6 +100,10 @@ const descriptionInput = document.getElementById("node-description");
 const hintFields = ["hint", "hint2", "hint3"];
 const hintInputs = ["node-hint", "node-hint-2", "node-hint-3"].map(id => document.getElementById(id));
 const colorInput = document.getElementById("node-color");
+const textColorInput = document.getElementById("node-text-color");
+const mapBackgroundInput = document.getElementById("map-background-color");
+let backgroundSavePromise = Promise.resolve();
+let editingBackground = false;
 const branchColorInput = document.getElementById("branch-color");
 const branchStyleInput = document.getElementById("branch-style");
 const branchWidthInput = document.getElementById("branch-width");
@@ -113,6 +117,10 @@ const imageHeightInput = document.getElementById("node-image-height");
 const imageWidthValue = document.getElementById("node-image-width-value");
 const imageHeightValue = document.getElementById("node-image-height-value");
 const autosaveStatus = document.getElementById("autosave-status");
+const failedEditorRequests = new Map();
+const activeEditorRequests = new Set();
+let leavingEditor = false;
+let allowEditorUnload = false;
 const nodeEmojiInput = document.getElementById("node-emoji");
 const branchTextInput = document.getElementById("branch-text");
 const autoLayoutBtn = document.getElementById("auto-layout-btn");
@@ -230,17 +238,52 @@ function snapshotEditorState() {
     };
 }
 
-function restoreEditorState(snapshot) {
-    formEditGroup = null;
-    state.isApplyingHistory = true;
-    state.map = structuredClone(snapshot.map);
-    state.selectedNodeId = snapshot.selectedNodeId;
-    state.isApplyingHistory = false;
-    if (state.selectedNodeId) {
-        selectNode(state.selectedNodeId);
-    } else {
+async function restoreEditorState(snapshot) {
+    const nodePaths = new Set([...state.map.nodes, ...snapshot.map.nodes].map(node => `/api/nodes/${node.id}`));
+    const mapPath = `/api/maps/${state.map.id}`;
+    const restored = await editorRequest(`/api/maps/${state.map.id}/restore`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(snapshot.map)
+    });
+    // A successful full restore supersedes previous failed writes to this map.
+    for (const key of failedEditorRequests.keys()) {
+        const path = key.slice(key.indexOf(" ") + 1);
+        if (nodePaths.has(path) || path === mapPath || path.startsWith(`${mapPath}/`)) failedEditorRequests.delete(key);
+    }
+    const errorBox = document.getElementById("editor-request-error");
+    errorBox.hidden = failedEditorRequests.size === 0;
+    errorBox.textContent = [...failedEditorRequests.values()].join(" ");
+    if (autosaveStatus) autosaveStatus.textContent = "Mappa ripristinata e salvata.";
+    const remap = id => id == null ? null : restored.nodeIds[id] ?? id;
+    for (const entry of [...state.undoStack, ...state.redoStack]) {
+        entry.selectedNodeId = remap(entry.selectedNodeId);
+        for (const node of entry.map.nodes) {
+            node.id = remap(node.id);
+            node.parentId = remap(node.parentId);
+        }
+    }
+    // Keep frontend-only settings until their persistence is implemented (TODO 12).
+    const localNodes = new Map(snapshot.map.nodes.map(node => [remap(node.id), node]));
+    state.map = restored.map;
+    for (const node of state.map.nodes) {
+        const local = localNodes.get(node.id);
+        if (local) {
+            node.branchWidth = local.branchWidth;
+            node.branchCurve = local.branchCurve;
+        }
+    }
+    state.selectedNodeId = remap(snapshot.selectedNodeId);
+    if (stylePresetInput) stylePresetInput.value = state.map.stylePreset;
+    refreshMapTitle();
+    closeContextMenu();
+    if (state.selectedNodeId) selectNode(state.selectedNodeId);
+    else {
+        hideNodeEditorOverlay();
+        hideImageEditorOverlay();
         render();
     }
+    return restored.nodeIds;
 }
 
 function pushUndoSnapshot() {
@@ -325,20 +368,43 @@ function openDialog({ title, message, mode = "alert", value = "" }) {
     });
 }
 
+async function applyHistory(source, destination) {
+    if (!source.length || state.isApplyingHistory || state.drag || state.resize || state.pan) return;
+    state.isApplyingHistory = true;
+    formEditGroup = null;
+    const workspace = document.querySelector(".editor-page");
+    workspace.inert = true;
+    showLoading("Sto ripristinando la mappa…");
+    try {
+        await flushAutosave();
+        await backgroundSavePromise;
+        while (activeEditorRequests.size) await Promise.all([...activeEditorRequests]);
+        const current = snapshotEditorState();
+        // Clone: ID reconciliation must not mutate the snapshot being restored.
+        const target = structuredClone(source[source.length - 1]);
+        const ids = await restoreEditorState(target);
+        current.selectedNodeId = ids[current.selectedNodeId] ?? current.selectedNodeId;
+        for (const node of current.map.nodes) {
+            node.id = ids[node.id] ?? node.id;
+            node.parentId = ids[node.parentId] ?? node.parentId;
+        }
+        source.pop();
+        destination.push(current);
+    } catch (error) {
+        reportEditorError(error);
+    } finally {
+        state.isApplyingHistory = false;
+        workspace.inert = false;
+        hideLoading();
+    }
+}
+
 function undoChange() {
-    if (!state.undoStack.length) return;
-    const current = snapshotEditorState();
-    const previous = state.undoStack.pop();
-    state.redoStack.push(current);
-    restoreEditorState(previous);
+    return applyHistory(state.undoStack, state.redoStack);
 }
 
 function redoChange() {
-    if (!state.redoStack.length) return;
-    const current = snapshotEditorState();
-    const next = state.redoStack.pop();
-    state.undoStack.push(current);
-    restoreEditorState(next);
+    return applyHistory(state.redoStack, state.undoStack);
 }
 function getNodeById(id) {
     return renderNodeIndex ? renderNodeIndex.get(id) : state.map.nodes.find(n => n.id === id);
@@ -377,6 +443,12 @@ function getSketchNodeSize(node) {
     return { width, height };
 }
 
+
+function colorPickerValue(value, fallback) {
+    const variable = /^var\((--[\w-]+)\)$/.exec(value || "");
+    const resolved = variable ? getComputedStyle(document.documentElement).getPropertyValue(variable[1]).trim() : value;
+    return /^#[0-9a-f]{6}$/i.test(resolved || "") ? resolved : fallback;
+}
 
 function getNodeColor(node) {
     const preset = getCurrentStylePreset();
@@ -500,6 +572,7 @@ function appendNodeText(group, node, width, height, sketchPreset, emojiValue) {
             ? node.y + ((height - ((lines.length - 1) * lineHeight)) / 2) + 14
             : node.y + ((height - ((lines.length - 1) * lineHeight)) / 2);
     text.setAttribute("class", "node-text");
+    if (node.textColor) text.style.fill = node.textColor;
     text.setAttribute("x", node.x + width / 2);
     text.setAttribute("y", firstLineY);
     text.setAttribute("text-anchor", "middle");
@@ -640,7 +713,7 @@ function updateNodeElement(node, depth, sketchPreset) {
     // Position is applied to the existing group so dragging keeps its image alive.
     const inputs = [node, node.parentId, node.text, node.description, node.emoji,
         node.fontSize, node.shape, node.imageUri, node.imageWidth, node.imageHeight,
-        node.nodeWidth, node.nodeHeight, node.branchColor, depth, sketchPreset, getNodeColor(node),
+        node.nodeWidth, node.nodeHeight, node.branchColor, node.textColor, depth, sketchPreset, getNodeColor(node),
         node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
     const previous = renderCache.nodes.get(node.id);
     const entry = updateCachedElement(renderCache.nodes, node.id, inputs, renderCache.layers.nodes,
@@ -659,6 +732,8 @@ function updateNodeElement(node, depth, sketchPreset) {
 }
 
 function render() {
+    if (canvasViewport) canvasViewport.style.backgroundColor = state.map.backgroundColor || "";
+    if (mapBackgroundInput) mapBackgroundInput.value = state.map.backgroundColor || "#fafbfd";
     if (renderFrame != null) {
         cancelAnimationFrame(renderFrame);
         renderFrame = null;
@@ -789,11 +864,11 @@ function openContextMenu(event, nodeId) {
         const action = actionEvent.target?.dataset?.action;
         if (!action) return;
 
-        if (action === "add-child") await addChildNode(nodeId);
+        if (action === "add-child") await addChildNode(nodeId).catch(reportEditorError);
         if (action === "edit-text") await quickEdit(nodeId);
-        if (action === "edit-branch") await quickEditBranchText(nodeId);
+        if (action === "edit-branch") await quickEditBranchText(nodeId).catch(reportEditorError);
         if (action === "upload-image") startImageUploadForNode(nodeId);
-        if (action === "delete") await deleteNodeWithChecks(nodeId);
+        if (action === "delete") await deleteNodeWithChecks(nodeId).catch(reportEditorError);
 
         closeContextMenu();
     });
@@ -970,7 +1045,7 @@ function renderNodeActionButtons(group, node, nodeWidth) {
             key: "add-child",
             label: "➕",
             title: "Aggiungi nodo figlio",
-            onClick: () => addChildNode(node.id)
+            onClick: () => addChildNode(node.id).catch(reportEditorError)
         },
         {
             key: "add-image",
@@ -982,13 +1057,13 @@ function renderNodeActionButtons(group, node, nodeWidth) {
             key: "edit-emoji",
             label: "😀",
             title: "Emoji nodo",
-            onClick: () => quickEditEmoji(node.id)
+            onClick: () => quickEditEmoji(node.id).catch(reportEditorError)
         },
         {
             key: "delete-node",
             label: "🗑️",
             title: "Elimina nodo",
-            onClick: () => deleteNodeWithChecks(node.id)
+            onClick: () => deleteNodeWithChecks(node.id).catch(reportEditorError)
         }
     ];
 
@@ -1068,7 +1143,7 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
     label.addEventListener("mousedown", event => event.stopPropagation());
     label.addEventListener("click", async event => {
         event.stopPropagation();
-        await quickEditBranchText(node.id);
+        await quickEditBranchText(node.id).catch(reportEditorError);
     });
     target.appendChild(label);
 }
@@ -1085,8 +1160,9 @@ function selectNode(nodeId, options = {}) {
     hintInputs.forEach((input, index) => { input.value = node[hintFields[index]] || ""; });
     if (nodeEmojiInput) nodeEmojiInput.value = node.emoji || "";
     branchTextInput.value = node.branchText || "";
-    colorInput.value = getNodeColor(node);
-    branchColorInput.value = node.branchColor || "#7c8a9a";
+    colorInput.value = colorPickerValue(getNodeColor(node), "#D9D2E9");
+    textColorInput.value = colorPickerValue(node.textColor || "var(--ink)", "#314256");
+    branchColorInput.value = colorPickerValue(node.branchColor, "#7c8a9a");
     branchStyleInput.value = node.branchStyle || "SOLID";
     branchWidthInput.value = clampBranchWidth(Number(node.branchWidth));
     branchCurveInput.value = (node.branchCurve || "CUBIC").toUpperCase();
@@ -1324,9 +1400,6 @@ function flushResizeAutosave(resizeState) {
     if (!resizeState) return;
     const resizedNode = getNodeById(resizeState.nodeId);
     if (!resizedNode) return;
-    clearTimeout(state.autosaveTimer);
-    state.autosaveTimer = null;
-    state.autosaveNodeId = null;
     runAutosave(resizedNode);
 }
 
@@ -1459,8 +1532,8 @@ imageHeightInput.addEventListener("input", () => {
 });
 }
 
-const autosubmitFields = [textInput, descriptionInput, ...hintInputs, nodeEmojiInput, branchTextInput, colorInput, branchColorInput, branchStyleInput, branchWidthInput, branchCurveInput, fontSizeInput, imageUrlInput].filter(Boolean);
-const instantAutosubmitFields = new Set([textInput, ...hintInputs, imageUrlInput, branchColorInput, branchWidthInput, fontSizeInput]);
+const autosubmitFields = [textInput, descriptionInput, ...hintInputs, nodeEmojiInput, branchTextInput, colorInput, textColorInput, branchColorInput, branchStyleInput, branchWidthInput, branchCurveInput, fontSizeInput, imageUrlInput].filter(Boolean);
+const instantAutosubmitFields = new Set([textInput, ...hintInputs, imageUrlInput, colorInput, textColorInput, branchColorInput, branchWidthInput, fontSizeInput]);
 for (const field of autosubmitFields) {
     const eventName = instantAutosubmitFields.has(field) ? "input" : "change";
     field.addEventListener(eventName, () => queueAutoSubmitSelectedNode(field));
@@ -1484,6 +1557,7 @@ function applyFormToNode(node) {
     node.emoji = normalizeNodeEmoji(nodeEmojiInput?.value || "");
     node.branchText = (branchTextInput.value || "").trim();
     node.color = colorInput.value;
+    node.textColor = textColorInput.value;
     node.branchColor = branchColorInput.value;
     node.branchStyle = branchStyleInput.value;
     node.branchWidth = clampBranchWidth(Number(branchWidthInput.value));
@@ -1598,15 +1672,11 @@ async function exportCanvas(format) {
     const url = isPdf
         ? `/api/maps/${state.map.id}/export/pdf?format=${pdfFormat}`
         : `/api/maps/${state.map.id}/export/png`;
-    const response = await fetch(url, {
+    const blob = await editorRequest(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ svg: svgMarkup })
-    });
-    if (!response.ok) {
-        throw new Error(`Export fallito (${response.status})`);
-    }
-    const blob = await response.blob();
+    }, isPdf ? "pdf" : "png");
     const blobUrl = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = blobUrl;
@@ -1678,6 +1748,16 @@ async function buildExportSvg() {
     clone.setAttribute("height", String(height));
     clone.setAttribute("viewBox", svg.getAttribute("viewBox") || `0 0 ${width} ${height}`);
 
+    if (state.map.backgroundColor) {
+        const background = document.createElementNS(SVG_NS, "rect");
+        background.setAttribute("x", String(viewBox[0] || 0));
+        background.setAttribute("y", String(viewBox[1] || 0));
+        background.setAttribute("width", String(width));
+        background.setAttribute("height", String(height));
+        background.setAttribute("fill", state.map.backgroundColor);
+        clone.prepend(background);
+    }
+
     const transientControls = clone.querySelectorAll(".node-resize-handle, .image-resize-handle, .node-action-button");
     transientControls.forEach(control => control.remove());
 
@@ -1698,12 +1778,12 @@ async function buildExportSvg() {
 if (exportPngButton) {
     exportPngButton.addEventListener("click", async event => {
         event.preventDefault();
-        await exportCanvas("png");
+        await exportCanvas("png").catch(reportEditorError);
     });
 }
 if (exportPdfButton) {
     exportPdfButton.addEventListener("click", async () => {
-        await exportCanvas("pdf");
+        await exportCanvas("pdf").catch(reportEditorError);
     });
 }
 if (zoomInput) {
@@ -1722,7 +1802,7 @@ if (gridSizeInput) {
     });
 }
 if (renameMapBtn) {
-    renameMapBtn.addEventListener("click", () => renameMap());
+    renameMapBtn.addEventListener("click", () => renameMap().catch(reportEditorError));
 }
 
 if (canvasViewport) {
@@ -1754,25 +1834,118 @@ async function reorderMap() {
     await persistAllNodePositions();
 }
 
-autoLayoutBtn.addEventListener("click", reorderMap);
+autoLayoutBtn.addEventListener("click", () => reorderMap().catch(reportEditorError));
+
+function reportEditorError(error) {
+    const message = error.message || "Operazione non riuscita. Riprova.";
+    const errorBox = document.getElementById("editor-request-error");
+    errorBox.textContent = message;
+    errorBox.hidden = false;
+    if (autosaveStatus) autosaveStatus.textContent = "Operazione non completata.";
+}
+
+function editorRequest(url, options = {}, format = "json") {
+    const request = sendEditorRequest(url, options, format);
+    activeEditorRequests.add(request);
+    request.then(() => activeEditorRequests.delete(request), () => activeEditorRequests.delete(request));
+    return request;
+}
+
+async function sendEditorRequest(url, options = {}, format = "json") {
+    const requestKey = `${options.method || "GET"} ${url}`;
+    try {
+        let response;
+        try {
+            response = await fetch(url, options);
+        } catch {
+            throw new Error("Connessione al server non riuscita. Le modifiche potrebbero non essere salvate. Controlla la connessione e riprova.");
+        }
+        if (response.redirected || response.status === 401) {
+            throw new Error("La sessione è scaduta. Accedi di nuovo prima di continuare; conserva le modifiche non salvate.");
+        }
+        if (!response.ok) {
+            const messages = {
+                403: "Non hai il permesso di completare questa operazione.",
+                404: "La mappa o il nodo non è più disponibile.",
+                413: "Il contenuto inviato è troppo grande.",
+                429: "Troppe richieste. Attendi qualche istante e riprova."
+            };
+            throw new Error(messages[response.status] || `Operazione non riuscita (HTTP ${response.status}). Riprova; le modifiche potrebbero non essere salvate.`);
+        }
+        const contentType = response.headers.get("Content-Type") || "";
+        let result;
+        if (format === "empty") {
+            if (contentType.includes("text/html")) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
+        } else {
+            const expected = format === "json" ? /application\/(?:[\w.-]+\+)?json/i
+                : format === "png" ? /image\/png/i : /application\/pdf/i;
+            if (!expected.test(contentType)) throw new Error("Risposta inattesa dal server. Verifica l’accesso e riprova.");
+            try {
+                result = format === "json" ? await response.json() : await response.blob();
+                if (format === "json" && (!result || typeof result !== "object" || Array.isArray(result))) {
+                    throw new Error("Invalid response");
+                }
+            } catch {
+                throw new Error("Risposta del server incompleta o non valida. Controlla la connessione e riprova.");
+            }
+        }
+        failedEditorRequests.delete(requestKey);
+        const errorBox = document.getElementById("editor-request-error");
+        errorBox.hidden = failedEditorRequests.size === 0;
+        errorBox.textContent = [...failedEditorRequests.values()].join(" ");
+        return result;
+    } catch (error) {
+        failedEditorRequests.set(requestKey, error.message);
+        reportEditorError(error);
+        throw error;
+    }
+}
+
+function saveMapBackground() {
+    const color = state.map.backgroundColor || "#fafbfd";
+    if (autosaveStatus) autosaveStatus.textContent = "Salvataggio in corso...";
+    backgroundSavePromise = backgroundSavePromise.then(async () => {
+        await editorRequest(`/api/maps/${state.map.id}/background`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ backgroundColor: color })
+        });
+        if (autosaveStatus) autosaveStatus.textContent = failedEditorRequests.size
+        ? "Restano operazioni non completate. Controlla il messaggio di errore." : "Modifiche salvate.";
+    }).catch(reportEditorError);
+    return backgroundSavePromise;
+}
+
+mapBackgroundInput?.addEventListener("input", () => {
+    if (!editingBackground) pushUndoSnapshot();
+    editingBackground = true;
+    state.map.backgroundColor = mapBackgroundInput.value;
+    requestRender();
+});
+mapBackgroundInput?.addEventListener("change", () => {
+    state.map.backgroundColor = mapBackgroundInput.value;
+    editingBackground = false;
+    saveMapBackground();
+});
 
 async function createNode(payload) {
-    const response = await fetch(`/api/maps/${state.map.id}/nodes`, {
+    return editorRequest(`/api/maps/${state.map.id}/nodes`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
     });
-    return response.json();
 }
 
 async function saveNode(node) {
     if (autosaveStatus) autosaveStatus.textContent = "Salvataggio in corso...";
-    await fetch(`/api/nodes/${node.id}`, {
+    await editorRequest(`/api/nodes/${node.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(node)
     });
-    if (autosaveStatus) autosaveStatus.textContent = "Modifiche salvate.";
+    if (autosaveStatus) autosaveStatus.textContent = failedEditorRequests.size
+        ? "Restano operazioni non completate. Controlla il messaggio di errore." : state.pendingAutosaves.size || state.autosaveCount > 1
+            ? "Altre modifiche in attesa di salvataggio..." : "Modifiche salvate.";
 }
 
 function queueAutoSubmitSelectedNode(field = null) {
@@ -1790,61 +1963,143 @@ function queueAutoSubmitSelectedNode(field = null) {
 
 function scheduleAutosave(node) {
     if (autosaveStatus) autosaveStatus.textContent = "Modifiche non ancora salvate...";
-    clearTimeout(state.autosaveTimer);
-    state.autosaveNodeId = node.id;
-    state.autosaveTimer = setTimeout(() => {
-        const pendingNode = getNodeById(state.autosaveNodeId);
-        state.autosaveTimer = null;
-        state.autosaveNodeId = null;
-        if (pendingNode) runAutosave(pendingNode);
+    const previous = state.pendingAutosaves.get(node.id);
+    if (previous) clearTimeout(previous.timer);
+    const pending = { nodeId: node.id, timer: null };
+    pending.timer = setTimeout(() => {
+        if (state.pendingAutosaves.get(node.id) !== pending) return;
+        const currentNode = getNodeById(pending.nodeId);
+        if (currentNode) runAutosave(currentNode);
+        else state.pendingAutosaves.delete(pending.nodeId);
     }, 500);
+    state.pendingAutosaves.set(node.id, pending);
 }
 
 function runAutosave(node) {
+    const pending = state.pendingAutosaves.get(node.id);
+    if (pending) {
+        clearTimeout(pending.timer);
+        state.pendingAutosaves.delete(node.id);
+    }
     const nodeSnapshot = structuredClone(node);
+    state.autosaveCount++;
     const startFrom = state.autosavePromise ?? Promise.resolve();
     const queuedPromise = startFrom
         .catch(() => {})
         .then(() => saveNode(nodeSnapshot));
 
     const trackedPromise = queuedPromise.finally(() => {
+        state.autosaveCount--;
         if (state.autosavePromise === trackedPromise) {
             state.autosavePromise = null;
         }
     });
     state.autosavePromise = trackedPromise;
+    trackedPromise.catch(reportEditorError);
 
     return trackedPromise;
 }
 
-
 async function flushAutosave() {
-    if (state.autosaveTimer && state.autosaveNodeId != null) {
-        clearTimeout(state.autosaveTimer);
-        const pendingNode = getNodeById(state.autosaveNodeId);
-        state.autosaveTimer = null;
-        state.autosaveNodeId = null;
-        if (pendingNode) {
-            await runAutosave(pendingNode);
+    const saves = [];
+    if (state.autosavePromise) saves.push(state.autosavePromise);
+    for (const pending of [...state.pendingAutosaves.values()]) {
+        const currentNode = getNodeById(pending.nodeId);
+        if (currentNode) saves.push(runAutosave(currentNode));
+        else {
+            clearTimeout(pending.timer);
+            state.pendingAutosaves.delete(pending.nodeId);
         }
     }
-    if (state.autosavePromise) {
-        await state.autosavePromise;
+    await Promise.all(saves);
+}
+
+function hasFailedSaves() {
+    return [...failedEditorRequests.keys()].some(key => /^(POST|PUT|DELETE) /.test(key) && !key.includes('/export/'));
+}
+
+function hasUnsavedChanges() {
+    return editingBackground || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
+        || activeEditorRequests.size > 0 || state.isApplyingHistory || hasFailedSaves();
+}
+
+async function saveBeforeLeaving(proceed) {
+    if (leavingEditor || state.isApplyingHistory) return;
+    leavingEditor = true;
+    const workspace = document.querySelector('.editor-page');
+    const focused = document.activeElement;
+    // Commit controls whose change event is dispatched on blur before locking the editor.
+    focused?.blur();
+    workspace.inert = true;
+    showLoading('Sto salvando le ultime modifiche…');
+    try {
+        if (editingBackground) {
+            editingBackground = false;
+            saveMapBackground();
+        }
+        let saveError;
+        do {
+            const results = await Promise.allSettled([
+                flushAutosave(), backgroundSavePromise, ...activeEditorRequests
+            ]);
+            const failed = results.find(result => result.status === 'rejected');
+            if (failed && !saveError) saveError = failed.reason;
+        } while (state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
+        if (saveError) throw saveError;
+        // Background saves report errors without rejecting their queue promise.
+        if (hasFailedSaves()) throw new Error('Ci sono modifiche non salvate. Controlla il messaggio di errore e riprova prima di continuare.');
+        allowEditorUnload = true;
+        proceed();
+    } catch (error) {
+        leavingEditor = false;
+        allowEditorUnload = false;
+        workspace.inert = false;
+        hideLoading();
+        reportEditorError(error);
+        focused?.focus({ preventScroll: true });
     }
 }
 
+for (const form of document.querySelectorAll('.editor-page form')) {
+    form.addEventListener('submit', event => {
+        if (allowEditorUnload) return;
+        event.preventDefault();
+        saveBeforeLeaving(() => form.requestSubmit(event.submitter || undefined));
+    });
+}
+
+document.querySelector('.back-link')?.addEventListener('click', event => {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const href = event.currentTarget.href;
+    saveBeforeLeaving(() => location.assign(href));
+});
+
+globalThis.addEventListener('beforeunload', event => {
+    if (allowEditorUnload || !hasUnsavedChanges()) return;
+    // Closing/reloading cannot reliably await fetch; let the browser warn instead.
+    event.preventDefault();
+    event.returnValue = '';
+});
+
+globalThis.addEventListener('pageshow', () => {
+    if (!leavingEditor) return;
+    leavingEditor = false;
+    allowEditorUnload = false;
+    document.querySelector('.editor-page').inert = false;
+    hideLoading();
+});
+
 async function fetchMap() {
-    const response = await fetch(`/api/maps/${state.map.id}`);
-    return response.json();
+    return editorRequest(`/api/maps/${state.map.id}`);
 }
 
 async function updateMapTitle(title) {
-    const response = await fetch(`/api/maps/${state.map.id}/title`, {
+    return editorRequest(`/api/maps/${state.map.id}/title`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title })
     });
-    return response.json();
 }
 
 function refreshMapTitle() {
@@ -2034,7 +2289,7 @@ async function applyStylePresetToMap(presetName) {
 if (globalThis.window) {
     globalThis.window.applyMapStylePreset = async presetName => {
         pushUndoSnapshot();
-        await applyStylePresetToMap(presetName);
+        await applyStylePresetToMap(presetName).catch(reportEditorError);
     };
 }
 
@@ -2058,7 +2313,7 @@ async function deleteNodeWithChecks(nodeId) {
     if (!shouldDelete) return;
     pushUndoSnapshot();
     await flushAutosave();
-    await fetch(`/api/nodes/${node.id}`, { method: "DELETE" });
+    await editorRequest(`/api/nodes/${node.id}`, { method: "DELETE" }, "empty");
     state.map = await fetchMap();
     state.selectedNodeId = state.map.nodes[0]?.id ?? null;
     if (state.selectedNodeId) selectNode(state.selectedNodeId);
@@ -2127,6 +2382,7 @@ function isTypingTarget(target) {
 }
 
 document.addEventListener("keydown", async event => {
+    if (leavingEditor) return;
     const isUndoShortcut = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z";
     const isRedoShortcut = ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y")
         || ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "z");
@@ -2152,13 +2408,13 @@ document.addEventListener("keydown", async event => {
 
     if (event.key === "Tab" && !event.shiftKey) {
         event.preventDefault();
-        await addChildNode(node.id);
+        await addChildNode(node.id).catch(reportEditorError);
         return;
     }
 
     if ((event.key === "Delete" || event.key === "Backspace") && !event.metaKey && !event.ctrlKey) {
         event.preventDefault();
-        await deleteNodeWithChecks(node.id);
+        await deleteNodeWithChecks(node.id).catch(reportEditorError);
         return;
     }
 
@@ -2174,7 +2430,7 @@ if (stylePresetInput) {
     stylePresetInput.value = state.map.stylePreset;
     const onPresetChange = async () => {
         pushUndoSnapshot();
-        await applyStylePresetToMap(stylePresetInput.value);
+        await applyStylePresetToMap(stylePresetInput.value).catch(reportEditorError);
     };
     stylePresetInput.addEventListener("change", onPresetChange);
     stylePresetInput.addEventListener("input", onPresetChange);
@@ -2184,6 +2440,6 @@ render();
 if (autoLayoutOnOpen) {
     reorderMap().catch(error => {
         console.error("Impossibile salvare il riordino iniziale della mappa", error);
-        if (autosaveStatus) autosaveStatus.textContent = "Riordino non salvato. Premi Riordina la mappa per riprovare.";
+        reportEditorError(error);
     });
 }

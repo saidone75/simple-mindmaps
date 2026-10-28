@@ -7,16 +7,34 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate.
+
+## [0.2.1] - 2026-10-27
+
 ### Changed
 
+- Spring Boot aggiornato alla versione 4.1.2.
+- Ricerca immagini attiva per impostazione predefinita nella creazione AI e opzioni rappresentate come interruttori.
+- Pulsante «Giochiamo!» grande e centrato nell’area iniziale della mappa delle scoperte; dopo l’avvio, il comando per ricominciare resta nell’intestazione della mappa.
+- Scheda del livello distanziata dalla barra del gioco e pulsante dei suoni allineato a destra.
 - Ricerche Wikimedia semplice e semantica con query progressive: soggetto principale sempre presente, dettagli aggiunti uno alla volta e ampliamento senza alternative generiche in `OR`.
 
 ### Fixed
 
+- Annulla/Ripristina dell’editor sincronizzato con il server, con ripristino atomico dei nodi e riconciliazione degli ID dopo creazioni ed eliminazioni.
+
+- Avanzamento della generazione in background gestito tramite riferimento atomico, anche in caso di errore.
+- Associazione esplicita tra etichette e campi dei titoli premio nel template dell’editor, mantenendo identificativi univoci per livello.
 - Conteggio dei livelli nella generazione AI comprensivo del nodo principale: scegliendo 2 livelli si ottengono solo radice e figli, con controllo del limite anche sul server.
 
 ### Added
 
+- Selettori affiancati per colore del testo, sfondo del nodo e ramo; colore dello sfondo della mappa nella barra degli strumenti, con salvataggio e mantenimento nei giochi pubblicati e nelle esportazioni.
+
+- Overlay di festeggiamento a ogni nuovo livello intermedio, con il titolo conquistato.
+- Suoni del gioco con pulsante per disattivarli e preferenza salvata.
 - Supporto dei risultati Wikimedia DjVu tramite anteprima della prima pagina, nelle ricerche semplice e semantica; i documenti senza anteprima supportata vengono scartati.
 
 ## [0.2.0] - 2026-10-26
@@ -101,6 +119,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
-[Unreleased]: https://github.com/saidone75/simple-mindmaps/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/saidone75/simple-mindmaps/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/saidone75/simple-mindmaps/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/saidone75/simple-mindmaps/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/saidone75/simple-mindmaps/releases/tag/v0.1.0

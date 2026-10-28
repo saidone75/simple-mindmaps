@@ -32,7 +32,7 @@ import java.time.Duration;
 
 @Configuration
 public class ApplicationConfig {
-    @Value("${app.wikimedia.user-agent:AliceSimpleMindMap/1.0 (+https://github.com/saidone/simple-mindmap; mailto:bot-traffic@wikimedia.org)}")
+    @Value("${wikimedia.user-agent:AliceSimpleMindMap/1.0 (+https://github.com/saidone/simple-mindmap; mailto:bot-traffic@wikimedia.org)}")
     private String wikimediaUserAgent;
 
     @Bean

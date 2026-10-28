@@ -32,6 +32,102 @@
     const welcome = document.getElementById('game-welcome');
     const feedbackWrap = document.querySelector('.game-feedback-wrap');
     const completion = document.getElementById('game-completion');
+    const levelCelebration = document.getElementById('game-level-celebration');
+    const soundButton = document.getElementById('game-sound');
+    const sounds = (() => {
+        let context, enabled = true;
+        const voices = new Set();
+        try { enabled = localStorage.getItem('game-sound') !== 'off'; } catch { /* Storage may be unavailable. */ }
+        function refreshButton() {
+            soundButton.textContent = enabled ? '🔊 Suoni attivi' : '🔇 Suoni spenti';
+            soundButton.setAttribute('aria-pressed', String(enabled));
+        }
+        function stop() {
+            for (const voice of voices) voice.stop();
+            voices.clear();
+        }
+        function unlock() {
+            if (!enabled) return;
+            try {
+                const AudioContext = globalThis.AudioContext || globalThis.webkitAudioContext;
+                if (!AudioContext) return;
+                context ||= new AudioContext();
+                if (context.state === 'suspended') context.resume().catch(() => {});
+            } catch { /* Audio must never interrupt the game. */ }
+        }
+        function note(frequency, offset, duration, type = 'triangle', endFrequency = frequency, volume = .09) {
+            const voice = context.createOscillator();
+            const envelope = context.createGain();
+            const time = context.currentTime + offset;
+            voice.type = type;
+            voice.frequency.setValueAtTime(frequency, time);
+            voice.frequency.exponentialRampToValueAtTime(endFrequency, time + duration);
+            envelope.gain.setValueAtTime(0, time);
+            envelope.gain.linearRampToValueAtTime(volume, time + (type === 'square' ? .002 : .008));
+            if (type === 'square') envelope.gain.setValueAtTime(volume * .8, time + duration - .015);
+            envelope.gain.exponentialRampToValueAtTime(.001, time + duration);
+            voice.connect(envelope);
+            envelope.connect(context.destination);
+            voices.add(voice);
+            voice.onended = () => { voices.delete(voice); voice.disconnect(); envelope.disconnect(); };
+            voice.start(time);
+            voice.stop(time + duration + .02);
+        }
+        function play(kind) {
+            if (!enabled || context?.state !== 'running') return;
+            try {
+                stop();
+                if (kind !== 'error') {
+                    note(1300, 0, .065, 'triangle', 320);
+                    note(600, .015, .045, 'sine', 220);
+                }
+                if (kind === 'error') {
+                    note(330, 0, .13, 'sine', 280);
+                    note(280, .14, .18, 'sine', 240);
+                } else if (kind === 'level') {
+                    note(523.25, .12, .14);
+                    note(659.25, .25, .14);
+                    for (const frequency of [523.25, 659.25, 783.99]) note(frequency, .39, .65);
+                } else if (kind === 'complete') {
+                    // Original three-voice arcade fanfare with short, sustained pulse notes.
+                    const beat = .125;
+                    const frequency = midi => 440 * 2 ** ((midi - 69) / 12);
+                    const melody = [
+                        [72, 1], [72, 1], [79, 2], [76, 1], [79, 1], [84, 3],
+                        [83, 1], [81, 1], [79, 1], [81, 2], [77, 2],
+                        [79, 1], [81, 1], [83, 1], [86, 1], [84, 7]
+                    ];
+                    let offset = .12;
+                    for (const [pitch, beats] of melody) {
+                        const hz = frequency(pitch);
+                        note(hz, offset, beats * beat * .8, 'square', hz, .028);
+                        offset += beats * beat;
+                    }
+                    const cadence = offset - 7 * beat;
+                    for (let step = 0; .12 + step * beat < cadence - .001; step++) {
+                        const chord = step < 9 ? [48, 64, 67] : step < 15 ? [53, 65, 69] : [55, 67, 71];
+                        const bass = frequency(step % 2 ? chord[0] + 12 : chord[0]);
+                        note(bass, .12 + step * beat, beat * .65, 'square', bass, .012);
+                        const harmony = frequency(chord[1 + step % 2]);
+                        note(harmony, .12 + step * beat, beat * .7, 'square', harmony, .014);
+                    }
+                    for (const pitch of [48, 64, 67]) {
+                        const hz = frequency(pitch);
+                        note(hz, cadence, 7 * beat * .8, 'square', hz, .016);
+                    }
+                }
+            } catch { /* Unsupported audio must leave visual feedback working. */ }
+        }
+        soundButton.onclick = () => {
+            enabled = !enabled;
+            stop();
+            refreshButton();
+            try { localStorage.setItem('game-sound', enabled ? 'on' : 'off'); } catch { /* Optional preference. */ }
+            unlock();
+        };
+        refreshButton();
+        return {unlock, play, stop};
+    })();
     const endpoint = location.pathname.replace(/\/$/, '');
     let board, selected, busy = false, lastResult, finished = false;
     const matched = new Map();
@@ -64,6 +160,16 @@
         progress.max = board.images.length;
         progress.value = lastResult?.matched || 0;
     }
+    function showLevelCelebration(result, previousLevel) {
+        if (!result.correct || result.complete || result.level <= previousLevel || levelCelebration.open) return;
+        document.getElementById('game-level-celebration-number').textContent = `Livello ${result.level} di 5`;
+        document.getElementById('game-level-celebration-prize').textContent = result.prize;
+        levelCelebration.showModal();
+    }
+    levelCelebration.addEventListener('close', () => {
+        const nextImage = tray.querySelector('button');
+        (nextImage || start).focus({ preventScroll: true });
+    });
     function showCompletion(result) {
         if (!result.complete || result.level !== 5 || completion.open) return;
         document.getElementById('game-completion-prize').textContent = result.prize;
@@ -140,12 +246,15 @@
     }
     async function attempt(node) {
         if (!selected || busy || finished || matched.has(node.id)) return;
+        sounds.unlock();
         busy = true;
         const cardId = selected;
         try {
             const result = await request('attempt', {runId: board.runId, imageId: cardId, nodeId: node.id});
+            const previousLevel = lastResult?.level || 1;
             lastResult = result;
             if (result.correct) {
+                sounds.play(result.level === 5 ? 'complete' : result.level > previousLevel ? 'level' : 'correct');
                 const card = board.images.find(c => c.id === cardId);
                 matched.set(node.id, card.uri);
                 [...tray.children].find(b => b.dataset.id === cardId)?.remove();
@@ -160,16 +269,20 @@
                 }
                 feedback.textContent = result.complete ? `Ce l’hai fatta! Hai completato tutta la mappa: ${result.prize}! Ogni tentativo ti ha aiutato a imparare!` : 'Ottimo lavoro! Un’immagine ha trovato la sua casella. Continua così!';
             } else {
+                sounds.play('error');
                 feedbackWrap.dataset.mood = 'hint';
                 feedback.textContent = `Bel tentativo! Proviamo insieme un’altra casella. Un piccolo indizio: ${result.hint}`;
             }
             finished = result.complete;
             showStats();
+            showLevelCelebration(result, previousLevel);
             showCompletion(result);
         } catch (error) { feedbackWrap.dataset.mood = 'hint'; feedback.textContent = error.message; }
         finally { busy = false; }
     }
     function renderMap() {
+        const viewport = svg.closest('.game-board-scroll');
+        if (viewport) viewport.style.backgroundColor = board.map.backgroundColor || '';
         svg.replaceChildren();
         const nodes = board.map.nodes;
         const depths = nodeDepths;
@@ -224,6 +337,7 @@
             if (emoji) group.appendChild(make('text', {x:node.x+width/2,y:node.y+28,'text-anchor':'middle','dominant-baseline':'middle'},emoji));
             const firstY = imageNode ? node.y+height-16-(lines.length-1)*lineHeight : node.y+(height-(lines.length-1)*lineHeight)/2+(emoji?14:0);
             const text = make('text', {'text-anchor':'middle','dominant-baseline':'middle',class:'node-text','font-size':font});
+            if (node.textColor) text.style.fill = node.textColor;
             lines.forEach((line,i) => text.appendChild(make('tspan',{x:node.x+width/2,y:firstY+i*lineHeight,'font-size':line.isDescription?Math.max(12,Math.round(font*.78)):font,'font-weight':line.isDescription?'500':'700'},line.text)));
             group.appendChild(text); svg.appendChild(group);
         }
@@ -270,7 +384,7 @@
         if (panViewport.hasPointerCapture(pointerId)) panViewport.releasePointerCapture(pointerId);
     }
     panViewport?.addEventListener('pointerdown', event => {
-        if (!board || pan || !event.isPrimary || event.button !== 0 || event.target.closest('.game-target')) return;
+        if (!board || pan || !event.isPrimary || event.button !== 0 || event.target.closest('.game-target, button')) return;
         pan = {
             pointerId: event.pointerId,
             x: event.clientX, y: event.clientY,
@@ -294,8 +408,11 @@
     globalThis.addEventListener?.('resize', resize);
     start.onclick = async () => {
         if (busy) return;
+        sounds.stop();
+        sounds.unlock();
         busy = true; start.disabled = true;
         if (completion.open) completion.close();
+        if (levelCelebration.open) levelCelebration.close();
         try {
             const next = await request('start');
             board = next; selected = null; matched.clear(); finished = false; lastResult = null;
@@ -305,6 +422,7 @@
             const sizes = board.map.nodes.map(n => ({x:n.x,y:n.y,...nodeSizes.get(n.id)}));
             const x = Math.min(...sizes.map(n=>n.x))-40, y = Math.min(...sizes.map(n=>n.y))-40;
             bounds = {x,y,w:Math.max(...sizes.map(n=>n.x+n.width))-x+40,h:Math.max(...sizes.map(n=>n.y+n.height))-y+40};
+            document.querySelector('.game-map-heading').appendChild(start);
             welcome.hidden = true;
             svg.removeAttribute('hidden');
             feedbackWrap.dataset.mood = '';

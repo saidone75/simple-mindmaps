@@ -34,6 +34,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Arrays;
@@ -81,6 +84,7 @@ public class MindMapService {
         dto.setTitle(map.getTitle());
         dto.setPrizes(prizes(map));
         dto.setStylePreset(normalizeStylePreset(map.getStylePreset()));
+        dto.setBackgroundColor(map.getBackgroundColor());
         dto.setNodes(nodeRepository.findByMapIdOrderByIdAsc(id).stream().map(nodeMapper::toDto).toList());
         return dto;
     }
@@ -206,6 +210,7 @@ public class MindMapService {
                     nodeDto.getY() != null ? nodeDto.getY() : 260,
                     nodeDto.getColor() != null ? nodeDto.getColor() : DEFAULT_NODE_COLOR
             );
+            node.setTextColor(nodeDto.getTextColor());
             node.setHint(normalizeNodeHint(nodeDto.getHint()));
             node.setHint2(normalizeNodeHint(nodeDto.getHint2()));
             node.setHint3(normalizeNodeHint(nodeDto.getHint3()));
@@ -245,6 +250,7 @@ public class MindMapService {
         node.setX(request.getX() == null ? 300 : request.getX());
         node.setY(request.getY() == null ? 200 : request.getY());
         node.setColor(request.getColor() == null ? DEFAULT_NODE_COLOR : request.getColor());
+        node.setTextColor(request.getTextColor());
         node.setFontSize(request.getFontSize() == null ? 18 : request.getFontSize());
         node.setShape(request.getShape() == null ? DEFAULT_SHAPE : request.getShape());
         node.setBranchColor(request.getBranchColor() == null ? DEFAULT_BRANCH_COLOR : request.getBranchColor());
@@ -289,6 +295,7 @@ public class MindMapService {
         updateIfPresent(request.getX(), node::setX);
         updateIfPresent(request.getY(), node::setY);
         updateIfPresent(request.getColor(), node::setColor);
+        updateIfPresent(request.getTextColor(), node::setTextColor);
         updateIfPresent(request.getFontSize(), node::setFontSize);
         updateIfPresent(request.getShape(), node::setShape);
         updateIfPresent(request.getBranchColor(), node::setBranchColor);
@@ -330,6 +337,7 @@ public class MindMapService {
         clonedMap.setTitle(sourceMap.getTitle() + " (Copia)");
         clonedMap.setPrizesJson(sourceMap.getPrizesJson());
         clonedMap.setStylePreset(normalizeStylePreset(sourceMap.getStylePreset()));
+        clonedMap.setBackgroundColor(sourceMap.getBackgroundColor());
         clonedMap.setOwner(sourceMap.getOwner());
         val savedMap = mindMapRepository.save(clonedMap);
         val clonedBySourceId = new ConcurrentHashMap<Long, Node>();
@@ -368,10 +376,75 @@ public class MindMapService {
         mindMapRepository.deleteById(id);
     }
 
+    public record RestoredMap(MindMapDto map, Map<Long, Long> nodeIds) {}
+
+    @Transactional
+    public RestoredMap restoreMap(Long mapId, MindMapDto snapshot) {
+        val map = getMap(mapId);
+        val invalid = new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Stato della mappa non valido");
+        if (snapshot == null || snapshot.getNodes() == null || snapshot.getNodes().isEmpty()
+                || snapshot.getTitle() == null || snapshot.getTitle().isBlank()) throw invalid;
+        val sources = new LinkedHashMap<Long, NodeDto>();
+        for (val source : snapshot.getNodes()) {
+            if (source == null || source.getId() == null || sources.putIfAbsent(source.getId(), source) != null
+                    || source.getText() == null || source.getX() == null || source.getY() == null
+                    || source.getColor() == null || source.getFontSize() == null || source.getShape() == null
+                    || source.getBranchColor() == null || source.getBranchStyle() == null) throw invalid;
+        }
+        for (val source : sources.values()) {
+            val visited = new HashSet<Long>();
+            NodeDto current = source;
+            while (current != null) {
+                if (!visited.add(current.getId())) throw invalid;
+                val parent = current.getParentId();
+                if (parent != null && !sources.containsKey(parent)) throw invalid;
+                current = parent == null ? null : sources.get(parent);
+            }
+        }
+        if (snapshot.getBackgroundColor() != null && !snapshot.getBackgroundColor().matches("#[0-9a-fA-F]{6}")) throw invalid;
+        val existing = nodeRepository.findByMapIdOrderByIdAsc(mapId);
+        val byId = new HashMap<Long, Node>();
+        existing.forEach(node -> byId.put(node.getId(), node));
+        val restored = new LinkedHashMap<Long, Node>();
+        val ids = new LinkedHashMap<Long, Long>();
+        for (val source : sources.values()) {
+            // Only reuse IDs belonging to this map; deleted nodes receive fresh IDs.
+            val node = byId.getOrDefault(source.getId(), new Node());
+            nodeMapper.restore(source, node);
+            node.setMapId(mapId);
+            node.setParentId(null);
+            nodeRepository.save(node);
+            restored.put(source.getId(), node);
+            ids.put(source.getId(), node.getId());
+        }
+        for (val source : sources.values()) {
+            restored.get(source.getId()).setParentId(ids.get(source.getParentId()));
+        }
+        nodeRepository.deleteAll(existing.stream().filter(node -> !sources.containsKey(node.getId())).toList());
+        map.setTitle(snapshot.getTitle());
+        map.setStylePreset(normalizeStylePreset(snapshot.getStylePreset()));
+        map.setBackgroundColor(snapshot.getBackgroundColor());
+        if (validPrizes(snapshot.getPrizes())) map.setPrizesJson(PRIZES_JSON.toJson(normalizePrizes(snapshot.getPrizes())));
+        mindMapRepository.save(map);
+        nodeRepository.flush();
+        return new RestoredMap(findMapWithNodes(mapId), ids);
+    }
+
     @Transactional
     public MindMapDto updateMapStyle(Long mapId, String stylePreset) {
         val map = getMap(mapId);
         map.setStylePreset(normalizeStylePreset(stylePreset));
+        mindMapRepository.save(map);
+        return findMapWithNodes(mapId);
+    }
+
+    @Transactional
+    public MindMapDto updateMapBackground(Long mapId, String backgroundColor) {
+        val map = getMap(mapId);
+        if (backgroundColor == null || !backgroundColor.matches("#[0-9a-fA-F]{6}")) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Colore di sfondo non valido");
+        }
+        map.setBackgroundColor(backgroundColor);
         mindMapRepository.save(map);
         return findMapWithNodes(mapId);
     }

@@ -63,6 +63,8 @@ public class Node {
     @Column(nullable = false)
     private String color;
 
+    private String textColor;
+
     @Column(nullable = false)
     private Integer fontSize;
 

@@ -32,6 +32,8 @@ public class UpdateNodeRequest {
     private Integer x;
     private Integer y;
     private String color;
+
+    private String textColor;
     private Integer fontSize;
     private String shape;
     private String branchColor;

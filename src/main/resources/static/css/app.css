@@ -453,7 +453,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 }
 
 #loading-overlay .loading-icon {
-    font-size: 44px;
+    font-size: clamp(56px, 8vw, 64px);
     transform-origin: center center;
     animation: wonderland-ultra-smooth 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
     will-change: transform;
