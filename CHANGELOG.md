@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Changed
+
+- Trascinamento, ridimensionamento e pan dell’editor unificati tramite Pointer Events per mouse, penna e touch, con cattura del puntatore, gestione dei gesti interrotti e distinzione tra tocco e trascinamento.
+
 ### Added
 
 - Pagina pubblica univoca per insegnante con pulsanti per avviare i giochi pubblicati; dalla festa finale si può rigiocare o tornare alla selezione. Il link di pubblicazione continua ad aprire il singolo gioco.

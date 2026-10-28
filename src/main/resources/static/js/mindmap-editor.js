@@ -58,6 +58,8 @@ let renderFrame = null;
 let interactionFrame = null;
 let pendingPointerMove = null;
 let edgePanActive = false;
+let interactionPointerId = null;
+let suppressPointerClick = false;
 let appliedViewport = null;
 let formEditGroup = null;
 let renderNodeIndex = null;
@@ -598,7 +600,7 @@ function appendNodeText(group, node, width, height, sketchPreset, emojiValue) {
 }
 
 function bindNodeGroupEvents(group, node) {
-    group.addEventListener("mousedown", startDrag);
+    group.addEventListener("pointerdown", startDrag);
     group.addEventListener("click", () => selectNode(node.id));
     group.addEventListener("dblclick", () => quickEdit(node.id));
     group.addEventListener("mouseenter", () => {
@@ -1015,7 +1017,7 @@ function renderNodeImage(group, node, width) {
     image.setAttribute("preserveAspectRatio", "xMidYMid slice");
     image.setAttribute("clip-path", `url(#${clipId})`);
     image.style.pointerEvents = "all";
-    image.addEventListener("mousedown", event => {
+    image.addEventListener("pointerdown", event => {
         event.stopPropagation();
     });
     image.addEventListener("click", event => {
@@ -1035,7 +1037,7 @@ function renderImageResizeHandle(group, node, nodeWidth) {
     handle.setAttribute("cy", bounds.y + bounds.height);
     handle.setAttribute("r", "7");
     handle.dataset.nodeId = node.id;
-    handle.addEventListener("mousedown", startImageResize);
+    handle.addEventListener("pointerdown", startImageResize);
     group.appendChild(handle);
 }
 
@@ -1078,7 +1080,7 @@ function renderNodeActionButtons(group, node, nodeWidth) {
         button.dataset.nodeId = node.id;
         button.dataset.action = action.key;
         button.setAttribute("transform", `translate(${x}, ${actionRowY})`);
-        button.addEventListener("mousedown", event => {
+        button.addEventListener("pointerdown", event => {
             event.stopPropagation();
             event.preventDefault();
         });
@@ -1122,7 +1124,7 @@ function renderNodeResizeHandle(group, node, nodeWidth, nodeHeight) {
     handle.setAttribute("cy", node.y + nodeHeight - 3);
     handle.setAttribute("r", "8");
     handle.dataset.nodeId = node.id;
-    handle.addEventListener("mousedown", startNodeResize);
+    handle.addEventListener("pointerdown", startNodeResize);
     group.appendChild(handle);
 }
 
@@ -1140,7 +1142,7 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
     }
     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     label.setAttribute("transform", `rotate(${Math.max(-24, Math.min(24, angle))}, ${cx}, ${cy - 6})`);
-    label.addEventListener("mousedown", event => event.stopPropagation());
+    label.addEventListener("pointerdown", event => event.stopPropagation());
     label.addEventListener("click", async event => {
         event.stopPropagation();
         await quickEditBranchText(node.id).catch(reportEditorError);
@@ -1184,15 +1186,26 @@ function selectNode(nodeId, options = {}) {
     hideImageEditorOverlay();
 }
 
+function canStartPointerInteraction(event) {
+    return event.isPrimary && event.button === 0 && interactionPointerId === null
+        && !state.isApplyingHistory && !leavingEditor;
+}
+
+function captureInteractionPointer() {
+    if (interactionPointerId !== null && !canvasViewport.hasPointerCapture(interactionPointerId)) {
+        canvasViewport.setPointerCapture(interactionPointerId);
+    }
+}
+
 function startDrag(event) {
-    if (state.resize) return;
+    if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
     const nodeId = Number(event.currentTarget.dataset.id);
-    beginInteractionSnapshot();
-    selectNode(nodeId, { showNodeOverlay: false });
     const node = getNodeById(nodeId);
     if (!node) return;
 
+    beginInteractionSnapshot();
+    interactionPointerId = event.pointerId;
     const point = toSvgPoint(event);
     state.drag = {
         nodeId,
@@ -1206,12 +1219,15 @@ function startDrag(event) {
 }
 
 function startImageResize(event) {
+    if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
     event.preventDefault();
     const nodeId = Number(event.currentTarget.dataset.nodeId);
     const node = getNodeById(nodeId);
     if (!node) return;
 
+    interactionPointerId = event.pointerId;
+    captureInteractionPointer();
     beginInteractionSnapshot();
     selectNode(nodeId, { showNodeOverlay: false });
     const nodeSize = getNodeSize(node);
@@ -1228,12 +1244,15 @@ function startImageResize(event) {
 }
 
 function startNodeResize(event) {
+    if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
     event.preventDefault();
     const nodeId = Number(event.currentTarget.dataset.nodeId);
     const node = getNodeById(nodeId);
     if (!node) return;
 
+    interactionPointerId = event.pointerId;
+    captureInteractionPointer();
     beginInteractionSnapshot();
     selectNode(nodeId, { showNodeOverlay: false });
     const size = getNodeSize(node);
@@ -1249,14 +1268,16 @@ function startNodeResize(event) {
 }
 
 function startCanvasPan(event) {
-    if (!canvasViewport || event.button !== 0) return;
-    if (state.drag || state.resize) return;
-    if (event.target.closest(".node-group") || event.target.closest(".node-action-button") || event.target.closest(".node-resize-handle") || event.target.closest(".image-resize-handle")) return;
+    if (!canvasViewport || !canStartPointerInteraction(event)) return;
+    if (event.target.closest('.node-group, .branch-label, button, input, select, textarea, a, [contenteditable]')) return;
+    interactionPointerId = event.pointerId;
+    captureInteractionPointer();
     state.pan = {
         startClientX: event.clientX,
         startClientY: event.clientY,
         startScrollLeft: canvasViewport.scrollLeft,
         startScrollTop: canvasViewport.scrollTop,
+        moved: false,
     };
     canvasViewport.classList.add("is-panning");
     event.preventDefault();
@@ -1277,12 +1298,10 @@ function snapToGrid(value) {
 
 function applyPointerMove(event) {
     if (state.drag) {
+        if (!state.drag.moved) return false;
         const node = getNodeById(state.drag.nodeId);
         if (!node) return false;
         const point = toSvgPoint(event);
-        if (Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY) > 3) {
-            state.drag.moved = true;
-        }
         if (!state.drag.overlayHidden && state.drag.moved) {
             hideNodeEditorOverlay();
             state.drag.overlayHidden = true;
@@ -1320,6 +1339,7 @@ function applyPointerMove(event) {
         return true;
     }
     if (state.pan && canvasViewport) {
+        if (Math.hypot(event.clientX - state.pan.startClientX, event.clientY - state.pan.startClientY) > 3) state.pan.moved = true;
         canvasViewport.scrollLeft = state.pan.startScrollLeft - (event.clientX - state.pan.startClientX);
         canvasViewport.scrollTop = state.pan.startScrollTop - (event.clientY - state.pan.startClientY);
     }
@@ -1360,15 +1380,25 @@ function flushPointerMove(allowPan = true) {
     if (edgePanActive) queuePointerMove(event);
 }
 
-document.addEventListener("mousemove", event => {
-    if (state.drag || state.resize || state.pan) queuePointerMove(event);
+document.addEventListener("pointermove", event => {
+    if (event.pointerId !== interactionPointerId) return;
+    if (state.drag && !state.drag.moved) {
+        if (Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY) <= 3) return;
+        // Capture on a stable ancestor only once a tap becomes a drag.
+        captureInteractionPointer();
+        state.drag.moved = true;
+        selectNode(state.drag.nodeId, { showNodeOverlay: false });
+    }
+    queuePointerMove(event);
 });
 
-function shouldHideNodeEditorAfterMouseup(wasDragging, dragMoved, justOpenedContextMenu) {
+function shouldHideNodeEditorAfterPointerEnd(wasDragging, dragMoved, justOpenedContextMenu) {
     return (wasDragging && dragMoved) || justOpenedContextMenu;
 }
 
 function resetPointerInteractionState() {
+    const pointerId = interactionPointerId;
+    interactionPointerId = null;
     state.drag = null;
     state.resize = null;
     state.pan = null;
@@ -1377,14 +1407,15 @@ function resetPointerInteractionState() {
     if (interactionFrame != null) cancelAnimationFrame(interactionFrame);
     interactionFrame = null;
     canvasViewport?.classList.remove("is-panning");
+    if (pointerId !== null && canvasViewport.hasPointerCapture(pointerId)) canvasViewport.releasePointerCapture(pointerId);
     applyCanvasViewport();
 }
 
-function refreshOverlaysAfterMouseup(wasDragging, dragMoved) {
+function refreshOverlaysAfterPointerEnd(wasDragging, dragMoved) {
     const selectedNode = getNodeById(state.selectedNodeId);
     const justOpenedContextMenu = state.contextMenu && (Date.now() - state.contextMenu.openedAt) < 250;
     if (selectedNode) {
-        if (shouldHideNodeEditorAfterMouseup(wasDragging, dragMoved, justOpenedContextMenu)) {
+        if (shouldHideNodeEditorAfterPointerEnd(wasDragging, dragMoved, justOpenedContextMenu)) {
             hideNodeEditorOverlay();
         } else {
             if (nodeEditorOverlay) nodeEditorOverlay.classList.add("visible");
@@ -1403,19 +1434,41 @@ function flushResizeAutosave(resizeState) {
     runAutosave(resizedNode);
 }
 
-document.addEventListener("mouseup", () => {
+function finishPointerInteraction(event, cancelled = false) {
+    if (interactionPointerId === null || (event && event.pointerId !== interactionPointerId)) return;
+    if (!cancelled && event) queuePointerMove(event);
     flushPointerMove(false);
     const wasDragging = !!state.drag;
     const dragMoved = !!state.drag?.moved;
     const resizeState = state.resize ? { ...state.resize } : null;
 
-    if (state.drag || state.resize) commitInteractionSnapshot();
+    const interacted = dragMoved || !!resizeState || !!state.pan?.moved;
+    suppressPointerClick = interacted;
+    if (dragMoved || resizeState) commitInteractionSnapshot();
+    else clearInteractionSnapshot();
 
     if (renderFrame != null) render();
     resetPointerInteractionState();
-    refreshOverlaysAfterMouseup(wasDragging, dragMoved);
+    if (interacted) refreshOverlaysAfterPointerEnd(wasDragging, dragMoved);
     flushResizeAutosave(resizeState);
+}
+
+document.addEventListener('pointerup', event => finishPointerInteraction(event));
+document.addEventListener('pointercancel', event => finishPointerInteraction(event, true));
+canvasViewport.addEventListener('lostpointercapture', event => {
+    if (event.target === canvasViewport) finishPointerInteraction(event, true);
 });
+globalThis.addEventListener('blur', () => finishPointerInteraction(null, true));
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) finishPointerInteraction(null, true);
+});
+document.addEventListener('pointerdown', () => { suppressPointerClick = false; }, true);
+document.addEventListener('click', event => {
+    if (!suppressPointerClick || event.detail === 0) return;
+    suppressPointerClick = false;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+}, true);
 
 document.addEventListener("click", event => {
     const justOpenedContextMenu = state.contextMenu && (Date.now() - state.contextMenu.openedAt) < 200;
@@ -1806,7 +1859,7 @@ if (renameMapBtn) {
 }
 
 if (canvasViewport) {
-    canvasViewport.addEventListener("mousedown", startCanvasPan);
+    canvasViewport.addEventListener("pointerdown", startCanvasPan);
 
     canvasViewport.addEventListener("scroll", () => {
         const selectedNode = getNodeById(state.selectedNodeId);
