@@ -23,7 +23,7 @@ import java.util.List;
 import lombok.val;
 
 public interface WikimediaImageSearchService {
-    int MAX_IMAGES = 6;
+    int MAX_IMAGES = 9;
 
     default List<String> searchImages(String[] keywords, String preferredMode, Set<String> excludedImageUrls) {
         val image = searchImage(keywords, preferredMode, excludedImageUrls);

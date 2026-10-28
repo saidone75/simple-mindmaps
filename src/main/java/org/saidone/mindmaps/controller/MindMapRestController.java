@@ -65,6 +65,13 @@ public class MindMapRestController {
         return mindMapService.updateMapStyle(id, request.getStylePreset());
     }
 
+    public record ImageStorageRequest(boolean enabled) {}
+
+    @PutMapping("/maps/{id}/image-storage")
+    public MindMapDto updateImageStorage(@PathVariable Long id, @RequestBody ImageStorageRequest request) {
+        return mindMapService.updateMapImageStorage(id, request.enabled());
+    }
+
     @PutMapping("/maps/{id}/background")
     public MindMapDto updateMapBackground(@PathVariable Long id, @RequestBody UpdateMapBackgroundRequest request) {
         return mindMapService.updateMapBackground(id, request.getBackgroundColor());

@@ -39,6 +39,7 @@ public class MindMap {
     private String stylePreset;
 
     private String backgroundColor;
+    private Boolean storeImagesLocally;
 
     @Lob
     @Column(name = "game_titles", columnDefinition = "CLOB")

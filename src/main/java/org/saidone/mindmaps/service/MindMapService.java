@@ -85,6 +85,7 @@ public class MindMapService {
         dto.setTitle(map.getTitle());
         dto.setPrizes(prizes(map));
         dto.setStylePreset(normalizeStylePreset(map.getStylePreset()));
+        dto.setStoreImagesLocally(!Boolean.FALSE.equals(map.getStoreImagesLocally()));
         dto.setBackgroundColor(map.getBackgroundColor());
         dto.setNodes(nodeRepository.findByMapIdOrderByIdAsc(id).stream().map(nodeMapper::toDto).toList());
         return dto;
@@ -354,6 +355,7 @@ public class MindMapService {
         clonedMap.setPrizesJson(sourceMap.getPrizesJson());
         clonedMap.setStylePreset(normalizeStylePreset(sourceMap.getStylePreset()));
         clonedMap.setBackgroundColor(sourceMap.getBackgroundColor());
+        clonedMap.setStoreImagesLocally(sourceMap.getStoreImagesLocally());
         clonedMap.setOwner(sourceMap.getOwner());
         val savedMap = mindMapRepository.save(clonedMap);
         val clonedBySourceId = new ConcurrentHashMap<Long, Node>();
@@ -453,6 +455,14 @@ public class MindMapService {
     public MindMapDto updateMapStyle(Long mapId, String stylePreset) {
         val map = getMap(mapId);
         map.setStylePreset(normalizeStylePreset(stylePreset));
+        mindMapRepository.save(map);
+        return findMapWithNodes(mapId);
+    }
+
+    @Transactional
+    public MindMapDto updateMapImageStorage(Long mapId, boolean enabled) {
+        val map = getMap(mapId);
+        map.setStoreImagesLocally(enabled);
         mindMapRepository.save(map);
         return findMapWithNodes(mapId);
     }
@@ -580,7 +590,7 @@ public class MindMapService {
     private List<String> normalizeImageCandidates(List<String> candidates) {
         if (candidates == null) return List.of();
         return candidates.stream().filter(Objects::nonNull).map(String::trim)
-                .filter(url -> url.startsWith("https://")).distinct()
+                .filter(url -> url.startsWith("https://") || url.matches("/images/[a-f0-9-]{36}")).distinct()
                 .limit(WikimediaImageSearchService.MAX_IMAGES).toList();
     }
 

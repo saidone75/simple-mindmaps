@@ -48,6 +48,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(org.springframework.http.HttpMethod.GET, "/images/**").permitAll()
                         .requestMatchers("/css/**", "/js/**", "/favicon.ico", "/play/**").permitAll()
                         .anyRequest().authenticated())
                 .formLogin(form -> form

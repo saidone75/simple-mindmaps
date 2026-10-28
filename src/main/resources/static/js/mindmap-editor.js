@@ -107,6 +107,7 @@ const mapBackgroundInput = document.getElementById("map-background-color");
 let backgroundSavePromise = Promise.resolve();
 let styleSavePromise = Promise.resolve();
 let pendingStyleChanges = 0;
+let imageSavePromise = null;
 let editingBackground = false;
 const branchColorInput = document.getElementById("branch-color");
 const branchStyleInput = document.getElementById("branch-style");
@@ -116,6 +117,10 @@ const fontSizeInput = document.getElementById("node-font-size");
 const imageUrlInput = document.getElementById("node-image-url");
 const imageUploadInput = document.getElementById("node-image-upload");
 const imagePreview = document.getElementById("node-image-preview");
+const imageStorageSwitch = document.getElementById("store-images-switch");
+const imageSaveFailures = new Set();
+let imagePolicyPromise = Promise.resolve();
+const saveImageStatus = document.getElementById("save-image-status");
 const imageAlternatives = document.getElementById("node-image-alternatives");
 const imageCandidates = document.getElementById("node-image-candidates");
 const imageWidthInput = document.getElementById("node-image-width");
@@ -266,6 +271,7 @@ async function restoreEditorState(snapshot) {
         }
     }
     state.map = restored.map;
+    imageStorageSwitch.checked = state.map.storeImagesLocally !== false;
     state.selectedNodeId = remap(snapshot.selectedNodeId);
     if (stylePresetInput) stylePresetInput.value = state.map.stylePreset;
     refreshMapTitle();
@@ -286,7 +292,9 @@ const { pushUndoSnapshot, beginInteractionSnapshot, commitInteractionSnapshot,
     snapshot: snapshotEditorState,
     restore: restoreEditorState,
     waitForSaves: async () => {
+        if (imageSavePromise) await imageSavePromise;
         await styleSavePromise;
+        await imagePolicyPromise;
         await flushAutosave();
         await backgroundSavePromise;
         while (activeEditorRequests.size) await Promise.all([...activeEditorRequests]);
@@ -294,7 +302,7 @@ const { pushUndoSnapshot, beginInteractionSnapshot, commitInteractionSnapshot,
     setBusy: busy => {
         document.querySelector(".editor-page").inert = busy;
         if (busy) showLoading("Sto ripristinando la mappa…");
-        else hideLoading();
+        else { hideLoading(); queueMicrotask(queueImageStorage); }
     },
     onError: reportEditorError,
     onEditBoundary: () => { formEditGroup = null; }
@@ -1446,6 +1454,7 @@ for (const field of autosubmitFields) {
 if (imageWidthInput) imageWidthInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 if (imageHeightInput) imageHeightInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 function updateImagePreview(uri) {
+    updateImageStorageControl(uri);
     for (const option of imageCandidates.children) option.setAttribute('aria-pressed', String(option.dataset.uri === uri));
     if (uri) {
         if (imagePreview.getAttribute("src") !== uri) imagePreview.src = uri;
@@ -1456,8 +1465,97 @@ function updateImagePreview(uri) {
     }
 }
 
+function updateImageStorageControl(uri) {
+    if (imageSavePromise) return;
+    saveImageStatus.textContent = /^\/images\/[a-f0-9-]{36}$/.test(uri || '')
+        ? 'Questa immagine è conservata nella mappa.'
+        : imageStorageSwitch.checked ? 'Le immagini esterne vengono salvate e adattate automaticamente.'
+            : 'Il salvataggio automatico delle immagini è disattivato.';
+}
+
+function nextImageToStore() {
+    return state.map.nodes.find(node => /^https?:\/\//i.test(node.imageUri || '')
+        && !imageSaveFailures.has(`${node.id}:${node.imageUri}`));
+}
+
+function queueImageStorage() {
+    if (imageSavePromise || !imageStorageSwitch.checked || state.isApplyingHistory || !nextImageToStore()) return;
+    let interrupted = false;
+    imageSavePromise = (async () => {
+        await imagePolicyPromise;
+        await styleSavePromise;
+        while (imageStorageSwitch.checked) {
+            await flushAutosave();
+            const node = nextImageToStore();
+            if (!node) break;
+            const source = node.imageUri;
+            const message = `Sto salvando l’immagine del nodo "${node.text}"…`;
+            saveImageStatus.textContent = message;
+            if (autosaveStatus) autosaveStatus.textContent = message;
+            try {
+                const saved = await editorRequest(`/api/nodes/${node.id}/image`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUri: source })
+                }, 'json', {
+                    serverMessages: true,
+                    messages: {
+                        400: 'Non riesco a preparare l’immagine. Scegli un altro link o formato.',
+                        409: 'L’immagine è cambiata durante il salvataggio.',
+                        413: 'L’immagine supera il limite di 25 MB.',
+                        502: 'Non riesco a scaricare questa immagine. Controlla il link.'
+                    }
+                });
+                if (getNodeById(node.id) !== node || node.imageUri !== source) continue;
+                // Only update the image: text and geometry may have changed during the download.
+                node.imageUri = saved.imageUri;
+                for (const other of state.map.nodes) {
+                    if (other.imageCandidates) other.imageCandidates = other.imageCandidates.map(uri => uri === source ? saved.imageUri : uri);
+                }
+                // Automatic storage is not a user edit; history keeps the same image reference.
+                for (const snapshot of [...state.undoStack, ...state.redoStack, state.interactionSnapshot].filter(Boolean)) {
+                    for (const previous of snapshot.map.nodes) {
+                        if (previous.id === node.id && previous.imageUri === source) previous.imageUri = saved.imageUri;
+                        if (previous.imageCandidates) previous.imageCandidates = previous.imageCandidates.map(uri => uri === source ? saved.imageUri : uri);
+                    }
+                }
+                if (state.selectedNodeId === node.id) {
+                    imageUrlInput.value = saved.imageUri;
+                    updateImagePreview(saved.imageUri);
+                    if (state.imageOverlayNodeId === node.id) renderImageCandidates(node);
+                }
+                requestRender();
+                // This follows any autosaves queued during the download, preserving the internal reference.
+                await runAutosave(node);
+            } catch (error) {
+                imageSaveFailures.add(`${node.id}:${source}`);
+                // Download failure leaves the original image intact and does not block publication.
+                failedEditorRequests.delete(`POST /api/nodes/${node.id}/image`);
+                reportEditorError(error);
+                saveImageStatus.textContent = `Immagine non salvata: ${node.text}. Il link originale resta disponibile.`;
+            }
+        }
+    })().catch(error => { interrupted = true; reportEditorError(error); }).finally(() => {
+        imageSavePromise = null;
+        if (autosaveStatus && !hasFailedSaves()) autosaveStatus.textContent = imageSaveFailures.size
+            ? 'Alcune immagini restano collegate al sito originale. Disattiva e riattiva il salvataggio per riprovare.'
+            : 'Modifiche salvate.';
+        updateImageStorageControl(getNodeById(state.selectedNodeId)?.imageUri);
+        if (!interrupted && imageStorageSwitch.checked && nextImageToStore()) queueMicrotask(queueImageStorage);
+    });
+}
+
+imageStorageSwitch.addEventListener('change', () => {
+    const enabled = imageStorageSwitch.checked;
+    state.map.storeImagesLocally = enabled;
+    imageSaveFailures.clear();
+    imagePolicyPromise = imagePolicyPromise.then(() => editorRequest(`/api/maps/${state.map.id}/image-storage`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled })
+    })).catch(reportEditorError);
+    imagePolicyPromise.then(() => { if (enabled) queueImageStorage(); });
+    updateImageStorageControl(getNodeById(state.selectedNodeId)?.imageUri);
+});
+
 function renderImageCandidates(node) {
-    const candidates = [...new Set(node.imageCandidates || [])].slice(0, 6);
+    const candidates = [...new Set(node.imageCandidates || [])].slice(0, 9);
     imageAlternatives.hidden = candidates.length === 0;
     imageCandidates.replaceChildren();
     const usedImages = new Set(state.map.nodes.filter(other => other.id !== node.id).map(other => other.imageUri));
@@ -1522,11 +1620,13 @@ function applyFormToNode(node) {
     } else if (hasNodeEmoji(node)) {
         node.imageUri = null;
     }
+    updateImageStorageControl(node.imageUri);
 }
 
 function normalizeImageUri(value) {
     const trimmed = (value || "").trim();
     if (!trimmed.length) return null;
+    if (/^\/images\/[a-f0-9-]{36}$/.test(trimmed)) return trimmed;
     if (trimmed.startsWith("data:image/")) return trimmed;
     if (!URL.canParse(trimmed)) return null;
     const parsed = new URL(trimmed);
@@ -1679,6 +1779,15 @@ async function normalizeExportImageHref(href) {
     if (!href) return "";
     const trimmed = href.trim();
     if (!trimmed) return "";
+    if (/^\/images\/[a-f0-9-]{36}$/.test(trimmed)) {
+        const blob = await editorRequest(trimmed, {}, 'image');
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = () => reject(new Error('Non riesco a preparare l’immagine salvata per l’esportazione.'));
+            reader.readAsDataURL(blob);
+        });
+    }
     if (trimmed.toLowerCase().startsWith("data:image/webp")) {
         return await convertWebpDataUriToPng(trimmed);
     }
@@ -1794,24 +1903,26 @@ function reportEditorError(error) {
     if (autosaveStatus) autosaveStatus.textContent = "Operazione non completata.";
 }
 
-function editorRequest(url, options = {}, format = "json") {
-    const request = sendEditorRequest(url, options, format);
+function editorRequest(url, options = {}, format = "json", settings = {}) {
+    const request = sendEditorRequest(url, options, format, settings);
     activeEditorRequests.add(request);
     request.then(() => activeEditorRequests.delete(request), () => activeEditorRequests.delete(request));
     return request;
 }
 
-async function sendEditorRequest(url, options = {}, format = "json") {
+async function sendEditorRequest(url, options = {}, format = "json", settings = {}) {
     const requestKey = `${options.method || "GET"} ${url}`;
     try {
         const result = await globalThis.MindMapHttp.request(url, options, {
+            ...settings,
             format,
             messages: {
                 403: "Non hai il permesso di completare questa operazione.",
                 404: "La mappa o il nodo non è più disponibile.",
                 409: "Questa immagine è già usata da un altro nodo. Scegli un’altra alternativa e riprova il salvataggio.",
                 413: "Il contenuto inviato è troppo grande.",
-                429: "Troppe richieste. Attendi qualche istante e riprova."
+                429: "Troppe richieste. Attendi qualche istante e riprova.",
+                ...settings.messages
             }
         });
         failedEditorRequests.delete(requestKey);
@@ -1871,6 +1982,7 @@ async function saveNode(node) {
     if (autosaveStatus) autosaveStatus.textContent = failedEditorRequests.size
         ? "Restano operazioni non completate. Controlla il messaggio di errore." : state.pendingAutosaves.size || state.autosaveCount > 1
             ? "Altre modifiche in attesa di salvataggio..." : "Modifiche salvate.";
+    if (/^https?:\/\//i.test(node.imageUri || "")) queueMicrotask(queueImageStorage);
 }
 
 function queueAutoSubmitSelectedNode(field = null) {
@@ -1944,7 +2056,7 @@ function hasFailedSaves() {
 }
 
 function hasUnsavedChanges() {
-    return editingBackground || pendingStyleChanges > 0 || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
+    return !!imageSavePromise || editingBackground || pendingStyleChanges > 0 || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
         || activeEditorRequests.size > 0 || state.isApplyingHistory || hasFailedSaves();
 }
 
@@ -1965,11 +2077,11 @@ async function saveBeforeLeaving(proceed) {
         let saveError;
         do {
             const results = await Promise.allSettled([
-                flushAutosave(), backgroundSavePromise, styleSavePromise, ...activeEditorRequests
+                flushAutosave(), backgroundSavePromise, styleSavePromise, imagePolicyPromise, imageSavePromise, ...activeEditorRequests
             ]);
             const failed = results.find(result => result.status === 'rejected');
             if (failed && !saveError) saveError = failed.reason;
-        } while (pendingStyleChanges || state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
+        } while (imageSavePromise || pendingStyleChanges || state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
         if (saveError) throw saveError;
         // Background saves report errors without rejecting their queue promise.
         if (hasFailedSaves()) throw new Error('Ci sono modifiche non salvate. Controlla il messaggio di errore e riprova prima di continuare.');
@@ -2355,6 +2467,7 @@ document.addEventListener("keydown", async event => {
     }
 });
 
+imageStorageSwitch.checked = state.map.storeImagesLocally !== false;
 state.map.stylePreset = getCurrentStylePresetName();
 refreshMapTitle();
 if (stylePresetInput) {
@@ -2370,5 +2483,7 @@ if (autoLayoutOnOpen) {
     reorderMap().catch(error => {
         console.error("Impossibile salvare il riordino iniziale della mappa", error);
         reportEditorError(error);
-    });
+    }).finally(queueImageStorage);
+} else {
+    queueImageStorage();
 }

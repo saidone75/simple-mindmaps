@@ -83,6 +83,7 @@
             <div class="canvas-section-heading"><div><span class="editor-eyebrow">SPAZIO ALLE IDEE</span><h2>Disegna i tuoi collegamenti</h2></div><details class="canvas-help"><summary>Come si usa?</summary><p>Trascina i nodi per spostarli e lo sfondo per esplorare la mappa. Clicca sul testo per scrivere. I pulsanti di ogni nodo permettono di aggiungere figli, immagini ed emoji. Il pallino in basso serve a ridimensionare.</p></details></div>
             <div class="canvas-toolbar">
                 <div class="editor-tool-group"><button type="button" id="auto-layout-btn" class="secondary-btn small-btn">✦ Riordina la mappa</button>
+                <label class="toolbar-checkbox" for="store-images-switch"><input id="store-images-switch" type="checkbox" role="switch" th:checked="${map.storeImagesLocally != false}"> Salva immagini nella mappa</label>
                 <label for="style-preset-control">Stile</label>
                 <select id="style-preset-control">
                     <option value="CLASSIC">Classico</option>
@@ -170,6 +171,7 @@
                     <button type="button" id="clear-image-btn" class="secondary-btn small-btn">Rimuovi</button>
                 </div>
                 <input id="node-image-upload" type="file" accept="image/*">
+                <p id="save-image-status" role="status" aria-live="polite"></p>
                 <div class="image-preview-box">
                     <img id="node-image-preview" alt="Anteprima immagine nodo" />
                 </div>

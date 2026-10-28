@@ -502,3 +502,10 @@
 #autosave-status, #editor-request-error { margin: 8px 22px; font-size: .8rem; }
 
 #autosave-status:empty { display: none; }
+
+#store-images-switch { appearance: none; flex: 0 0 36px; width: 36px; height: 20px; margin: 0; padding: 2px; border: 0; border-radius: 99px; background: #bec8d8; cursor: pointer; }
+#store-images-switch::before { content: ""; display: block; width: 16px; height: 16px; border-radius: 50%; background: var(--white); }
+#store-images-switch:checked { background: var(--accent); }
+#store-images-switch:checked::before { transform: translateX(16px); }
+#store-images-switch:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+#save-image-status { font-size: .75rem; color: var(--muted); }

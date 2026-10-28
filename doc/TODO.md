@@ -3,7 +3,6 @@
 1. [ ] Verificare il trascinamento dei nodi, lo spostamento della vista (pan) e il ridimensionamento automatico dell’area di lavoro.
 3. [ ] Esportare le mappe su file, valutando il formato JSON.
 4. [ ] Importare mappe da file.
-5. [ ] Salvare sul server, come asset, le immagini collegate tramite URL nei nodi.
 6. [ ] Aggiungere un gioco con una linea del tempo in cui collocare le immagini nelle tappe corrette.
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026
@@ -23,3 +22,8 @@ Revisione statica ricontrollata sul codice attuale. I punti 13–17 descrivono p
 ### CSS — consolidamento e ottimizzazione
 
 30. [ ] Pulizia facoltativa: estrarre variabili CSS per colori effettivamente condivisi fra pannelli, bordi e controlli dell’editor. Non accorpare automaticamente colori simili che rappresentano stati diversi: è una miglioria di manutenzione, non un problema prestazionale dimostrato (`mindmap-editor.css`).
+
+## Nuove funzionalità e manutenzione
+
+37. [ ] Nella pagina pubblica di selezione dei giochi, sostituire l’icona `teacher-game-icon` con l’immagine del nodo principale della relativa mappa pubblicata, mantenendo un’icona di riserva se manca l’immagine.
+39. [ ] Disaccoppiare la creazione della mappa dalla ricerca delle immagini: mostrare l’editor appena la struttura è pronta e proseguire le ricerche in background, in parallelo. Nei nodi in attesa mostrare un placeholder con il coniglietto animato dello spinner, sostituendolo progressivamente con l’immagine trovata. Gli aggiornamenti devono preservare le modifiche dell’utente e gestire anche ricerche senza risultati o fallite.
