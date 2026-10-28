@@ -293,8 +293,8 @@
 .teacher-game:nth-child(3n) { background: #fff5d9; border-color: #eddfaf; box-shadow: 0 5px 0 #ede2bf; }
 .teacher-game:hover { border-color: #8c65c7; }
 .teacher-game:focus-visible { outline: 3px solid #6544ac; outline-offset: 4px; }
-.teacher-game-icon { display: grid; place-items: center; width: 96px; height: 96px; font-size: 48px; }
-.teacher-game-icon img { display: block; width: 100%; height: 100%; object-fit: contain; border-radius: 16px; }
+.teacher-game-icon { display: grid; place-items: center; flex: 0 0 96px; width: 96px; height: 96px; font-size: 48px; }
+.teacher-game-icon img { display: block; width: 96px; height: 96px; object-fit: contain; border-radius: 16px; }
 .teacher-game-title { font-size: clamp(1.3rem, 3vw, 1.75rem); font-weight: 800; overflow-wrap: anywhere; }
 .teacher-game-action { color: #6544ac; font-weight: 700; }
 

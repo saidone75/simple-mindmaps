@@ -218,7 +218,13 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         if (batchIndex >= batchCount - 1) {
             return false;
         }
-        if (dedup.size() >= TARGET_CANDIDATE_POOL_SIZE) {
+        val ordinaryImages = dedup.values().stream().filter(candidate -> !candidate.fallbackImage)
+                .map(candidate -> candidate.imageUrl).distinct().count();
+        if (batchIndex == batchCount - 2 && ordinaryImages >= MAX_IMAGES) {
+            log.debug("Ho già {} foto o illustrazioni: non cerco anteprime di documenti.", ordinaryImages);
+            return false;
+        }
+        if (ordinaryImages >= TARGET_CANDIDATE_POOL_SIZE) {
             log.debug("Ho raccolto abbastanza immagini da confrontare: {} alla fase {}.",
                     dedup.size(), batchIndex + 1);
             return false;
@@ -280,7 +286,8 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
     }
 
     private ImageResult buildResult(List<Candidate> candidates, long startedAt) {
-        candidates.sort(Comparator.comparingDouble((Candidate c) -> c.totalScore).reversed());
+        candidates.sort(Comparator.comparing((Candidate c) -> c.fallbackImage)
+                .thenComparing(Comparator.comparingDouble((Candidate c) -> c.totalScore).reversed()));
         val best = candidates.getFirst();
         val topCandidates = candidates.stream()
                 .limit(3)
@@ -294,6 +301,9 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
                         c.mime
                 ))
                 .toList();
+        log.debug("Ho trovato {} foto o illustrazioni e {} copertine o anteprime di documenti, tenute come ultima alternativa.",
+                candidates.stream().filter(candidate -> !candidate.fallbackImage).count(),
+                candidates.stream().filter(candidate -> candidate.fallbackImage).count());
         val totalMs = Duration.ofNanos(System.nanoTime() - startedAt).toMillis();
         log.info("Immagine scelta: '{}' (valutazione: {}, ricerca completata in {} ms).",
                 best.title, round(best.totalScore), totalMs);
@@ -361,7 +371,8 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         return java.util.stream.IntStream.range(0, batches.size())
                 .mapToObj(index -> batches.get(index).stream()
                         .map(query -> new SearchQuerySpec(
-                                index == batches.size() - 1 ? "subject-words" : "subject-context", query))
+                                index == batches.size() - 1 ? "document-fallback"
+                                        : index == 0 && batches.get(index).size() > 1 ? "subject-context" : "subject-words", query))
                         .toList())
                 .toList();
     }
@@ -405,6 +416,8 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
             c.thumbnailUrl = c.imageUrl;
             c.mime = ii.path("mime").asText("");
 
+            c.fallbackImage = WikimediaImagePreference.isFallback(c.title, c.mime, c.imageUrl,
+                    meta(ext, "ObjectName") + " " + meta(ext, "ImageDescription"));
             if (WikimediaDjvuPreview.isDjvu(c.title, c.mime, c.imageUrl)) {
                 c.imageUrl = WikimediaDjvuPreview.resolve(ii.path("thumburl").asText(null),
                         ii.path("thumbmime").asText(null));
@@ -682,6 +695,7 @@ public class WikimediaSemanticImageSearchService implements WikimediaImageSearch
         String normalizedTitle;
         String descriptionText;
         String semanticText;
+        boolean fallbackImage;
         double lexicalScore;
         double descriptionSemanticScore;
         double semanticScore;

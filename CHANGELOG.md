@@ -28,6 +28,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Anteprime dei giochi pubblici con spazio fisso riservato e immagini contenute entro 96 × 96 px, per evitare sovrapposizioni con il titolo anche durante il caricamento.
+- Ricerca Wikimedia meno restrittiva: parole senza virgolette per includere varianti grammaticali, soggetti AI più brevi e ampliamento progressivo delle espressioni troppo lunghe. Foto e illustrazioni precedono copertine, frontespizi e anteprime DjVu in entrambe le modalità; nella ricerca semantica i documenti non interrompono prematuramente la raccolta delle immagini.
 - Riferimenti ai genitori dei nodi AI rimappati dopo gli scarti; i figli dei nodi scartati vengono collegati al primo antenato valido, mentre radici mancanti e riferimenti incoerenti fanno ripetere la generazione.
 - Eliminazione dell’ultimo nodo principale impedita anche sul server, prima di rimuovere i discendenti.
 - Immagini conservate su file anziché come Blob, con trasferimento automatico degli eventuali contenuti binari già salvati nel database SQLite.

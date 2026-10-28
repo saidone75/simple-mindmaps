@@ -84,22 +84,26 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
 
         val images = new LinkedHashSet<String>();
         val seenFiles = new HashSet<String>();
+        val fallbackImages = new LinkedHashSet<String>();
         try {
             for (val queryTerms : buildSearchQueries(normalizedKeywords)) {
-                images.addAll(searchMatchingImageUrls(queryTerms, excludedImageUrls, MAX_IMAGES - images.size(), seenFiles));
+                images.addAll(searchMatchingImageUrls(queryTerms, excludedImageUrls, MAX_IMAGES - images.size(), seenFiles, fallbackImages));
                 if (images.size() >= MAX_IMAGES) break;
             }
         } catch (Exception e) {
             log.warn("Errore durante la ricerca immagine su Wikimedia: {}", e.getMessage());
         }
-        return List.copyOf(images);
+        log.debug("Ho trovato {} foto o illustrazioni e {} copertine o anteprime di documenti, tenute come ultima alternativa.",
+                images.size(), fallbackImages.size());
+        images.addAll(fallbackImages);
+        return images.stream().limit(MAX_IMAGES).toList();
     }
 
     private boolean hasKeywords(String[] keywords) {
         return keywords != null && keywords.length > 0;
     }
 
-    private List<String> searchMatchingImageUrls(String queryTerms, Set<String> excludedImageUrls, int limit, Set<String> seenFiles) throws Exception {
+    private List<String> searchMatchingImageUrls(String queryTerms, Set<String> excludedImageUrls, int limit, Set<String> seenFiles, Set<String> fallbackImages) throws Exception {
         val searchRoot = wikimediaRestClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("action", "query")
@@ -116,16 +120,19 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
         val images = new LinkedHashSet<String>();
         for (val result : searchResponse.searchResults()) {
             if (!seenFiles.add(result.title())) continue;
-            val imageUrl = resolveImageUrl(result.title());
-            if (imageUrl != null && !excludedImageUrls.contains(imageUrl)) {
-                images.add(imageUrl);
+            val image = resolveImageUrl(result.title());
+            if (image != null && !excludedImageUrls.contains(image.url())) {
+                if (image.fallback()) fallbackImages.add(image.url());
+                else images.add(image.url());
                 if (images.size() >= limit) break;
             }
         }
         return List.copyOf(images);
     }
 
-    private String resolveImageUrl(String fileTitle) throws Exception {
+    private record ResolvedImage(String url, boolean fallback) {}
+
+    private ResolvedImage resolveImageUrl(String fileTitle) throws Exception {
         if (!StringUtils.hasText(fileTitle)) {
             return null;
         }
@@ -149,12 +156,14 @@ public class WikimediaSimpleImageSearchService implements WikimediaImageSearchSe
         }
 
         if (WikimediaDjvuPreview.isDjvu(fileTitle, firstImageInfo.mime(), firstImageInfo.url())) {
-            return WikimediaDjvuPreview.resolve(firstImageInfo.thumburl(), firstImageInfo.thumbmime());
+            val preview = WikimediaDjvuPreview.resolve(firstImageInfo.thumburl(), firstImageInfo.thumbmime());
+            return preview == null ? null : new ResolvedImage(preview, true);
         }
 
         val mimeType = firstImageInfo.mime();
         val imageUrl = firstImageInfo.url();
-        return isWebImage(mimeType, imageUrl) ? imageUrl : null;
+        return isWebImage(mimeType, imageUrl) ? new ResolvedImage(imageUrl,
+                WikimediaImagePreference.isFallback(fileTitle, mimeType, imageUrl, null)) : null;
     }
 
     private List<String> buildSearchQueries(String[] normalizedKeywords) {
