@@ -1,7 +1,6 @@
 # TODO
 
 1. [ ] Verificare il trascinamento dei nodi, lo spostamento della vista (pan) e il ridimensionamento automatico dell’area di lavoro.
-2. [ ] Ingrandire il coniglietto dello spinner.
 3. [ ] Esportare le mappe su file, valutando il formato JSON.
 4. [ ] Importare mappe da file.
 5. [ ] Salvare sul server, come asset, le immagini collegate tramite URL nei nodi.
