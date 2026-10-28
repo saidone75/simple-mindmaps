@@ -8,11 +8,10 @@
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026
 
-Revisione statica ricontrollata sul codice attuale. I punti 10–17, 22 e 29 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. I punti 19 e 23 includono scelte funzionali; 24–28 e 30 sono proposte di ottimizzazione o manutenzione, non tutte correzioni necessarie. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
+Revisione statica ricontrollata sul codice attuale. I punti 11–17, 22 e 29 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. I punti 19 e 23 includono scelte funzionali; 24–28 e 30 sono proposte di ottimizzazione o manutenzione, non tutte correzioni necessarie. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
 
 ### Correttezza e salvataggio — priorità alta
 
-10. [ ] Attendere i salvataggi pendenti di nodi e sfondo prima di pubblicare o aggiornare il gioco. Gestire separatamente la navigazione interna e la chiusura della pagina: un semplice `await` in `beforeunload` non garantisce il completamento delle richieste. I form di pubblicazione oggi partono indipendentemente dal debounce (`editor.html`, `flushAutosave` e `backgroundSavePromise` in `mindmap-editor.js`).
 11. [ ] Salvare il preset della mappa tramite l’endpoint `/style`: `applyStylePresetToMap` cambia `state.map.stylePreset` e salva i nodi, ma non il preset sul server. Unificare inoltre `onchange` inline e listener `input`/`change`, che possono applicare lo stesso stile più volte (`editor.html`, `mindmap-editor.js`).
 12. [ ] Completare la persistenza di `branchWidth` e `branchCurve`: i controlli e il rendering li utilizzano, ma mancano in entità, DTO e richieste backend; spessore e curva personalizzati si perdono al ricaricamento e nella pubblicazione (`Node`, `NodeDto`, `CreateNodeRequest`, `UpdateNodeRequest`, `MindMapService`).
 

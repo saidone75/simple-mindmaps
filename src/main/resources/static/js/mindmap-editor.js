@@ -119,6 +119,8 @@ const imageHeightValue = document.getElementById("node-image-height-value");
 const autosaveStatus = document.getElementById("autosave-status");
 const failedEditorRequests = new Map();
 const activeEditorRequests = new Set();
+let leavingEditor = false;
+let allowEditorUnload = false;
 const nodeEmojiInput = document.getElementById("node-emoji");
 const branchTextInput = document.getElementById("branch-text");
 const autoLayoutBtn = document.getElementById("auto-layout-btn");
@@ -2012,6 +2014,82 @@ async function flushAutosave() {
     await Promise.all(saves);
 }
 
+function hasFailedSaves() {
+    return [...failedEditorRequests.keys()].some(key => /^(POST|PUT|DELETE) /.test(key) && !key.includes('/export/'));
+}
+
+function hasUnsavedChanges() {
+    return editingBackground || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
+        || activeEditorRequests.size > 0 || state.isApplyingHistory || hasFailedSaves();
+}
+
+async function saveBeforeLeaving(proceed) {
+    if (leavingEditor || state.isApplyingHistory) return;
+    leavingEditor = true;
+    const workspace = document.querySelector('.editor-page');
+    const focused = document.activeElement;
+    // Commit controls whose change event is dispatched on blur before locking the editor.
+    focused?.blur();
+    workspace.inert = true;
+    showLoading('Sto salvando le ultime modifiche…');
+    try {
+        if (editingBackground) {
+            editingBackground = false;
+            saveMapBackground();
+        }
+        let saveError;
+        do {
+            const results = await Promise.allSettled([
+                flushAutosave(), backgroundSavePromise, ...activeEditorRequests
+            ]);
+            const failed = results.find(result => result.status === 'rejected');
+            if (failed && !saveError) saveError = failed.reason;
+        } while (state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
+        if (saveError) throw saveError;
+        // Background saves report errors without rejecting their queue promise.
+        if (hasFailedSaves()) throw new Error('Ci sono modifiche non salvate. Controlla il messaggio di errore e riprova prima di continuare.');
+        allowEditorUnload = true;
+        proceed();
+    } catch (error) {
+        leavingEditor = false;
+        allowEditorUnload = false;
+        workspace.inert = false;
+        hideLoading();
+        reportEditorError(error);
+        focused?.focus({ preventScroll: true });
+    }
+}
+
+for (const form of document.querySelectorAll('.editor-page form')) {
+    form.addEventListener('submit', event => {
+        if (allowEditorUnload) return;
+        event.preventDefault();
+        saveBeforeLeaving(() => form.requestSubmit(event.submitter || undefined));
+    });
+}
+
+document.querySelector('.back-link')?.addEventListener('click', event => {
+    if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const href = event.currentTarget.href;
+    saveBeforeLeaving(() => location.assign(href));
+});
+
+globalThis.addEventListener('beforeunload', event => {
+    if (allowEditorUnload || !hasUnsavedChanges()) return;
+    // Closing/reloading cannot reliably await fetch; let the browser warn instead.
+    event.preventDefault();
+    event.returnValue = '';
+});
+
+globalThis.addEventListener('pageshow', () => {
+    if (!leavingEditor) return;
+    leavingEditor = false;
+    allowEditorUnload = false;
+    document.querySelector('.editor-page').inert = false;
+    hideLoading();
+});
+
 async function fetchMap() {
     return editorRequest(`/api/maps/${state.map.id}`);
 }
@@ -2304,6 +2382,7 @@ function isTypingTarget(target) {
 }
 
 document.addEventListener("keydown", async event => {
+    if (leavingEditor) return;
     const isUndoShortcut = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z";
     const isRedoShortcut = ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "y")
         || ((event.ctrlKey || event.metaKey) && event.shiftKey && event.key.toLowerCase() === "z");

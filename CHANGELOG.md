@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate.
+
 ## [0.2.1] - 2026-10-27
 
 ### Changed
