@@ -1,0 +1,52 @@
+<!--
+  ~ Alice's Simple Mind Maps
+  ~ Copyright (C) 2026 Miss Alice & Saidone
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Le nostre avventure — Giochi delle immagini</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <link rel="stylesheet" th:href="@{/css/map-game.css}">
+</head>
+<body class="playful-game">
+<main class="game-page">
+    <header class="game-hero">
+        <div class="game-hero-copy">
+            <span class="game-eyebrow">✦ LE NOSTRE AVVENTURE</span>
+            <h1>Oggi a cosa giochiamo?</h1>
+            <p>Scegli una mappa e parti alla scoperta delle immagini!</p>
+        </div>
+        <div class="game-hero-art" aria-hidden="true"><span class="game-mascot">🐰</span></div>
+    </header>
+    <nav class="teacher-games" aria-label="Scegli un gioco" th:if="${!games.isEmpty()}">
+        <a class="teacher-game" th:each="game : ${games}" th:href="@{/play/{token}(token=${game.token},start=true)}">
+            <span class="teacher-game-icon" aria-hidden="true">🧩</span>
+            <span class="teacher-game-title" th:text="${game.title}">La nostra mappa</span>
+            <span class="teacher-game-action" aria-hidden="true">Giochiamo! →</span>
+        </a>
+    </nav>
+    <section class="game-welcome" th:if="${games.isEmpty()}" aria-label="Giochi in preparazione">
+        <span aria-hidden="true">🎒</span>
+        <h2>Le avventure stanno arrivando!</h2>
+        <p>La maestra sta preparando i giochi. Torna presto a esplorare!</p>
+    </section>
+</main>
+</body>
+</html>
