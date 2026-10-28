@@ -105,6 +105,8 @@ const colorInput = document.getElementById("node-color");
 const textColorInput = document.getElementById("node-text-color");
 const mapBackgroundInput = document.getElementById("map-background-color");
 let backgroundSavePromise = Promise.resolve();
+let styleSavePromise = Promise.resolve();
+let pendingStyleChanges = 0;
 let editingBackground = false;
 const branchColorInput = document.getElementById("branch-color");
 const branchStyleInput = document.getElementById("branch-style");
@@ -263,16 +265,7 @@ async function restoreEditorState(snapshot) {
             node.parentId = remap(node.parentId);
         }
     }
-    // Keep frontend-only settings until their persistence is implemented (TODO 12).
-    const localNodes = new Map(snapshot.map.nodes.map(node => [remap(node.id), node]));
     state.map = restored.map;
-    for (const node of state.map.nodes) {
-        const local = localNodes.get(node.id);
-        if (local) {
-            node.branchWidth = local.branchWidth;
-            node.branchCurve = local.branchCurve;
-        }
-    }
     state.selectedNodeId = remap(snapshot.selectedNodeId);
     if (stylePresetInput) stylePresetInput.value = state.map.stylePreset;
     refreshMapTitle();
@@ -293,6 +286,7 @@ const { pushUndoSnapshot, beginInteractionSnapshot, commitInteractionSnapshot,
     snapshot: snapshotEditorState,
     restore: restoreEditorState,
     waitForSaves: async () => {
+        await styleSavePromise;
         await flushAutosave();
         await backgroundSavePromise;
         while (activeEditorRequests.size) await Promise.all([...activeEditorRequests]);
@@ -1950,7 +1944,7 @@ function hasFailedSaves() {
 }
 
 function hasUnsavedChanges() {
-    return editingBackground || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
+    return editingBackground || pendingStyleChanges > 0 || state.pendingAutosaves.size > 0 || state.autosaveCount > 0
         || activeEditorRequests.size > 0 || state.isApplyingHistory || hasFailedSaves();
 }
 
@@ -1971,11 +1965,11 @@ async function saveBeforeLeaving(proceed) {
         let saveError;
         do {
             const results = await Promise.allSettled([
-                flushAutosave(), backgroundSavePromise, ...activeEditorRequests
+                flushAutosave(), backgroundSavePromise, styleSavePromise, ...activeEditorRequests
             ]);
             const failed = results.find(result => result.status === 'rejected');
             if (failed && !saveError) saveError = failed.reason;
-        } while (state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
+        } while (pendingStyleChanges || state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
         if (saveError) throw saveError;
         // Background saves report errors without rejecting their queue promise.
         if (hasFailedSaves()) throw new Error('Ci sono modifiche non salvate. Controlla il messaggio di errore e riprova prima di continuare.');
@@ -2196,32 +2190,38 @@ async function addChildNode(parentId) {
     render();
 }
 
-async function applyStylePresetToMap(presetName) {
-    const normalized = (presetName || "CLASSIC").toUpperCase();
-    const preset = STYLE_PRESETS[normalized] || STYLE_PRESETS.CLASSIC;
-    state.map.stylePreset = normalized;
-    if (stylePresetInput) stylePresetInput.value = normalized;
-
-    await flushAutosave();
-    for (const node of state.map.nodes) {
-        node.shape = preset.shape;
-        node.branchColor = preset.branchColor;
-        node.branchStyle = preset.branchStyle;
-        node.branchWidth = preset.branchWidth;
-        node.branchCurve = preset.branchCurve;
-        node.color = node.parentId == null ? preset.rootColor : preset.childColor;
-    }
-
-    render();
-    selectNode(state.selectedNodeId, { showNodeOverlay: false });
-    await Promise.all(state.map.nodes.map(node => saveNode(node)));
-}
-
-if (globalThis.window) {
-    globalThis.window.applyMapStylePreset = async presetName => {
+function applyStylePresetToMap(presetName) {
+    const requested = (presetName || "CLASSIC").toUpperCase();
+    const normalized = STYLE_PRESETS[requested] ? requested : "CLASSIC";
+    pendingStyleChanges++;
+    const queued = styleSavePromise.then(async () => {
+        await flushAutosave();
         pushUndoSnapshot();
-        await applyStylePresetToMap(presetName).catch(reportEditorError);
-    };
+        const preset = STYLE_PRESETS[normalized];
+        state.map.stylePreset = normalized;
+        if (stylePresetInput) stylePresetInput.value = normalized;
+        for (const node of state.map.nodes) {
+            node.shape = preset.shape;
+            node.branchColor = preset.branchColor;
+            node.branchStyle = preset.branchStyle;
+            node.branchWidth = preset.branchWidth;
+            node.branchCurve = preset.branchCurve;
+            node.color = node.parentId == null ? preset.rootColor : preset.childColor;
+        }
+        render();
+        selectNode(state.selectedNodeId, { showNodeOverlay: false });
+        await editorRequest(`/api/maps/${state.map.id}/style`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ stylePreset: normalized })
+        });
+        await Promise.all(state.map.nodes.map(node => runAutosave(node)));
+    });
+    const tracked = queued.finally(() => { pendingStyleChanges--; });
+    // Keep the queue usable after a failure; request errors still block publication
+    // until retried or superseded by a successful full history restore.
+    styleSavePromise = tracked.catch(() => {});
+    return tracked;
 }
 
 async function deleteNodeWithChecks(nodeId) {
@@ -2312,7 +2312,7 @@ function isInteractiveTarget(target) {
 
 document.addEventListener("keydown", async event => {
     // Text fields keep native undo/redo; controls keep their normal keyboard behavior.
-    if (leavingEditor || event.defaultPrevented || event.isComposing || event.altKey
+    if (leavingEditor || pendingStyleChanges || event.defaultPrevented || event.isComposing || event.altKey
         || appDialog?.open || isInteractiveTarget(event.target)
         || state.isApplyingHistory || state.drag || state.resize || state.pan) return;
     const isUndoShortcut = (event.ctrlKey || event.metaKey) && !event.shiftKey && event.key.toLowerCase() === "z";
@@ -2360,11 +2360,9 @@ refreshMapTitle();
 if (stylePresetInput) {
     stylePresetInput.value = state.map.stylePreset;
     const onPresetChange = async () => {
-        pushUndoSnapshot();
         await applyStylePresetToMap(stylePresetInput.value).catch(reportEditorError);
     };
     stylePresetInput.addEventListener("change", onPresetChange);
-    stylePresetInput.addEventListener("input", onPresetChange);
 }
 selectNode(null);
 render();

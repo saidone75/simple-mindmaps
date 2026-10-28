@@ -21,6 +21,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Preset della mappa salvato sul server con un solo gestore del cambio di stile e attesa dei salvataggi anche prima della pubblicazione. Spessore e curva dei rami persistiti, validati e conservati al ricaricamento, nella duplicazione, in Annulla/Ripristina e nei giochi pubblicati; aggiunte le colonne `branch_width` e `branch_curve` alla tabella dei nodi.
 - Scorciatoie dell’editor rispettose del controllo selezionato e delle finestre di dialogo: Tab e Invio mantengono il comportamento dei controlli, Annulla/Ripristina nei campi di testo resta nativo del browser.
 - Pubblicazione e navigazione dall’editor attendono i salvataggi pendenti di nodi e sfondo; gli errori bloccano l’uscita e la chiusura o il ricaricamento della scheda avvisa se restano modifiche non salvate. Dopo il salvataggio i form vengono inviati direttamente, evitando blocchi nell’aggiornamento e nel ritiro del gioco.
 

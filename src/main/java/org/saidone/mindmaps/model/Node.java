@@ -77,6 +77,8 @@ public class Node {
 
     @Column(nullable = false)
     private String branchStyle;
+    private Integer branchWidth;
+    private String branchCurve;
 
     @Lob
     @Column(columnDefinition = "CLOB")

@@ -8,12 +8,7 @@
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026
 
-Revisione statica ricontrollata sul codice attuale. I punti 11–17 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. Il punto 30 è una proposta di manutenzione facoltativa. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
-
-### Correttezza e salvataggio — priorità alta
-
-11. [ ] Salvare il preset della mappa tramite l’endpoint `/style`: `applyStylePresetToMap` cambia `state.map.stylePreset` e salva i nodi, ma non il preset sul server. Unificare inoltre `onchange` inline e listener `input`/`change`, che possono applicare lo stesso stile più volte (`editor.html`, `mindmap-editor.js`).
-12. [ ] Completare la persistenza di `branchWidth` e `branchCurve`: i controlli e il rendering li utilizzano, ma mancano in entità, DTO e richieste backend; spessore e curva personalizzati si perdono al ricaricamento e nella pubblicazione (`Node`, `NodeDto`, `CreateNodeRequest`, `UpdateNodeRequest`, `MindMapService`).
+Revisione statica ricontrollata sul codice attuale. I punti 13–17 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. Il punto 30 è una proposta di manutenzione facoltativa. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
 
 ### Backend e configurazione
 

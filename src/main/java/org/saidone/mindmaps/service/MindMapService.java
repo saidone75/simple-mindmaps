@@ -217,6 +217,8 @@ public class MindMapService {
             node.setHint3(normalizeNodeHint(nodeDto.getHint3()));
             node.setEmoji(normalizeNodeEmoji(nodeDto.getEmoji()));
             node.setBranchText(normalizeBranchText(nodeDto.getBranchText()));
+            node.setBranchWidth(normalizeBranchWidth(nodeDto.getBranchWidth()));
+            node.setBranchCurve(normalizeBranchCurve(nodeDto.getBranchCurve()));
             if (searchWikimediaImages) {
                 progress.update("Sto cercando un’immagine per il nodo \"%s\"…".formatted(nodeDto.getText()), index, totalNodes);
                 val candidates = normalizeImageCandidates(wikimediaImageSearchService.searchImages(
@@ -258,6 +260,8 @@ public class MindMapService {
         node.setShape(request.getShape() == null ? DEFAULT_SHAPE : request.getShape());
         node.setBranchColor(request.getBranchColor() == null ? DEFAULT_BRANCH_COLOR : request.getBranchColor());
         node.setBranchStyle(request.getBranchStyle() == null ? DEFAULT_BRANCH_STYLE : request.getBranchStyle());
+        node.setBranchWidth(normalizeBranchWidth(request.getBranchWidth()));
+        node.setBranchCurve(normalizeBranchCurve(request.getBranchCurve()));
         node.setImageUri(normalizeImageUri(request.getImageUri()));
         node.setImageWidth(normalizeImageSize(request.getImageWidth()));
         node.setImageHeight(normalizeImageSize(request.getImageHeight()));
@@ -310,6 +314,8 @@ public class MindMapService {
         updateIfPresent(request.getShape(), node::setShape);
         updateIfPresent(request.getBranchColor(), node::setBranchColor);
         updateIfPresent(request.getBranchStyle(), node::setBranchStyle);
+        updateIfPresent(request.getBranchWidth(), value -> node.setBranchWidth(normalizeBranchWidth(value)));
+        updateIfPresent(request.getBranchCurve(), value -> node.setBranchCurve(normalizeBranchCurve(value)));
         node.setImageUri(imageUri);
         node.setImageWidth(normalizeImageSize(request.getImageWidth()));
         node.setImageHeight(normalizeImageSize(request.getImageHeight()));
@@ -421,6 +427,8 @@ public class MindMapService {
             // Only reuse IDs belonging to this map; deleted nodes receive fresh IDs.
             val node = byId.getOrDefault(source.getId(), new Node());
             nodeMapper.restore(source, node);
+            node.setBranchWidth(normalizeBranchWidth(source.getBranchWidth()));
+            node.setBranchCurve(normalizeBranchCurve(source.getBranchCurve()));
             node.setImageCandidates(normalizeImageCandidates(source.getImageCandidates()));
             node.setMapId(mapId);
             node.setParentId(null);
@@ -555,6 +563,19 @@ public class MindMapService {
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Mappa non trovata"));
     }
 
+
+    private Integer normalizeBranchWidth(Integer width) {
+        return width == null ? null : Math.clamp(width, 1, 12);
+    }
+
+    private String normalizeBranchCurve(String curve) {
+        if (curve == null) return null;
+        val normalized = curve.trim().toUpperCase(Locale.ROOT);
+        if (!normalized.equals("CUBIC") && !normalized.equals("QUADRATIC")) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Tipo di curva del ramo non valido");
+        }
+        return normalized;
+    }
 
     private List<String> normalizeImageCandidates(List<String> candidates) {
         if (candidates == null) return List.of();
