@@ -1,8 +1,6 @@
 # TODO
 
 1. [ ] Verificare il trascinamento dei nodi, lo spostamento della vista (pan) e il ridimensionamento automatico dell’area di lavoro.
-3. [ ] Esportare le mappe su file, valutando il formato JSON.
-4. [ ] Importare mappe da file.
 6. [ ] Aggiungere un gioco con una linea del tempo in cui collocare le immagini nelle tappe corrette.
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026

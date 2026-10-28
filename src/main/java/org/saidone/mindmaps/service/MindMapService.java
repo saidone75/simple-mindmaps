@@ -398,6 +398,17 @@ public class MindMapService {
         mindMapRepository.deleteById(id);
     }
 
+    @Transactional
+    public Long importMap(MindMapDto snapshot) {
+        val map = new MindMap();
+        map.setTitle(snapshot.getTitle());
+        map.setOwner(currentUserService.getCurrentUser());
+        map.setStoreImagesLocally(!Boolean.FALSE.equals(snapshot.getStoreImagesLocally()));
+        val saved = mindMapRepository.save(map);
+        restoreMap(saved.getId(), snapshot);
+        return saved.getId();
+    }
+
     public record RestoredMap(MindMapDto map, Map<Long, Long> nodeIds) {}
 
     @Transactional

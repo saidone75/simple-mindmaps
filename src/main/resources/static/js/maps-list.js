@@ -178,4 +178,37 @@
         bindCloneMapConfirm();
         bindDeleteMapConfirm();
     }
+    const importButton = document.getElementById('import-map-btn');
+    const importFile = document.getElementById('import-map-file');
+    const importError = document.getElementById('import-map-error');
+    importButton?.addEventListener('click', () => importFile.click());
+    importFile?.addEventListener('change', async () => {
+        const file = importFile.files[0];
+        if (!file) return;
+        importFile.value = '';
+        importError.hidden = true;
+        if (file.size > 100 * 1024 * 1024) {
+            importError.textContent = 'Il file della mappa supera il limite di 100 MB.';
+            importError.hidden = false;
+            return;
+        }
+        importButton.disabled = true;
+        globalThis.showLoading('Sto importando la mappa…');
+        try {
+            const result = await globalThis.MindMapHttp.request('/api/maps/import', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: file
+            }, {
+                serverMessages: true,
+                messages: { 400: 'Il file non contiene una mappa valida o completa.', 413: 'Il file della mappa supera il limite di 100 MB.' },
+                httpErrorMessage: 'Non riesco a importare la mappa. Riprova.'
+            });
+            if (!Number.isSafeInteger(result.id) || result.id <= 0) throw new Error('Risposta del server non valida.');
+            location.assign(`/maps/${result.id}`);
+        } catch (error) {
+            importError.textContent = error.message;
+            importError.hidden = false;
+            importButton.disabled = false;
+            globalThis.hideLoading();
+        }
+    });
 })();

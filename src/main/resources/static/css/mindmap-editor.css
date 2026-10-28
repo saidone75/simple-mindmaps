@@ -243,11 +243,7 @@
 
 .topbar-actions select { width: 75px; }
 
-.publication-panel {
-    display: grid;
-    align-items: center;
-    grid-template-columns: minmax(0,1fr) auto;
-    gap: 14px 24px;
+.publication-card {
     padding: 18px 22px;
     margin: 0 0 22px;
     border: 1px solid #dcdff0;
@@ -255,13 +251,15 @@
     background: linear-gradient(110deg,#f0edf9,#fafbff);
 }
 
-.publication-heading { display: flex; gap: 13px; align-items: center; flex-wrap: wrap; }
+.publication-panel { display: grid; align-items: center; grid-template-columns: minmax(0,1fr) auto; gap: 14px 24px; padding-top: 16px; }
+
+.publication-heading { cursor: pointer; list-style: none; display: flex; gap: 13px; align-items: center; flex-wrap: wrap; }
 
 .publication-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 13px; background: #e5ddf3; font-size: 23px; }
 
-.publication-heading h2 { font-size: .95rem; color: #4a4262; margin: 0 0 5px; }
+.publication-title { display: block; font-size: .95rem; color: #4a4262; margin: 0 0 5px; }
 
-.publication-heading p { font-size: .79rem; color: #80768f; margin: 0; }
+.publication-subtitle { display: block; font-size: .79rem; color: #80768f; margin: 0; }
 
 .publication-status { border: 1px solid #c7dfd3; background: #e8f4ed; padding: 5px 9px; border-radius: 99px; font-size: .65rem; color: #468064; }
 
@@ -272,8 +270,6 @@
 .publication-action button:hover { background: #5d4b82; }
 
 .publication-panel > small { grid-column: 1/-1; font-size: .71rem; color: #8a8099; }
-
-.publication-panel > p[role=status] { grid-column: 1/-1; margin: 0; font-size: .85rem; }
 
 .publication-link {
     display: flex;
@@ -446,7 +442,7 @@
 
     .topbar-actions { width: auto; }
 
-    .publication-panel { padding: 16px; }
+    .publication-card { padding: 16px; }
 }
 
 @media(max-width: 760px) {
@@ -509,3 +505,8 @@
 #store-images-switch:checked::before { transform: translateX(16px); }
 #store-images-switch:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 #save-image-status { font-size: .75rem; color: var(--muted); }
+
+.publication-heading::-webkit-details-marker { display: none; }
+.publication-heading::after { content: "▸"; margin-left: auto; }
+.publication-card[open] > .publication-heading::after { content: "▾"; }
+.editor-file-tools { margin-left: auto; }

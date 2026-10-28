@@ -46,7 +46,7 @@
             if (contentType.includes('text/html')) throw new Error('Risposta inattesa dal server. Verifica l’accesso e riprova.');
             return undefined;
         }
-        const expected = format === 'json' ? /application\/(?:[\w.-]+\+)?json/i : format === 'image' ? /image\//i
+        const expected = (format === 'json' || format === 'json-file') ? /application\/(?:[\w.-]+\+)?json/i : format === 'image' ? /image\//i
             : format === 'png' ? /image\/png/i : /application\/pdf/i;
         if (!expected.test(contentType)) throw new Error('Risposta inattesa dal server. Verifica l’accesso e riprova.');
         try {

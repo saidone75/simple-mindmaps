@@ -2086,7 +2086,7 @@ async function saveBeforeLeaving(proceed) {
         // Background saves report errors without rejecting their queue promise.
         if (hasFailedSaves()) throw new Error('Ci sono modifiche non salvate. Controlla il messaggio di errore e riprova prima di continuare.');
         allowEditorUnload = true;
-        proceed();
+        await proceed();
     } catch (error) {
         leavingEditor = false;
         allowEditorUnload = false;
@@ -2487,3 +2487,25 @@ if (autoLayoutOnOpen) {
 } else {
     queueImageStorage();
 }
+
+// Flush and lock the editor while producing a portable snapshot, then resume editing.
+document.getElementById('export-json-btn')?.addEventListener('click', () => {
+    saveBeforeLeaving(async () => {
+        try {
+            const blob = await globalThis.MindMapHttp.request(`/api/maps/${state.map.id}/export/json`, {}, {
+                format: 'json-file', serverMessages: true, httpErrorMessage: 'Non riesco a esportare la mappa. Riprova.'
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `${state.map.title.replace(/[^\p{L}\p{N}_-]+/gu, '-').slice(0, 80) || 'mappa'}.json`;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        } finally {
+            leavingEditor = false;
+            allowEditorUnload = false;
+            document.querySelector('.editor-page').inert = false;
+            hideLoading();
+        }
+    });
+});

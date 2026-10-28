@@ -9,6 +9,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Card dei modelli pronti spostata sotto «Le mie mappe» e pubblicazione del gioco richiudibile, chiusa per impostazione predefinita.
+- Toolbar dell’editor riordinata con lo switch «Salva immagini» a destra, dopo la griglia.
 - Limite di download delle immagini esterne aumentato a 25 MB prima della normalizzazione.
 - JavaScript organizzato in componenti dedicati per dialoghi, richieste HTTP e cronologia Annulla/Ripristina, con riuso fra editor ed elenco mappe e rimozione del controllo di rendering duplicato nell’esportazione SVG.
 - Il gioco aggiorna solo l’immagine della casella completata, riusando nodi, collegamenti e listener e mantenendo il focus della tastiera; selezione e rimozione delle immagini usano indici dedicati.
@@ -17,6 +19,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Importazione ed esportazione delle mappe in JSON, con nodi, collegamenti, stile, indizi, titoli premio e immagini locali incorporate nel file. L’importazione crea una nuova mappa privata con nuovi riferimenti alle immagini; controllo del formato e dei collegamenti, limite di 100 MB per file e 1000 nodi. Comando «Importa mappa» nei modelli pronti ed «Esporta» in fondo alla toolbar dell’editor, dopo lo switch delle immagini.
 - Job notturno configurabile per le immagini orfane, con controllo dei riferimenti in mappe, alternative e copie pubblicate, sette giorni di conservazione dall’individuazione e cancellazione dei file dopo il commit del database.
 
 - Switch nella toolbar dell’editor, attivo per impostazione predefinita e salvato per mappa, per scaricare e conservare le immagini esterne nella cartella del server, con metadati e riferimenti nel database. Normalizzazione entro 1024 × 1024 px senza ingrandimento, JPEG per immagini opache, PNG per trasparenze e conversione SVG; le GIF animate mantengono fotogrammi, tempi e ripetizione. Elaborazione in background, compatibilità con giochi, copie ed esportazioni e nuova tabella `map_image` per i metadati; cartella configurabile tramite `app.upload.directory`.
