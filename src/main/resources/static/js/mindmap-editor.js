@@ -421,10 +421,6 @@ function hasNodeEmoji(node) {
 }
 
 
-function isSketchPreset() {
-    return false;
-}
-
 const STYLE_PRESETS = {
     CLASSIC: { rootColor: "#D9D2E9", childColor: "#9FC5E8", shape: "ROUNDED", branchColor: "#7c8a9a", branchStyle: "SOLID", branchWidth: 4, branchCurve: "CUBIC" },
     TRUE_SUMMER: { rootColor: "#AFC4D9", childColor: "#D4C6DD", shape: "SQUARED", branchColor: "#5E7893", branchStyle: "SOLID", branchWidth: 3, branchCurve: "QUADRATIC" }
@@ -437,15 +433,6 @@ function getCurrentStylePresetName() {
 
 function getCurrentStylePreset() {
     return STYLE_PRESETS[getCurrentStylePresetName()];
-}
-
-function getSketchNodeSize(node) {
-    const lines = getNodeDisplayLines(node, 24);
-    const longest = lines.reduce((max, line) => Math.max(max, (line.text || "").length), 0);
-    const fontSize = Number(node.fontSize) || 18;
-    const width = Math.max(120, (longest * (fontSize * 0.65)) + 36);
-    const height = Math.max(56, (lines.length * (fontSize * 1.2)) + 28);
-    return { width, height };
 }
 
 
@@ -531,7 +518,7 @@ function renderGrid(viewport) {
     }
 }
 
-function renderConnectors(depthMap, sketchPreset) {
+function renderConnectors(depthMap) {
     for (const node of state.map.nodes) {
         if (node.parentId == null) continue;
         const parent = getNodeById(node.parentId);
@@ -544,7 +531,7 @@ function renderConnectors(depthMap, sketchPreset) {
         const x2 = node.x + nodeSize.width / 2;
         const y2 = node.y + nodeSize.height / 2;
         const depth = depthMap.get(node.id) || 1;
-        const inputs = [node, x1, y1, x2, y2, depth, sketchPreset,
+        const inputs = [node, x1, y1, x2, y2, depth,
             node.branchColor, node.branchStyle, node.branchWidth, node.branchCurve, node.branchText];
         updateCachedElement(renderCache.connectors, node.id, inputs, renderCache.layers.connectors, () => {
             const group = document.createElementNS(SVG_NS, "g");
@@ -552,13 +539,6 @@ function renderConnectors(depthMap, sketchPreset) {
             path.setAttribute("class", "connector");
             path.setAttribute("d", buildConnectorPath(node, x1, y1, x2, y2));
             applyBranchStyle(path, node, depth);
-            if (sketchPreset) {
-                path.classList.add("connector-sketch");
-                path.removeAttribute("marker-end");
-                const sketchStrokeWidth = String(Math.max(2.5, 5.5 - Math.min(depth, 3)));
-                path.style.strokeWidth = sketchStrokeWidth;
-                path.setAttribute("stroke-width", sketchStrokeWidth);
-            }
             group.appendChild(path);
             renderBranchLabel(node, (x1 + x2) / 2, (y1 + y2) / 2, x1, y1, x2, y2, group);
             return group;
@@ -566,14 +546,14 @@ function renderConnectors(depthMap, sketchPreset) {
     }
 }
 
-function appendNodeText(group, node, width, height, sketchPreset, emojiValue) {
+function appendNodeText(group, node, width, height, emojiValue) {
     const text = document.createElementNS(SVG_NS, "text");
-    const lines = getNodeDisplayLines(node, sketchPreset ? 24 : (hasNodeImage(node) ? 18 : 20));
+    const lines = getNodeDisplayLines(node, hasNodeImage(node) ? 18 : 20);
     const fontSize = Number(node.fontSize) || 18;
     const lineHeight = Math.max(16, Math.round(fontSize * 1.2));
-    const firstLineY = hasNodeImage(node) && !sketchPreset
+    const firstLineY = hasNodeImage(node)
         ? node.y + height - 16 - ((lines.length - 1) * lineHeight)
-        : emojiValue && !sketchPreset
+        : emojiValue
             ? node.y + ((height - ((lines.length - 1) * lineHeight)) / 2) + 14
             : node.y + ((height - ((lines.length - 1) * lineHeight)) / 2);
     text.setAttribute("class", "node-text");
@@ -627,46 +607,45 @@ function bindNodeGroupEvents(group, node) {
     group.addEventListener("contextmenu", event => openContextMenu(event, node.id));
 }
 
-function createNodeGroupElement(node, sketchPreset) {
+function createNodeGroupElement(node) {
     const group = document.createElementNS(SVG_NS, "g");
     const selectedClass = node.id === state.selectedNodeId ? " selected" : "";
-    group.setAttribute("class", `node-group${selectedClass}${sketchPreset ? " sketch-node" : ""}`);
+    group.setAttribute("class", `node-group${selectedClass}`);
     group.dataset.id = node.id;
     return group;
 }
 
 
-function appendNodeBackground(group, node, width, height, depth, sketchPreset) {
+function appendNodeBackground(group, node, width, height, depth) {
     const rect = document.createElementNS(SVG_NS, "rect");
-    const radius = getNodeCornerRadius(node, depth, sketchPreset);
+    const radius = getNodeCornerRadius(node, depth);
     rect.setAttribute("x", node.x);
     rect.setAttribute("y", node.y);
     rect.setAttribute("rx", radius);
     rect.setAttribute("ry", radius);
     rect.setAttribute("width", width);
     rect.setAttribute("height", height);
-    rect.setAttribute("fill", sketchPreset ? "rgba(255,255,255,0.001)" : getNodeColor(node));
-    rect.setAttribute("stroke", sketchPreset ? "transparent" : "#546170");
-    rect.setAttribute("stroke-width", sketchPreset ? "0" : "1.5");
+    rect.setAttribute("fill", getNodeColor(node));
+    rect.setAttribute("stroke", "#546170");
+    rect.setAttribute("stroke-width", "1.5");
     group.appendChild(rect);
 }
 
-function appendNodeImageContent(group, node, width, sketchPreset) {
-    if (sketchPreset || !hasNodeImage(node)) return;
+function appendNodeImageContent(group, node, width) {
+    if (!hasNodeImage(node)) return;
     renderNodeImage(group, node, width);
     if (node.id === state.selectedNodeId) renderImageResizeHandle(group, node, width);
 }
 
-function appendNodeInteractionControls(group, node, width, height, sketchPreset) {
-    if (sketchPreset) return;
+function appendNodeInteractionControls(group, node, width, height) {
     if (node.id === state.hoveredNodeId) renderNodeActionButtons(group, node, width);
     if (node.id === state.selectedNodeId || node.id === state.hoveredNodeId) {
         renderNodeResizeHandle(group, node, width, height);
     }
 }
 
-function appendNodeEmoji(group, node, width, emojiValue, sketchPreset) {
-    if (!emojiValue || sketchPreset) return;
+function appendNodeEmoji(group, node, width, emojiValue) {
+    if (!emojiValue) return;
 
     const emoji = document.createElementNS(SVG_NS, "text");
     emoji.setAttribute("class", "node-emoji");
@@ -682,47 +661,30 @@ function appendNodeEmoji(group, node, width, emojiValue, sketchPreset) {
     group.appendChild(emoji);
 }
 
-function appendSketchUnderline(group, node, width, height, depth, sketchPreset) {
-    if (!sketchPreset) return;
-
-    const underline = document.createElementNS(SVG_NS, "path");
-    const underlineY = node.y + height - 10;
-    const left = node.x + 10;
-    const right = node.x + width - 10;
-    const mid = (left + right) / 2;
-    underline.setAttribute("d", `M ${left} ${underlineY} Q ${mid} ${underlineY + 8} ${right} ${underlineY}`);
-    underline.setAttribute("stroke", node.branchColor || "#2f855a");
-    underline.setAttribute("stroke-width", depth === 0 ? "3.8" : "2.6");
-    underline.setAttribute("fill", "none");
-    underline.setAttribute("stroke-linecap", "round");
-    group.appendChild(underline);
-}
-
-function renderNodeGroup(node, depth, sketchPreset) {
+function renderNodeGroup(node, depth) {
     const { width, height } = getLayoutNodeSize(node);
-    const group = createNodeGroupElement(node, sketchPreset);
+    const group = createNodeGroupElement(node);
     const emojiValue = hasNodeImage(node) ? "" : normalizeNodeEmoji(node.emoji);
 
-    appendNodeBackground(group, node, width, height, depth, sketchPreset);
-    appendNodeImageContent(group, node, width, sketchPreset);
-    appendNodeInteractionControls(group, node, width, height, sketchPreset);
-    appendNodeEmoji(group, node, width, emojiValue, sketchPreset);
-    appendNodeText(group, node, width, height, sketchPreset, emojiValue);
-    appendSketchUnderline(group, node, width, height, depth, sketchPreset);
+    appendNodeBackground(group, node, width, height, depth);
+    appendNodeImageContent(group, node, width);
+    appendNodeInteractionControls(group, node, width, height);
+    appendNodeEmoji(group, node, width, emojiValue);
+    appendNodeText(group, node, width, height, emojiValue);
 
     bindNodeGroupEvents(group, node);
     return group;
 }
 
-function updateNodeElement(node, depth, sketchPreset) {
+function updateNodeElement(node, depth) {
     // Position is applied to the existing group so dragging keeps its image alive.
     const inputs = [node, node.parentId, node.text, node.description, node.emoji,
         node.fontSize, node.shape, node.imageUri, node.imageWidth, node.imageHeight,
-        node.nodeWidth, node.nodeHeight, node.branchColor, node.textColor, depth, sketchPreset, getNodeColor(node),
+        node.nodeWidth, node.nodeHeight, node.branchColor, node.textColor, depth, getNodeColor(node),
         node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
     const previous = renderCache.nodes.get(node.id);
     const entry = updateCachedElement(renderCache.nodes, node.id, inputs, renderCache.layers.nodes,
-        () => renderNodeGroup(node, depth, sketchPreset));
+        () => renderNodeGroup(node, depth));
     if (entry !== previous) {
         entry.x = node.x;
         entry.y = node.y;
@@ -759,12 +721,11 @@ function render() {
         const viewport = getViewportForRender();
         renderGrid(viewport);
         const depthMap = buildDepthMap(state.map.nodes, renderNodeIndex);
-        const sketchPreset = isSketchPreset();
-        renderConnectors(depthMap, sketchPreset);
+        renderConnectors(depthMap);
         const connectorIds = new Set();
         for (const node of state.map.nodes) {
             const depth = depthMap.get(node.id) || 0;
-            updateNodeElement(node, depth, sketchPreset);
+            updateNodeElement(node, depth);
             if (node.parentId != null && renderNodeIndex.has(node.parentId)) connectorIds.add(node.id);
         }
         removeStaleElements(renderCache.nodes, new Set(renderNodeIndex.keys()));
@@ -934,7 +895,6 @@ function applyCanvasViewport(viewport = getViewportForRender()) {
     // Keep the drawing scale fixed when its bounds grow, including on mobile.
     if (svg.style.width !== `${pixelWidth}px`) svg.style.width = `${pixelWidth}px`;
     if (svg.style.height !== `${pixelHeight}px`) svg.style.height = `${pixelHeight}px`;
-    if (svg.style.minWidth !== '0px') svg.style.minWidth = '0px';
     appliedViewport = viewport;
     if (canvasViewport) {
         if (offsetX) canvasViewport.scrollLeft += offsetX;
@@ -1140,9 +1100,6 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
     label.setAttribute("y", String(cy - 6));
     label.setAttribute("text-anchor", "middle");
     label.textContent = truncate(branchText, 26);
-    if (isSketchPreset()) {
-        label.classList.add("branch-label-sketch");
-    }
     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     label.setAttribute("transform", `rotate(${Math.max(-24, Math.min(24, angle))}, ${cx}, ${cy - 6})`);
     label.addEventListener("pointerdown", event => event.stopPropagation());
@@ -2320,13 +2277,12 @@ function applyOrganicLayout() {
 
 function getLayoutNodeSize(node) {
     if (renderNodeSizes?.has(node.id)) return renderNodeSizes.get(node.id);
-    const sketchPreset = isSketchPreset();
-    const inputs = [sketchPreset, node.text, node.description, node.fontSize, node.imageUri,
+    const inputs = [node.text, node.description, node.fontSize, node.imageUri,
         node.imageWidth, node.imageHeight, node.nodeWidth, node.nodeHeight];
     const cached = layoutSizeCache.get(node);
     const size = cached && sameRenderInputs(cached.inputs, inputs)
         ? cached.size
-        : sketchPreset ? getSketchNodeSize(node) : getNodeSize(node);
+        : getNodeSize(node);
     if (size !== cached?.size) layoutSizeCache.set(node, { inputs, size });
     renderNodeSizes?.set(node.id, size);
     return size;

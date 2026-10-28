@@ -304,7 +304,7 @@
             const {width, height} = nodeSizes.get(node.id);
             const imageNode = hasNodeImage(node);
             const group = make('g', {'data-node-id': node.id, class: imageNode ? `game-target${matched.has(node.id) ? ' matched' : ''}` : ''});
-            const radius = getNodeCornerRadius(node, depths.get(node.id) || 0, false);
+            const radius = getNodeCornerRadius(node, depths.get(node.id) || 0);
             group.appendChild(make('rect', {x:node.x, y:node.y, width,height, rx:radius, fill:node.color || '#D9D2E9', stroke:'#546170', 'stroke-width':1.5}));
             if (imageNode) {
                 const box = getNodeImageBounds(node, width);

@@ -96,7 +96,6 @@ button.login-card-bunny:hover,
 
 .hero-card,
 .section-card,
-.side-panel,
 .map-card,
 .login-card,
 .app-dialog-card,
@@ -108,7 +107,6 @@ button.login-card-bunny:hover,
 
 .hero-card,
 .section-card,
-.side-panel,
 .app-dialog-card,
 .loading-status { background: var(--card); }
 
@@ -122,37 +120,25 @@ button.login-card-bunny:hover,
 .form-actions,
 .app-dialog-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
-.editor-title-actions-row,
-.topbar-actions,
-.canvas-toolbar { display: flex; align-items: center; flex-wrap: wrap; }
-
 .hero-card,
 .section-header,
-.card-actions,
-.editor-title-actions-row { justify-content: space-between; }
+.card-actions { justify-content: space-between; }
 
-.hero-card h1,
-.editor-topbar h1 { margin: 0; font-size: 2rem; }
+.hero-card h1 { margin: 0; font-size: 2rem; }
 
 .hero-card p,
 .section-intro p,
 .map-card p,
-.canvas-toolbar,
 .logout-form,
 .login-card p:not(.section-kicker) { color: var(--muted); }
 
 .logout-form,
-.back-link,
 .section-kicker { font-weight: 800; }
 
-.back-link,
 .section-kicker { color: var(--accent-dark); }
 
 .section-kicker { font-size: 3rem; letter-spacing: 0.04em; }
 
-.map-title-row { display: inline-flex; align-items: center; gap: 8px; }
-
-.map-title-row h1,
 .section-card h2 { margin-bottom: 0; }
 
 .page-shell .hero-card { align-items: flex-start; gap: 18px; }
@@ -211,7 +197,6 @@ button.login-card-bunny:hover,
 
 .create-form label { display: block; font-weight: 800; }
 
-.side-panel label,
 .login-field label { display: block; margin-bottom: 8px; font-weight: 800; }
 
 input[type="text"],
@@ -240,8 +225,7 @@ textarea:focus,
 
 textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
-.field-error,
-.node-context-menu button.danger { color: var(--danger); }
+.field-error { color: var(--danger); }
 
 .field-error { margin-top: 8px; }
 
@@ -252,8 +236,6 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 .login-alert { border-radius: 16px; padding: 12px 16px; margin-bottom: 20px; font-weight: 700; }
 
 .login-alert-error { background: var(--danger-soft); border: 1px solid var(--danger-border); }
-
-.node-context-menu button.danger { background: var(--danger-soft); }
 
 .checkbox-group,
 .template-grid,
@@ -275,6 +257,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
     border-radius: 16px;
     cursor: pointer;
 }
+
 .checkbox-label input[role="switch"] {
     appearance: none;
     flex: 0 0 42px;
@@ -287,6 +270,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
     background: var(--muted);
     cursor: inherit;
 }
+
 .checkbox-label input[role="switch"]::before {
     content: "";
     display: block;
@@ -295,8 +279,11 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
     border-radius: 50%;
     background: var(--white);
 }
+
 .checkbox-label input[role="switch"]:checked { background: var(--accent-dark); }
+
 .checkbox-label input[role="switch"]:checked::before { transform: translateX(18px); }
+
 .checkbox-label input[role="switch"]:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 
 .template-btn,
@@ -304,53 +291,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 .template-btn { width: 100%; min-height: 72px; font-size: 1.05rem; }
 
-.inline-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
 .map-card { background: var(--surface); }
-
-.editor-topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
-
-.editor-topbar .logout-form { justify-self: end; }
-
-.editor-title-actions-row { grid-column: 1 / -1; }
-
-.editor-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
-
-.canvas-panel { position: relative; }
-
-.canvas-scroll-area { min-width: 100%; }
-
-#mindmap-canvas { display: block; min-width: 0; min-height: 0; cursor: grab; }
-
-.node-group,
-.node-group * { cursor: grab; }
-
-.node-group:active,
-.node-group:active * { cursor: grabbing; }
-
-#zoom-value { font-weight: 700; }
-
-.toolbar-checkbox { display: inline-flex; align-items: center; gap: 6px; }
-
-.toolbar-checkbox input { width: auto; }
-
-.side-panel { padding: 12px; font-size: 0.92rem; }
-
-.side-panel > * + * { margin-top: 8px; }
-
-.side-panel h2 { margin-bottom: 8px; font-size: 1rem; }
-
-.image-preview-box {
-    display: grid;
-    place-items: center;
-    min-height: 72px;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    background: var(--surface-soft);
-}
-
-#node-image-preview { display: none; max-width: 100%; max-height: 110px; border-radius: 10px; }
 
 .node-text,
 .node-emoji { pointer-events: all; cursor: inherit; }
@@ -361,74 +302,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 .connector { fill: none; stroke: var(--connector); stroke-width: 3; opacity: 0.9; stroke-linecap: round; }
 
-.node-group rect { stroke: var(--node-stroke); stroke-width: 2; filter: drop-shadow(0 8px 10px var(--shadow)); }
-
-.node-group.selected rect { stroke: var(--accent-dark); stroke-width: 3.5; }
-
-.image-resize-handle,
-.node-resize-handle { fill: var(--white); stroke: var(--accent-dark); stroke-width: 2; cursor: nwse-resize; }
-
-.node-action-button { cursor: pointer; }
-
-.node-action-button rect { fill: var(--white); stroke: var(--border); stroke-width: 1.6; filter: drop-shadow(0 4px 8px var(--shadow)); }
-
-.node-action-button:hover rect { fill: var(--soft); stroke: var(--accent); }
-
-.node-action-icon { font-size: 14px; fill: var(--accent-dark); user-select: none; pointer-events: none; }
-
 .branch-label { fill: var(--branch-label); font-size: 13px; font-weight: 700; pointer-events: all; cursor: text; }
-
-.connector-sketch { stroke-linecap: round; stroke-linejoin: round; opacity: 0.95; }
-
-.sketch-node .node-text,
-.branch-label-sketch { font-family: "Trebuchet MS", "Comic Sans MS", Arial, sans-serif; }
-
-.sketch-node.selected .node-text,
-.branch-label-sketch { fill: var(--sketch-ink); }
-
-.branch-label-sketch { font-size: 12px; }
-
-.node-context-menu {
-    position: fixed;
-    z-index: 1200;
-    display: grid;
-    gap: 6px;
-    min-width: 210px;
-    padding: 8px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: var(--white);
-    box-shadow: 0 18px 34px var(--shadow);
-}
-
-.node-context-menu button {
-    width: 100%;
-    padding: 8px 10px;
-    text-align: left;
-    background: var(--surface);
-    color: var(--ink);
-    border: 1px solid var(--border);
-}
-
-.node-editor-overlay,
-.image-editor-overlay {
-    position: absolute;
-    left: 16px;
-    display: none;
-    width: min(280px, calc(100% - 20px));
-    backdrop-filter: blur(6px);
-}
-
-.node-editor-overlay { z-index: 20; }
-
-.node-editor-overlay { max-height: calc(100% - 32px); overflow: auto; font-size: 0.82rem; }
-
-.image-editor-overlay { z-index: 24; }
-
-.node-editor-overlay.visible,
-.image-editor-overlay.visible { display: block; }
-
-.node-editor-overlay .small-btn { padding: 8px 10px; border-radius: 12px; }
 
 .app-dialog { width: min(460px, calc(100% - 32px)); max-width: 460px; padding: 0; border: 0; background: var(--transparent); }
 
@@ -462,16 +336,21 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 #loading-overlay p { color: var(--sketch-ink); font-size: 16px; font-weight: 700; }
 
 /* Current server activity stays readable while map creation runs. */
+
 .loading-status {
     width: min(520px, calc(100% - 32px));
     padding: 20px 24px;
     text-align: center;
     border-radius: 18px;
 }
+
 #loading-overlay .loading-status p { margin: 0; font-size: 18px; line-height: 1.5; }
+
 .loading-status small { display: block; margin-top: 10px; color: var(--muted); line-height: 1.5; }
+
 .loading-status small[hidden],
 .loading-progress[hidden] { display: none; }
+
 .loading-progress { display: block; width: 100%; height: 12px; margin-top: 16px; accent-color: var(--accent); }
 
 .login-page { min-height: 100vh; display: grid; place-items: center; padding: 32px 18px; }
@@ -551,8 +430,6 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
     .page-shell { padding: 12px; font-size: 0.94rem; }
 
-    .editor-page { font-size: 0.94rem; }
-
     .hero-card,
     .section-card,
     .login-card { border-radius: 18px; box-shadow: 0 8px 22px var(--shadow); }
@@ -562,17 +439,13 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
     .hero-card,
     .section-header,
-    .editor-title-actions-row,
-    .topbar-actions,
     .form-actions,
-    .canvas-toolbar,
     .app-dialog-actions {
         align-items: stretch;
         flex-direction: column;
     }
 
-    .hero-card h1,
-    .editor-topbar h1 { font-size: clamp(1.45rem, 8vw, 1.85rem); }
+    .hero-card h1 { font-size: clamp(1.45rem, 8vw, 1.85rem); }
 
     .logout-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
 
@@ -585,11 +458,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
     .compact-create-form,
     .checkbox-group,
     .template-grid,
-    .map-grid,
-    .inline-actions,
-    .editor-topbar {
-        grid-template-columns: 1fr;
-    }
+    .map-grid { grid-template-columns: 1fr; }
 
     .form-field,
     .form-field-main,
@@ -599,36 +468,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
     .card-actions form,
     .card-actions a,
-    .card-actions button,
-    .topbar-actions,
-    .topbar-actions a,
-    .topbar-actions button,
-    .canvas-toolbar,
-    .canvas-toolbar input {
-        width: 100%;
-    }
-
-    .editor-topbar .logout-form { justify-self: stretch; }
-
-    .map-title-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
-
-    .canvas-panel { max-height: none; }
-
-    .canvas-toolbar label,
-    .canvas-toolbar span { width: 100%; margin-left: 0; }
-
-    .toolbar-checkbox { width: 100%; justify-content: flex-start; }
-
-    .toolbar-checkbox input { width: auto; }
-
-    .canvas-scroll-area { min-width: 100%; -webkit-overflow-scrolling: touch; }
-
-    #mindmap-canvas { width: 100%; min-width: 760px; height: 65vh; touch-action: none; }
-
-    .node-editor-overlay,
-    .image-editor-overlay { position: sticky; left: 0; width: 100%; max-height: 70vh; margin-bottom: 10px; }
-
-    .node-context-menu { left: 8px !important; right: 8px; width: auto; min-width: 0; }
+    .card-actions button { width: 100%; }
 
     .app-dialog { width: calc(100% - 20px); }
 
@@ -641,16 +481,6 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 @media (min-width: 761px) and (max-width: 1024px) {
     .page-shell { padding: 18px; }
-
-    .editor-topbar { grid-template-columns: 1fr; }
-
-    .editor-topbar .logout-form { justify-self: start; }
-
-    .topbar-actions { width: 100%; }
-
-    .canvas-toolbar { align-items: flex-end; }
-
-    #mindmap-canvas { width: 100%; min-width: 960px; height: 70vh; }
 }
 
 @keyframes bunny-hop {
@@ -707,10 +537,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 @media (max-width: 720px) {
     .ai-create-form,
-    .compact-create-form,
-    .editor-topbar { grid-template-columns: 1fr; }
-
-    .editor-topbar .logout-form { justify-self: start; }
+    .compact-create-form { grid-template-columns: 1fr; }
 
     .form-actions button { width: 100%; }
 }

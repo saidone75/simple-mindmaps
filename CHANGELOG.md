@@ -9,6 +9,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Stili specifici dell’editor raccolti in `mindmap-editor.css`, dimensioni responsive del canvas semplificate e codice grafico sketch inattivo rimosso da CSS e JavaScript.
 - Trascinamento, ridimensionamento e pan dell’editor unificati tramite Pointer Events per mouse, penna e touch, con cattura del puntatore, gestione dei gesti interrotti e distinzione tra tocco e trascinamento.
 
 ### Added

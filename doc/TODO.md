@@ -8,7 +8,7 @@
 
 ## Migliorie dalla revisione del codice — 27 ottobre 2026
 
-Revisione statica ricontrollata sul codice attuale. I punti 11–17 e 29 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. I punti 19 e 23 includono scelte funzionali; 24–28 e 30 sono proposte di ottimizzazione o manutenzione, non tutte correzioni necessarie. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
+Revisione statica ricontrollata sul codice attuale. I punti 11–17 descrivono problemi o lacune individuati nel codice; il punto 18 richiede anche una verifica della policy della libreria, il 21 riguarda solo la configurazione locale. I punti 19 e 23 includono scelte funzionali; 24–25 e 30 sono proposte di ottimizzazione o manutenzione, non tutte correzioni necessarie. Prestazioni e comportamento nei browser non sono stati misurati. Numerazione mantenuta; nessuna modifica applicativa o test eseguito.
 
 ### Correttezza e salvataggio — priorità alta
 
@@ -34,8 +34,4 @@ Revisione statica ricontrollata sul codice attuale. I punti 11–17 e 29 descriv
 
 ### CSS — consolidamento e ottimizzazione
 
-26. [ ] Consolidamento facoltativo: riunire gli stili specifici dell’editor in `mindmap-editor.css`, mantenendo in `app.css` quelli usati anche dal gioco o da altre pagine. Toolbar, pannelli e layout sono distribuiti fra i file, ma la presenza di override non è di per sé un errore: preservare ordine della cascata e resa responsive.
-27. [ ] Pulizia delle dimensioni responsive del canvas, collegata al punto 1: `app.css` impone larghezze minime e altezze per mobile/tablet, mentre `applyCanvasViewport` imposta poi larghezza, altezza e `min-width: 0` inline. Stabilire quali regole servono come stato iniziale e rimuovere soltanto quelle ridondanti; questa sovrascrittura da sola non dimostra un difetto di pan.
-28. [ ] Rimuovere o isolare il percorso grafico sketch non attivo: `isSketchPreset` restituisce sempre `false`, ma restano rendering condizionali e selettori `.sketch-node`, `.connector-sketch` e `.branch-label-sketch`. Conservare le risorse ancora condivise: per esempio `--sketch-ink` è usata anche dal testo dello spinner (`mindmap-editor.js`, `app.css`).
-29. [ ] Estendere `prefers-reduced-motion` al coniglietto dello spinner: in `app.css` la regola disattiva soltanto le animazioni del login, mentre `#loading-overlay .loading-icon` continua ad animarsi.
 30. [ ] Pulizia facoltativa: estrarre variabili CSS per colori effettivamente condivisi fra pannelli, bordi e controlli dell’editor. Non accorpare automaticamente colori simili che rappresentano stati diversi: è una miglioria di manutenzione, non un problema prestazionale dimostrato (`mindmap-editor.css`).

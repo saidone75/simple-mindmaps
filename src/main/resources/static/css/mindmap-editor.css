@@ -16,6 +16,197 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+.side-panel {
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    box-shadow: 0 12px 32px var(--shadow);
+}
+
+.side-panel { background: var(--card); }
+
+.editor-title-actions-row,
+.topbar-actions,
+.canvas-toolbar { display: flex; align-items: center; flex-wrap: wrap; }
+
+.editor-title-actions-row { justify-content: space-between; }
+
+.editor-topbar h1 { margin: 0; font-size: 2rem; }
+
+.canvas-toolbar { color: var(--muted); }
+
+.back-link { font-weight: 800; }
+
+.back-link { color: var(--accent-dark); }
+
+.map-title-row { display: inline-flex; align-items: center; gap: 8px; }
+
+.map-title-row h1 { margin-bottom: 0; }
+
+.side-panel label { display: block; margin-bottom: 8px; font-weight: 800; }
+
+.node-context-menu button.danger { color: var(--danger); }
+
+.node-context-menu button.danger { background: var(--danger-soft); }
+
+.inline-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.editor-topbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+
+.editor-topbar .logout-form { justify-self: end; }
+
+.editor-title-actions-row { grid-column: 1 / -1; }
+
+.editor-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+
+.canvas-panel { position: relative; }
+
+#mindmap-canvas { display: block; width: 100%; height: auto; min-width: 0; min-height: 0; cursor: grab; }
+
+.node-group,
+.node-group * { cursor: grab; }
+
+.node-group:active,
+.node-group:active * { cursor: grabbing; }
+
+#zoom-value { font-weight: 700; }
+
+.toolbar-checkbox { display: inline-flex; align-items: center; gap: 6px; }
+
+.toolbar-checkbox input { width: auto; }
+
+.side-panel { padding: 12px; font-size: 0.92rem; }
+
+.side-panel > * + * { margin-top: 8px; }
+
+.side-panel h2 { margin-bottom: 8px; font-size: 1rem; }
+
+.image-preview-box {
+    display: grid;
+    place-items: center;
+    min-height: 72px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface-soft);
+}
+
+#node-image-preview { display: none; max-width: 100%; max-height: 110px; border-radius: 10px; }
+
+.node-group rect { stroke: var(--node-stroke); stroke-width: 2; filter: drop-shadow(0 8px 10px var(--shadow)); }
+
+.node-group.selected rect { stroke: var(--accent-dark); stroke-width: 3.5; }
+
+.image-resize-handle,
+.node-resize-handle { fill: var(--white); stroke: var(--accent-dark); stroke-width: 2; cursor: nwse-resize; }
+
+.node-action-button { cursor: pointer; }
+
+.node-action-button rect { fill: var(--white); stroke: var(--border); stroke-width: 1.6; filter: drop-shadow(0 4px 8px var(--shadow)); }
+
+.node-action-button:hover rect { fill: var(--soft); stroke: var(--accent); }
+
+.node-action-icon { font-size: 14px; fill: var(--accent-dark); user-select: none; pointer-events: none; }
+
+.node-context-menu {
+    position: fixed;
+    z-index: 1200;
+    display: grid;
+    gap: 6px;
+    min-width: 210px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--white);
+    box-shadow: 0 18px 34px var(--shadow);
+}
+
+.node-context-menu button {
+    width: 100%;
+    padding: 8px 10px;
+    text-align: left;
+    background: var(--surface);
+    color: var(--ink);
+    border: 1px solid var(--border);
+}
+
+.node-editor-overlay,
+.image-editor-overlay {
+    position: absolute;
+    left: 16px;
+    display: none;
+    width: min(280px, calc(100% - 20px));
+    backdrop-filter: blur(6px);
+}
+
+.node-editor-overlay { z-index: 20; }
+
+.node-editor-overlay { max-height: calc(100% - 32px); overflow: auto; font-size: 0.82rem; }
+
+.image-editor-overlay { z-index: 24; }
+
+.node-editor-overlay.visible,
+.image-editor-overlay.visible { display: block; }
+
+.node-editor-overlay .small-btn { padding: 8px 10px; border-radius: 12px; }
+
+@media (max-width: 760px) {
+    .editor-page { font-size: 0.94rem; }
+
+    .editor-title-actions-row,
+    .topbar-actions,
+    .canvas-toolbar {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .editor-topbar h1 { font-size: clamp(1.45rem, 8vw, 1.85rem); }
+
+    .inline-actions,
+    .editor-topbar { grid-template-columns: 1fr; }
+
+    .topbar-actions,
+    .topbar-actions a,
+    .topbar-actions button,
+    .canvas-toolbar,
+    .canvas-toolbar input { width: 100%; }
+
+    .editor-topbar .logout-form { justify-self: stretch; }
+
+    .map-title-row { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+
+    .canvas-panel { max-height: none; }
+
+    .canvas-toolbar label,
+    .canvas-toolbar span { width: 100%; margin-left: 0; }
+
+    .toolbar-checkbox { width: 100%; justify-content: flex-start; }
+
+    .toolbar-checkbox input { width: auto; }
+
+    .canvas-scroll-area { -webkit-overflow-scrolling: touch; }
+
+    .node-editor-overlay,
+    .image-editor-overlay { position: sticky; left: 0; width: 100%; max-height: 70vh; margin-bottom: 10px; }
+
+    .node-context-menu { left: 8px !important; right: 8px; width: auto; min-width: 0; }
+}
+
+@media (min-width: 761px) and (max-width: 1024px) {
+    .editor-topbar { grid-template-columns: 1fr; }
+
+    .editor-topbar .logout-form { justify-self: start; }
+
+    .topbar-actions { width: 100%; }
+
+    .canvas-toolbar { align-items: flex-end; }
+}
+
+@media (max-width: 720px) {
+    .editor-topbar { grid-template-columns: 1fr; }
+
+    .editor-topbar .logout-form { justify-self: start; }
+}
+
 .mindmap-workspace { --accent: #637caa; --accent-dark: #415e8d; background: #f1f4f8; }
 
 .editor-page { max-width: 1920px; margin: auto; padding: 24px 30px; }
@@ -175,6 +366,7 @@
 .toolbar-checkbox { margin-left: 0; }
 
 .canvas-scroll-area {
+    min-width: 0;
     overflow: auto;
     touch-action: none;
     user-select: none;
@@ -200,29 +392,49 @@
 .side-panel h2 { color: #475b78; }
 
 .image-alternatives[hidden] { display: none; }
+
 .image-editor-overlay { max-height: min(70vh, calc(100% - 24px)); overflow: auto; }
+
 .image-alternatives { margin-top: 16px; }
+
 .image-alternatives h3 { margin: 0 0 6px; font-size: .9rem; }
+
 .image-alternatives p { margin: 0 0 10px; font-size: .75rem; color: var(--muted); }
+
 .image-candidates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+
 .image-candidate { min-width: 0; padding: 4px; border: 2px solid var(--border); border-radius: 10px; background: var(--white); }
+
 .image-candidate img { display: block; width: 100%; height: 64px; object-fit: cover; border-radius: 6px; }
+
 .image-candidate:hover, .image-candidate[aria-pressed="true"] { border-color: var(--accent); background: var(--surface-soft); }
+
 .image-candidate:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
 .image-candidate:disabled { opacity: .4; cursor: not-allowed; }
 
 .side-panel label { color: #74839a; font-size: .75rem; }
+
 .node-colors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; min-width: 0; margin: 16px 0 8px; padding: 0; border: 0; }
+
 .node-colors legend { margin-bottom: 8px; padding: 0; font-size: .75rem; font-weight: 800; color: #74839a; }
+
 .node-colors input, #map-background-color { display: block; width: 100%; height: 36px; margin-top: 6px; padding: 2px; border: 1px solid var(--border); border-radius: 8px; background: var(--white); cursor: pointer; }
+
 #map-background-color { width: 42px; margin: 0; }
 
 .prizes-editor { grid-column: 1 / -1; padding-top: 12px; border-top: 1px solid #e5ddf3; }
+
 .prizes-editor summary { cursor: pointer; font-weight: 700; color: #5d4b82; }
+
 .prizes-editor p { font-size: .85rem; line-height: 1.5; color: #746585; }
+
 .prizes-form { display: grid; gap: 10px; margin-bottom: 12px; }
+
 .prize-field { display: grid; grid-template-columns: 80px minmax(0, 1fr); align-items: center; gap: 10px; }
+
 .prize-field input { min-width: 0; }
+
 .prizes-form button { justify-self: start; }
 
 @media(max-width: 1024px) {
@@ -272,9 +484,7 @@
     .canvas-toolbar span,
     .canvas-toolbar select,
     .canvas-toolbar .small-btn,
-    .canvas-toolbar input[type=checkbox] {
-        width: auto;
-    }
+    .canvas-toolbar input[type=checkbox] { width: auto; }
 
     .editor-zoom-group #zoom-control { width: auto; flex: 1; }
 
@@ -290,4 +500,5 @@
 .canvas-scroll-area.is-panning * { cursor: grabbing; user-select: none; }
 
 #autosave-status, #editor-request-error { margin: 8px 22px; font-size: .8rem; }
+
 #autosave-status:empty { display: none; }

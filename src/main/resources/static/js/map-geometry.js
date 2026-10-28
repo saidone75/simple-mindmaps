@@ -198,8 +198,7 @@ function getNodeImageBounds(node, nodeWidth) {
     };
 }
 
-function getNodeCornerRadius(node, depth, sketchPreset) {
-    if (sketchPreset) return 16;
+function getNodeCornerRadius(node, depth) {
     if ((node.shape || "").toUpperCase() === "SQUARED") return 0;
     return depth === 0 ? 10 : 20;
 }
