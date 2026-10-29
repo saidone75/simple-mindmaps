@@ -682,7 +682,7 @@ public class MindMapService {
     private String normalizeStylePreset(String stylePreset) {
         if (stylePreset == null || stylePreset.isBlank()) return DEFAULT_STYLE_PRESET;
         return switch (stylePreset.trim().toUpperCase()) {
-            case "PLAYFUL", "OCEAN", "CANDY", DEFAULT_STYLE_PRESET -> stylePreset.trim().toUpperCase();
+            case "PLAYFUL", "OCEAN", "CANDY", "TRUE_SUMMER", DEFAULT_STYLE_PRESET -> stylePreset.trim().toUpperCase();
             default -> DEFAULT_STYLE_PRESET;
         };
     }

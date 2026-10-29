@@ -29,6 +29,9 @@ import org.saidone.mindmaps.dto.MindMapDto;
 import org.saidone.mindmaps.dto.MapGenerationRequestDto;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
+import org.springframework.core.io.Resource;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -49,6 +52,10 @@ public class OpenAiMapGenerationService implements MapGenerationService {
     @Value("${app.openai.model:gpt-5.4-mini}")
     private String model;
 
+    @Value("${app.openai.system-prompt:classpath:prompts/mindmap-system.md}")
+    private Resource systemPromptResource;
+    private String systemPromptTemplate;
+
     private Map<String, Object> cachedQuizSchema;
 
     private static final String QUIZ_JSON_SCHEMA_TEMPLATE = """
@@ -62,29 +69,30 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                   "type": "array", "minItems": 5, "maxItems": 5,
                   "items": { "type": "string", "minLength": 1, "maxLength": 120 }
                 },
-                "stylePreset": { "type": "string" },
+                "stylePreset": { "type": "string", "enum": ["CLASSIC", "TRUE_SUMMER"] },
                 "nodes": {
                   "type": "array",
                   "minItems": 1,
+                  "maxItems": 30,
                   "items": {
                     "type": "object",
                     "additionalProperties": false,
                     "required": ["text", "description", "hint", "hint2", "hint3", "emoji", "branchText", "imageUri", "imageKeywords", "parentId"],
                     "properties": {
-                      "text": { "type": "string" },
-                      "description": { "type": "string" },
-                      "hint": { "type": "string", "maxLength": 280 },
-                      "hint2": { "type": "string", "maxLength": 280 },
-                      "hint3": { "type": "string", "maxLength": 280 },
+                      "text": { "type": "string", "minLength": 1, "maxLength": 120 },
+                      "description": { "type": "string", "minLength": 1, "maxLength": 280 },
+                      "hint": { "type": "string", "minLength": 1, "maxLength": 280 },
+                      "hint2": { "type": "string", "minLength": 1, "maxLength": 280 },
+                      "hint3": { "type": "string", "minLength": 1, "maxLength": 280 },
                       "emoji": { "type": "string" },
                       "branchText": { "type": "string" },
-                      "imageUri": { "type": "string" },
+                      "imageUri": { "type": "string", "enum": [""] },
                       "imageKeywords": {
-                        "description": "3-4 English search terms or short phrases combining the node subject with the main map topic; include explicit topic context in every node.",
+                        "description": "3-4 distinct English search terms: first a concrete visual subject in 1-3 words retaining any essential civilization, era, place or species qualifier; second the map context; remaining terms are visual details. Avoid books and covers.",
                         "type": "array",
                         "minItems": 3,
                         "maxItems": 4,
-                        "items": { "type": "string" }
+                        "items": { "type": "string", "minLength": 1, "maxLength": 100 }
                       },
                       "parentId": { "type": ["integer", "null"] }
                     }
@@ -93,6 +101,18 @@ public class OpenAiMapGenerationService implements MapGenerationService {
               }
             }
             """;
+
+    @PostConstruct
+    void loadSystemPrompt() {
+        try {
+            systemPromptTemplate = systemPromptResource.getContentAsString(StandardCharsets.UTF_8);
+            if (!StringUtils.hasText(systemPromptTemplate)) throw new IllegalStateException("Il system prompt è vuoto.");
+            // Validate formatting at startup rather than on the first generation request.
+            String.format(systemPromptTemplate, 3, "branchText è sempre vuota.");
+        } catch (IOException | IllegalFormatException ex) {
+            throw new IllegalStateException("Impossibile caricare o formattare il system prompt.", ex);
+        }
+    }
 
     @PostConstruct
     void initSchema() {
@@ -132,81 +152,22 @@ public class OpenAiMapGenerationService implements MapGenerationService {
 
     private Map<String, Object> buildPayload(MapGenerationRequestDto request) {
         val includeBranchText = Boolean.TRUE.equals(request.getIncludeBranchText());
-        val userPrompt = """
-                Crea una mindmap in italiano e rispondi SOLO con JSON valido compatibile con MindMapDto.
-                Campi obbligatori: title (string), prizes (array di 5 stringhe), stylePreset (string), nodes (array).
-                Ogni node deve avere: text (titolo), description (breve descrizione/curiosità), hint, hint2, hint3 (tre indizi diversi per il gioco), emoji, branchText, imageUri, parentId.
-
-                Vincoli:
-                - Argomento: %s
-                - Numero massimo di livelli della mappa, INCLUSO il nodo radice: %d
-                - La radice è il livello 1, i figli il livello 2, i nipoti il livello 3.
-                  Con 2 livelli crea solo radice e figli, senza nipoti.
-                - prizes contiene esattamente 5 titoli premio diversi, ordinati dal livello 1 al 5.
-                - I titoli premio devono essere qualifiche in italiano, brevi, positive e legate all'argomento,
-                  adatte ai bambini della scuola primaria e sempre più prestigiose dal primo al quinto livello.
-                  Inventa cinque qualifiche fantasiose con ruoli e riferimenti concreti al tema diversi tra loro.
-                  Ogni titolo deve riconoscere una competenza o un talento, con parole semplici e memorabili.
-                  Evita formule fisse, ruoli ripetuti e titoli che cambiano soltanto per un aggettivo o un grado.
-                  Massimo 120 caratteri ciascuno; niente voti o confronti con altri bambini.
-                - Il primo nodo rappresenta il tema centrale.
-                - text deve essere sempre un titolo breve (2-6 parole).
-                - description è OBBLIGATORIA per ogni nodo: una sola frase breve con descrizione o curiosità utile.
-                - Non lasciare mai description vuota o generica (es. "descrizione", "nodo", "...").
-                - hint, hint2 e hint3 sono tre brevi indizi in italiano per bambini della scuola primaria: ciascuno invita a ragionare su una caratteristica indiretta diversa, senza citare il titolo del nodo, sinonimi evidenti o rivelare la risposta. Devono essere diversi tra loro e da description, non vuoti e lunghi al massimo 280 caratteri ciascuno.
-                - I nodi successivi devono essere brevi, non duplicati e coerenti col tema.
-                - %s
-                - imageUri deve essere sempre stringa vuota.
-                - imageKeywords deve essere un array di 3-4 termini o brevi espressioni in inglese, pensati per
-                  cercare immagini su Wikimedia Commons. Per OGNI nodo, anche quelli più profondi, collega
-                  sempre il soggetto del nodo all'argomento principale della mappa: includi un riferimento
-                  esplicito al tema centrale (civiltà, epoca, luogo, ambiente o ambito pertinente).
-                  Il primo elemento identifica il soggetto visivo specifico in 1-3 parole, preferibilmente
-                  un nome concreto (es. "cuneiform tablet", "irrigation canals", "Hammurabi stele").
-                  Non accumulare civiltà, epoca, soggetto e dettagli nel primo elemento: gli altri
-                  elementi precisano separatamente il contesto e i dettagli visivi utili. Usa anche il ramo di appartenenza
-                  per disambiguare il soggetto, senza perdere il riferimento al tema principale.
-                  Evita parole generiche isolate che potrebbero portare a immagini di altri argomenti.
-                  Esempio: nella mappa sulla Mesopotamia, per il nodo "Scrittura" usa
-                  ["cuneiform tablet", "Mesopotamia", "Sumerian writing"], per "Case" usa
-                  ["mud brick house", "Mesopotamia", "ancient dwelling"].
-                  Cerca fotografie di oggetti, luoghi o illustrazioni: evita libri, copertine,
-                  frontespizi e pagine di testo come soggetti delle immagini.
-                  Adatta sempre il contesto all'argomento richiesto; non copiare questi esempi per altri temi.
-                - parentId: null solo per il nodo principale (primo elemento).
-                - Per gli altri nodi, parentId deve contenere l'indice (0-based) di un nodo precedente nella lista.
-                - Struttura gerarchica: radice -> figli -> nipoti -> livelli successivi, solo entro il limite richiesto.
-                - Albero n-ario: sia la radice sia ogni figlio possono avere più figli (0..n).
-                - Evita collegamenti incrociati o riassegnazioni ambigue: ogni nodo deve avere un solo parentId.
-                - Ordina i nodi per livelli (prima i figli della radice, poi i figli dei figli, ecc.).
-                - Ogni collegamento padre->figlio deve esprimere una relazione chiara e corretta per il tema:
-                  categoria o parte, ma anche caratteristica, esempio, causa, conseguenza, fase di un processo
-                  o aspetto di un argomento. Non forzare tutti i collegamenti in una classificazione tassonomica.
-                - Vietato creare catene tassonomiche errate (esempio: "Uccelli" figlio di "Mammiferi" è sempre sbagliato).
-                - Le grandi categorie parallele (es. Mammiferi, Uccelli, Rettili, Pesci, Insetti) devono essere sorelle con lo stesso parentId, non una figlia dell'altra.
-                - Prima di rispondere, fai un controllo di coerenza semantica di tutti gli archi padre->figlio e correggi eventuali errori.
-                - Non superare la profondità massima richiesta: massimo %d livelli contando il nodo radice come livello 1.
-                - La profondità richiesta è un limite massimo, non un obiettivo da raggiungere in ogni ramo.
-                  I rami possono avere profondità diverse: aggiungi dettagli solo se utili e pertinenti,
-                  senza inventare suddivisioni o ripetere concetti per riempire i livelli.
-
-                Testo di riferimento allegato (se presente):
-                %s
-                """.formatted(
-                request.getTopic(),
+        val systemPrompt = String.format(systemPromptTemplate,
                 request.getMaxDepth() == null ? 3 : request.getMaxDepth(),
                 includeBranchText
-                        ? "branchText deve essere una breve nota utile (non usare qui la descrizione principale)."
-                        : "branchText è opzionale e deve essere sempre una stringa vuota (\"\") per tutti i nodi.",
-                request.getMaxDepth() == null ? 3 : request.getMaxDepth(),
-                StringUtils.hasText(request.getReferenceText()) ? request.getReferenceText() : "N/A"
+                        ? "branchText contiene una breve relazione tra padre e figlio, senza ripetere la description; nella radice è vuota."
+                        : "branchText è sempre una stringa vuota per tutti i nodi."
         );
+        val userPrompt = objectMapper.valueToTree(Map.of(
+                "argomento", request.getTopic(),
+                "testoDiRiferimento", StringUtils.hasText(request.getReferenceText()) ? request.getReferenceText() : ""
+        )).toString();
 
         val payload = new HashMap<String, Object>();
         payload.put("model", model);
         payload.put("response_format", responseFormat());
         payload.put("messages", List.of(
-                Map.of("role", "system", "content", "Sei un assistente che crea mindmap didattiche accurate in italiano."),
+                Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", userPrompt)
         ));
         return payload;

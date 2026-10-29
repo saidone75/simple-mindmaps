@@ -73,6 +73,8 @@ In alternativa, dopo avere configurato le credenziali, `bash run.sh` avvia il pr
 
 La chiave OpenAI serve alla generazione AI; la creazione manuale delle mappe non la richiede.
 
+Il prompt di sistema è in `src/main/resources/prompts/mindmap-system.md`. Per usare un file esterno al JAR, imposta `APP_OPENAI_SYSTEM_PROMPT=file:/percorso/mindmap-system.md`. Il file viene letto in UTF-8 all’avvio: `%d` indica la profondità massima e `%s` la regola delle etichette dei collegamenti; eventuali percentuali letterali vanno scritte come `%%`. Riavvia l’applicazione dopo averlo modificato.
+
 Per abilitare la generazione AI, imposta `OPENAI_API_KEY` nell’ambiente prima dell’avvio:
 
 ```bash
