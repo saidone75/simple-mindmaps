@@ -88,6 +88,7 @@ public class Node {
     @Column(columnDefinition = "CLOB")
     private List<String> imageCandidates;
 
+    private Integer imageZoom;
     private Integer imagePositionX;
     private Integer imagePositionY;
     private Integer imageWidth;

@@ -236,10 +236,10 @@ function buildDepthMap(nodes, byId = new Map(nodes.map(node => [node.id, node]))
 
 // Intrinsic dimensions are shared by all occurrences of an image, including the game.
 const cropImageDimensions = new Map();
-function cropImageMetrics(uri, box) {
+function cropImageMetrics(uri, box, zoom = 100) {
     const entry = cropImageDimensions.get(uri);
     if (!entry?.width || !entry?.height) return null;
-    const scale = Math.max(box.width / entry.width, box.height / entry.height);
+    const scale = Math.max(box.width / entry.width, box.height / entry.height) * Math.max(100, Math.min(400, zoom ?? 100)) / 100;
     return { width: entry.width * scale, height: entry.height * scale,
         overflowX: Math.max(0, entry.width * scale - box.width),
         overflowY: Math.max(0, entry.height * scale - box.height) };
@@ -257,7 +257,7 @@ function positionCroppedImage(element, node, box, uri = node.imageUri) {
         void entry.ready.then(size => { if (size) Object.assign(entry, size); });
     }
     const apply = () => {
-        const metrics = cropImageMetrics(uri, box);
+        const metrics = cropImageMetrics(uri, box, node.imageZoom);
         if (!metrics) return;
         const fraction = value => Math.max(0, Math.min(100, value ?? 50)) / 100;
         element.setAttribute('x', box.x - metrics.overflowX * fraction(node.imagePositionX));

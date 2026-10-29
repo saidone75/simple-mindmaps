@@ -51,6 +51,7 @@ public class NodeDto implements Serializable {
     private String branchCurve;
     private String imageUri;
     private List<String> imageCandidates;
+    private Integer imageZoom;
     private Integer imagePositionX;
     private Integer imagePositionY;
     private Integer imageWidth;

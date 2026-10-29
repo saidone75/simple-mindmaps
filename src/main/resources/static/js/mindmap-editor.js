@@ -124,6 +124,8 @@ const saveImageStatus = document.getElementById("save-image-status");
 const imageAlternatives = document.getElementById("node-image-alternatives");
 const imageCandidates = document.getElementById("node-image-candidates");
 const imageWidthInput = document.getElementById("node-image-width");
+const imageZoomInput = document.getElementById("node-image-zoom");
+const imageZoomValue = document.getElementById("node-image-zoom-value");
 const imageHeightInput = document.getElementById("node-image-height");
 const imageWidthValue = document.getElementById("node-image-width-value");
 const imageHeightValue = document.getElementById("node-image-height-value");
@@ -579,7 +581,7 @@ function renderNodeGroup(node, depth) {
 function updateNodeElement(node, depth) {
     // Position is applied to the existing group so dragging keeps its image alive.
     const inputs = [node, node.parentId, node.text, node.description, node.emoji,
-        node.fontSize, node.shape, node.imageUri, node.imageWidth, node.imageHeight, node.imagePositionX, node.imagePositionY,
+        node.fontSize, node.shape, node.imageUri, node.imageWidth, node.imageHeight, node.imageZoom, node.imagePositionX, node.imagePositionY,
         node.nodeWidth, node.nodeHeight, node.branchColor, node.textColor, depth, getNodeColor(node),
         node.id === state.selectedNodeId, node.id === state.hoveredNodeId];
     const previous = renderCache.nodes.get(node.id);
@@ -884,13 +886,14 @@ function renderNodeImage(group, node, width) {
     image.addEventListener("pointerdown", event => {
         event.stopPropagation();
         if (!canStartPointerInteraction(event)) return;
-        const metrics = cropImageMetrics(node.imageUri, { width: imageWidth, height: imageHeight });
+        const metrics = cropImageMetrics(node.imageUri, { width: imageWidth, height: imageHeight }, node.imageZoom);
         if (!metrics || (metrics.overflowX < .01 && metrics.overflowY < .01)) return;
         interactionPointerId = event.pointerId;
         captureInteractionPointer();
         beginInteractionSnapshot();
         const point = toSvgPoint(event);
         selectNode(node.id, { showNodeOverlay: false });
+        showImageEditorOverlay(node);
         state.resize = { mode: 'image-pan', nodeId: node.id, startX: point.x, startY: point.y,
             positionX: node.imagePositionX ?? 50, positionY: node.imagePositionY ?? 50, ...metrics };
         event.preventDefault();
@@ -1051,6 +1054,8 @@ function selectNode(nodeId, options = {}) {
     const imageSize = getNodeImageSize(node);
     if (imageWidthInput) imageWidthInput.value = imageSize.width;
     if (imageHeightInput) imageHeightInput.value = imageSize.height;
+    imageZoomInput.value = node.imageZoom ?? 100;
+    imageZoomValue.value = `${imageZoomInput.value}%`;
     updateImageSizeLabels();
     updateImagePreview(node.imageUri || "");
     render();
@@ -1530,6 +1535,18 @@ for (const field of autosubmitFields) {
 }
 if (imageWidthInput) imageWidthInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 if (imageHeightInput) imageHeightInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
+imageZoomInput.addEventListener('input', () => {
+    const node = getNodeById(state.selectedNodeId);
+    if (!node) return;
+    if (!formEditGroup || formEditGroup.nodeId !== node.id || formEditGroup.field !== imageZoomInput) pushUndoSnapshot();
+    formEditGroup = { nodeId: node.id, field: imageZoomInput, time: performance.now() };
+    node.imageZoom = Number(imageZoomInput.value);
+    imageZoomValue.value = `${node.imageZoom}%`;
+    requestRender();
+    scheduleAutosave(node);
+});
+imageZoomInput.addEventListener('change', () => { formEditGroup = null; });
+
 function updateImagePreview(value) {
     const uri = normalizeImageUri(value);
     updateImageStorageControl(uri);
