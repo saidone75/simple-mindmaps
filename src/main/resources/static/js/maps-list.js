@@ -19,6 +19,14 @@
 (function () {
     const openDialog = globalThis.MindMapDialogs.open;
 
+    function bindCreationSwitches() {
+        const switches = document.querySelectorAll('#ai-generate-form input[role="switch"]');
+        const sync = () => switches.forEach(input => input.setAttribute('aria-checked', String(input.checked)));
+        switches.forEach(input => input.addEventListener('change', sync));
+        window.addEventListener('pageshow', sync);
+        sync();
+    }
+
     const bindAiGenerateLoading = function () {
         const form = document.getElementById('ai-generate-form');
         if (!form) return;
@@ -169,11 +177,13 @@
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
+            bindCreationSwitches();
             bindAiGenerateLoading();
             bindCloneMapConfirm();
             bindDeleteMapConfirm();
         }, { once: true });
     } else {
+        bindCreationSwitches();
         bindAiGenerateLoading();
         bindCloneMapConfirm();
         bindDeleteMapConfirm();
