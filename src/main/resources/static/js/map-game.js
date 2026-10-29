@@ -305,7 +305,9 @@
             const clip = make('clipPath', {id:clipId});
             clip.appendChild(make('rect', {...box, rx:8, ry:8}));
             defs.appendChild(clip);
-            slot.replaceChildren(defs, make('image', {...box, href:uri, preserveAspectRatio:'xMidYMid slice', 'clip-path':`url(#${clipId})`}));
+            const image = make('image', {...box, href:uri, preserveAspectRatio:'xMidYMid slice', 'clip-path':`url(#${clipId})`});
+            positionCroppedImage(image, node, box, uri);
+            slot.replaceChildren(defs, image);
         } else {
             slot.replaceChildren(
                 make('rect', {...box, rx:8, fill:'rgba(255,255,255,.5)', stroke:'#546170', 'stroke-dasharray':'6 4'}),

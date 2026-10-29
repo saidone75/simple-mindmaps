@@ -341,6 +341,9 @@ public class MindMapService {
         updateIfPresent(request.getBranchCurve(), value -> node.setBranchCurve(normalizeBranchCurve(value)));
         updateIfPresent(request.getImageCandidates(), value -> node.setImageCandidates(normalizeImageCandidates(value)));
         node.setImageUri(imageUri);
+        updateIfPresent(request.getImageZoom(), value -> node.setImageZoom(Math.clamp(value, 100, 400)));
+        updateIfPresent(request.getImagePositionX(), value -> node.setImagePositionX(Math.clamp(value, 0, 100)));
+        updateIfPresent(request.getImagePositionY(), value -> node.setImagePositionY(Math.clamp(value, 0, 100)));
         node.setImageWidth(normalizeImageSize(request.getImageWidth()));
         node.setImageHeight(normalizeImageSize(request.getImageHeight()));
         updateIfPresent(request.getNodeWidth(), value -> node.setNodeWidth(normalizeNodeWidth(value)));

@@ -233,3 +233,39 @@ function buildDepthMap(nodes, byId = new Map(nodes.map(node => [node.id, node]))
     }
     return depthMap;
 }
+
+// Intrinsic dimensions are shared by all occurrences of an image, including the game.
+const cropImageDimensions = new Map();
+function cropImageMetrics(uri, box, zoom = 100) {
+    const entry = cropImageDimensions.get(uri);
+    if (!entry?.width || !entry?.height) return null;
+    const scale = Math.max(box.width / entry.width, box.height / entry.height) * Math.max(100, Math.min(400, zoom ?? 100)) / 100;
+    return { width: entry.width * scale, height: entry.height * scale,
+        overflowX: Math.max(0, entry.width * scale - box.width),
+        overflowY: Math.max(0, entry.height * scale - box.height) };
+}
+function positionCroppedImage(element, node, box, uri = node.imageUri) {
+    let entry = cropImageDimensions.get(uri);
+    if (!entry) {
+        const source = new Image();
+        entry = { ready: new Promise(resolve => {
+            source.onload = () => resolve({ width: source.naturalWidth, height: source.naturalHeight });
+            source.onerror = () => resolve(null);
+        }) };
+        cropImageDimensions.set(uri, entry);
+        source.src = uri;
+        void entry.ready.then(size => { if (size) Object.assign(entry, size); });
+    }
+    const apply = () => {
+        const metrics = cropImageMetrics(uri, box, node.imageZoom);
+        if (!metrics) return;
+        const fraction = value => Math.max(0, Math.min(100, value ?? 50)) / 100;
+        element.setAttribute('x', box.x - metrics.overflowX * fraction(node.imagePositionX));
+        element.setAttribute('y', box.y - metrics.overflowY * fraction(node.imagePositionY));
+        element.setAttribute('width', metrics.width);
+        element.setAttribute('height', metrics.height);
+        element.setAttribute('preserveAspectRatio', 'none');
+    };
+    if (entry.width) apply();
+    else void entry.ready.then(apply);
+}
