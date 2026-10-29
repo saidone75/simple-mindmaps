@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Record dei download immagini con `equals`, `hashCode` e `toString` basati sul contenuto degli array di byte.
+
 ### Security
 
 - Anteprime e alternative delle immagini validate prima dell’assegnazione al DOM: consentiti solo HTTP/HTTPS senza credenziali, riferimenti locali con UUID valido e immagini incorporate in base64 nei formati supportati. Le risposte del salvataggio immagini vengono convertite in riferimenti locali, senza utilizzare URI arbitrari restituiti dal server.
