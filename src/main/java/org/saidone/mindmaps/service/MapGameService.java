@@ -138,7 +138,8 @@ public class MapGameService {
         return node.getImageUri() != null && !node.getImageUri().isBlank();
     }
 
-    public record Card(String id, String uri) implements Serializable {}
+    public record Card(String id, String uri, Integer imageWidth, Integer imageHeight,
+                       Integer imageZoom, Integer imagePositionX, Integer imagePositionY) implements Serializable {}
     public record Board(String runId, MindMapDto map, List<Card> images) {}
     public record Result(boolean correct, String hint, int attempts, int errors, int matched,
                          int total, long seconds, int level, String prize, boolean complete) {}
@@ -179,7 +180,8 @@ public class MapGameService {
                 val cardId = UUID.randomUUID().toString();
                 originalImages.put(node.getId(), node.getImageUri());
                 answers.put(cardId, snapshot.getNodes().stream().filter(n -> n.getId().equals(node.getId())).findFirst().orElseThrow());
-                cards.add(new Card(cardId, node.getImageUri()));
+                cards.add(new Card(cardId, node.getImageUri(), node.getImageWidth(), node.getImageHeight(),
+                        node.getImageZoom(), node.getImagePositionX(), node.getImagePositionY()));
                 node.setImageUri("pending");
                 node.setImageKeywords(null);
             }

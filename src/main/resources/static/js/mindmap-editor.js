@@ -198,6 +198,13 @@ function updateNodeEditorOverlay(node) {
     nodeEditorOverlay.style.top = `${Math.round(top)}px`;
 }
 
+function showNodeEditorOverlay(node) {
+    if (!nodeEditorOverlay || !node) return;
+    hideImageEditorOverlay();
+    nodeEditorOverlay.classList.add("visible");
+    updateNodeEditorOverlay(node);
+}
+
 function hideNodeEditorOverlay() {
     if (!nodeEditorOverlay) return;
     nodeEditorOverlay.classList.remove("visible");
@@ -205,6 +212,7 @@ function hideNodeEditorOverlay() {
 
 function showImageEditorOverlay(node) {
     if (!imageEditorOverlay || !node) return;
+    hideNodeEditorOverlay();
     state.imageOverlayNodeId = node.id;
     imageEditorOverlay.classList.add("visible");
     updateImagePreview(node.imageUri || "");
@@ -1061,8 +1069,7 @@ function selectNode(nodeId, options = {}) {
     render();
     const selected = getNodeById(state.selectedNodeId);
     if (nodeEditorOverlay && selected && showNodeOverlay) {
-        nodeEditorOverlay.classList.add("visible");
-        updateNodeEditorOverlay(selected);
+        showNodeEditorOverlay(selected);
     } else {
         hideNodeEditorOverlay();
     }
@@ -1312,8 +1319,7 @@ function refreshOverlaysAfterPointerEnd(wasDragging, dragMoved) {
         if (shouldHideNodeEditorAfterPointerEnd(wasDragging, dragMoved, justOpenedContextMenu)) {
             hideNodeEditorOverlay();
         } else {
-            if (nodeEditorOverlay) nodeEditorOverlay.classList.add("visible");
-            updateNodeEditorOverlay(selectedNode);
+            if (!imageEditorOverlay?.classList.contains("visible")) showNodeEditorOverlay(selectedNode);
         }
     }
 
@@ -1463,10 +1469,7 @@ document.getElementById("clear-image-btn").addEventListener("click", () => {
     if (imageHeightInput) imageHeightInput.value = DEFAULT_IMAGE_SIZE;
     updateImageSizeLabels();
     render();
-    if (nodeEditorOverlay) {
-        nodeEditorOverlay.classList.add("visible");
-        updateNodeEditorOverlay(node);
-    }
+    updateImageEditorOverlay(node);
     queueAutoSubmitSelectedNode();
 });
 
@@ -1505,10 +1508,7 @@ imageWidthInput.addEventListener("input", () => {
     imageWidthInput.value = node.imageWidth;
     updateImageSizeLabels();
     render();
-    if (nodeEditorOverlay) {
-        nodeEditorOverlay.classList.add("visible");
-        updateNodeEditorOverlay(node);
-    }
+    updateImageEditorOverlay(node);
 });
 }
 
@@ -1520,10 +1520,7 @@ imageHeightInput.addEventListener("input", () => {
     imageHeightInput.value = node.imageHeight;
     updateImageSizeLabels();
     render();
-    if (nodeEditorOverlay) {
-        nodeEditorOverlay.classList.add("visible");
-        updateNodeEditorOverlay(node);
-    }
+    updateImageEditorOverlay(node);
 });
 }
 
@@ -2498,10 +2495,7 @@ async function deleteNodeWithChecks(nodeId) {
     state.selectedNodeId = state.map.nodes[0]?.id ?? null;
     if (state.selectedNodeId) selectNode(state.selectedNodeId);
     render();
-    if (nodeEditorOverlay) {
-        nodeEditorOverlay.classList.add("visible");
-        updateNodeEditorOverlay(node);
-    }
+    showNodeEditorOverlay(node);
 }
 
 async function quickEdit(nodeId) {
