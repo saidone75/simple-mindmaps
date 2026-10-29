@@ -17,7 +17,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 ### Changed
 
 - Comandi dell’editor immagini rappresentati da icone per ricerca e rimozione, con etichette accessibili e descrizioni al passaggio del mouse. Rimosso il pulsante di applicazione del link, già salvato automaticamente, e uniformato il selettore dei file allo stile dell’editor.
-- Il pulsante «Cerca» dell’editor immagini chiede conferma delle parole di ricerca in un campo precompilato con il testo del nodo e modificabile, prima di avviare la ricerca semantica Wikimedia.
+- Il pulsante *Cerca* dell’editor immagini chiede conferma delle parole di ricerca in un campo precompilato con il testo del nodo e modificabile, prima di avviare la ricerca semantica Wikimedia.
 - Prompt di sistema AI estratto in un file Markdown UTF-8 nelle risorse, caricato e verificato all’avvio; file esterno configurabile tramite `APP_OPENAI_SYSTEM_PROMPT`.
 - Prompt AI riorganizzato con regole nel messaggio di sistema e dati utente separati in JSON; linguaggio per la primaria, titoli anche di una parola, dimensioni indicative e massimo 30 nodi, indizi concreti, contesto essenziale nelle parole chiave delle immagini e uso esplicito del testo di riferimento. Schema JSON allineato con stili consentiti, immagini inizialmente vuote e limiti sui contenuti.
 
@@ -40,7 +40,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
-- Pulsante «Cerca» nell’editor immagini per cercare immagini Wikimedia con la ricerca semantica usando il testo del nodo e il titolo della mappa come contesto. Applicazione del primo risultato, fino a nove alternative salvate, avanzamento visibile e supporto Annulla/Ripristina; i risultati non sovrascrivono un nodo modificato nel frattempo.
+- Pulsante *Cerca* nell’editor immagini per cercare immagini Wikimedia con la ricerca semantica usando il testo del nodo e il titolo della mappa come contesto. Applicazione del primo risultato, fino a nove alternative salvate, avanzamento visibile e supporto Annulla/Ripristina; i risultati non sovrascrivono un nodo modificato nel frattempo.
 
 ### Fixed
 
@@ -51,8 +51,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 ### Changed
 
 - Riordino iniziale e manuale più compatto: ogni nodo viene collocato nel punto libero più vicino lungo il proprio ramo, usando le dimensioni effettive e un margine di separazione, senza espandere uniformemente tutta la mappa. La disposizione salvata viene mantenuta nel gioco pubblicato.
-- Card dei modelli pronti spostata sotto «Le mie mappe», pulsante della pagina pubblica dei giochi distanziato dal testo introduttivo e pubblicazione del gioco richiudibile, chiusa per impostazione predefinita e aperta dopo la pubblicazione o l’aggiornamento, anche in caso di errore.
-- Toolbar dell’editor riordinata con lo switch «Salva immagini» a destra, dopo la griglia.
+- Card dei modelli pronti spostata sotto *Le mie mappe*, pulsante della pagina pubblica dei giochi distanziato dal testo introduttivo e pubblicazione del gioco richiudibile, chiusa per impostazione predefinita e aperta dopo la pubblicazione o l’aggiornamento, anche in caso di errore.
+- Toolbar dell’editor riordinata con lo switch *Salva immagini* a destra, dopo la griglia.
 - Limite di download delle immagini esterne aumentato a 25 MB prima della normalizzazione.
 - JavaScript organizzato in componenti dedicati per dialoghi, richieste HTTP e cronologia Annulla/Ripristina, con riuso fra editor ed elenco mappe e rimozione del controllo di rendering duplicato nell’esportazione SVG.
 - Il gioco aggiorna solo l’immagine della casella completata, riusando nodi, collegamenti e listener e mantenendo il focus della tastiera; selezione e rimozione delle immagini usano indici dedicati.
@@ -61,8 +61,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
-- Pulsante «Adatta alla griglia» nella toolbar: allinea tutti i nodi alla posizione più vicina e arrotonda larghezza e altezza a multipli della griglia, rispettando lo spazio minimo del contenuto; salvataggio automatico e supporto Annulla/Ripristina.
-- Importazione ed esportazione delle mappe in JSON, con nodi, collegamenti, stile, indizi, titoli premio e immagini locali incorporate nel file. L’importazione crea una nuova mappa privata con nuovi riferimenti alle immagini; controllo del formato e dei collegamenti, limite di 100 MB per file e 1000 nodi. Comando «Importa mappa» al primo posto a sinistra nella griglia dei modelli pronti, con le stesse dimensioni e un colore distinto, ed «Esporta» in fondo alla toolbar dell’editor, dopo lo switch delle immagini.
+- Pulsante *Adatta alla griglia* nella toolbar: allinea tutti i nodi alla posizione più vicina e arrotonda larghezza e altezza a multipli della griglia, rispettando lo spazio minimo del contenuto; salvataggio automatico e supporto Annulla/Ripristina.
+- Importazione ed esportazione delle mappe in JSON, con nodi, collegamenti, stile, indizi, titoli premio e immagini locali incorporate nel file. L’importazione crea una nuova mappa privata con nuovi riferimenti alle immagini; controllo del formato e dei collegamenti, limite di 100 MB per file e 1000 nodi. Comando *Importa mappa* al primo posto a sinistra nella griglia dei modelli pronti, con le stesse dimensioni e un colore distinto, ed *Esporta* in fondo alla toolbar dell’editor, dopo lo switch delle immagini.
 - Job notturno configurabile per le immagini orfane, con controllo dei riferimenti in mappe, alternative e copie pubblicate, sette giorni di conservazione dall’individuazione e cancellazione dei file dopo il commit del database.
 - Switch nella toolbar dell’editor, attivo per impostazione predefinita e salvato per mappa, per scaricare e conservare le immagini esterne nella cartella del server, con metadati e riferimenti nel database. Normalizzazione entro 1024 × 1024 px senza ingrandimento, JPEG per immagini opache, PNG per trasparenze e conversione SVG; le GIF animate mantengono fotogrammi, tempi e ripetizione. Elaborazione in background, compatibilità con giochi, copie ed esportazioni e nuova tabella `map_image` per i metadati; cartella configurabile tramite `app.upload.directory`.
 - Fino a nove URL Wikimedia candidati salvati per nodo nelle nuove mappe AI, con anteprime e scelta nell’editor. Supporto alle ricerche semplice e semantica, mantenimento nelle copie e in Annulla/Ripristina, controllo delle immagini già usate da altri nodi. Aggiunta della colonna `image_candidates` alla tabella dei nodi.
@@ -88,7 +88,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 - Spring Boot aggiornato alla versione 4.1.2.
 - Ricerca immagini attiva per impostazione predefinita nella creazione AI e opzioni rappresentate come interruttori.
-- Pulsante «Giochiamo!» grande e centrato nell’area iniziale della mappa delle scoperte; dopo l’avvio, il comando per ricominciare resta nell’intestazione della mappa.
+- Pulsante *Giochiamo!* grande e centrato nell’area iniziale della mappa delle scoperte; dopo l’avvio, il comando per ricominciare resta nell’intestazione della mappa.
 - Scheda del livello distanziata dalla barra del gioco e pulsante dei suoni allineato a destra.
 - Ricerche Wikimedia semplice e semantica con query progressive: soggetto principale sempre presente, dettagli aggiunti uno alla volta e ampliamento senza alternative generiche in `OR`.
 
@@ -116,7 +116,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Barra di avanzamento nello spinner, affiancata al conteggio dei nodi: indeterminata durante la generazione AI e aggiornata sui nodi effettivamente preparati quando il totale è noto.
 - Creazione AI in background con API di avanzamento riservata al proprietario e spinner aggiornato ogni due secondi: attività corrente, nodo per cui si cerca un’immagine, numero di nodi preparati sul totale.
 - Log sul caricamento e sull’uso di `textEmbeddingModel`, con durata del ranking semantico, dimensione dei vettori e statistiche della cache.
-- Tre campi «Indizio per il gioco» per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.
+- Tre campi *Indizio per il gioco* per ogni nodo, con salvataggio automatico nell’editor e generazione di tre indizi diversi per le nuove mappe AI.
 - Cinque titoli premio (`prizes`) legati al tema, generati dall’AI nella stessa richiesta della mappa e modificabili singolarmente dall’insegnante. Per le mappe manuali, da template o già esistenti senza titoli premio vengono proposti valori iniziali modificabili.
 
 ### Changed
