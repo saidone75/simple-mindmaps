@@ -82,11 +82,13 @@ public class MindMapRestController {
         return mindMapService.updateMapTitle(id, request.getTitle());
     }
 
+    public record ImageSearchRequest(String query) {}
+
     public record ImageSearchResult(java.util.List<String> images) {}
 
     @PostMapping("/nodes/{nodeId}/image-search")
-    public ImageSearchResult searchNodeImages(@PathVariable Long nodeId) {
-        return new ImageSearchResult(mindMapService.searchNodeImages(nodeId));
+    public ImageSearchResult searchNodeImages(@PathVariable Long nodeId, @RequestBody ImageSearchRequest request) {
+        return new ImageSearchResult(mindMapService.searchNodeImages(nodeId, request.query()));
     }
 
     @DeleteMapping("/nodes/{nodeId}")

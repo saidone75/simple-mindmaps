@@ -9,6 +9,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Comandi dell’editor immagini rappresentati da icone per ricerca e rimozione, con etichette accessibili e descrizioni al passaggio del mouse. Rimosso il pulsante di applicazione del link, già salvato automaticamente, e uniformato il selettore dei file allo stile dell’editor.
+- Il pulsante «Cerca» dell’editor immagini chiede conferma delle parole di ricerca in un campo precompilato con il testo del nodo e modificabile, prima di avviare la ricerca semantica Wikimedia.
 - Prompt di sistema AI estratto in un file Markdown UTF-8 nelle risorse, caricato e verificato all’avvio; file esterno configurabile tramite `APP_OPENAI_SYSTEM_PROMPT`.
 - Prompt AI riorganizzato con regole nel messaggio di sistema e dati utente separati in JSON; linguaggio per la primaria, titoli anche di una parola, dimensioni indicative e massimo 30 nodi, indizi concreti, contesto essenziale nelle parole chiave delle immagini e uso esplicito del testo di riferimento. Schema JSON allineato con stili consentiti, immagini inizialmente vuote e limiti sui contenuti.
 

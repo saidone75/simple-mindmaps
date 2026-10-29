@@ -505,6 +505,22 @@
 .publication-card[open] > .publication-heading::after { content: "▾"; }
 .editor-file-tools { margin-left: auto; }
 
-.image-link-actions { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.image-link-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 #image-search-status { font-size: .75rem; color: var(--muted); }
+
+#node-image-upload { width: 100%; min-width: 0; padding: 6px; font-size: .75rem; }
+
+#node-image-upload::file-selector-button {
+    margin-right: 8px;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--soft);
+    color: var(--accent-dark);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+#node-image-upload::file-selector-button:hover { background: var(--accent-dark); color: var(--white); }
