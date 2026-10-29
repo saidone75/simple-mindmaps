@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Removed
+
+- Rimossa `LegacyMapImageMigration`, usata per trasferire le immagini BLOB della vecchia implementazione nella cartella del server.
+
 ### Fixed
 
 - Record dei download immagini con `equals`, `hashCode` e `toString` basati sul contenuto degli array di byte.
