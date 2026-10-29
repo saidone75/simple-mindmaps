@@ -24,6 +24,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 public class LoginPageController {
 
+    @GetMapping("/")
+    public String home() {
+        return "redirect:/maps";
+    }
+
     @GetMapping("/login")
     public String login() {
         return "login";

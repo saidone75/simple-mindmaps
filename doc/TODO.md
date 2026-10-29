@@ -24,3 +24,7 @@ Punti aperti raggruppati per area logica. Le verifiche tecniche derivano dalla r
 6. [ ] Ripristinare la protezione CSRF per le operazioni autenticate e passare il token nei form e nelle richieste JavaScript; definire separatamente il trattamento degli endpoint pubblici del gioco. Attualmente CSRF è disabilitato globalmente (`SecurityConfig`).
 
 7. [ ] Spostare i valori sensibili della configurazione locale in variabili d’ambiente o file esterni non versionati, per non includerli nei JAR generati. Verificato che i fallback sensibili sono nella modifica locale di `application.yml`, mentre il file in `HEAD` ha fallback vuoti: non risulta da questa verifica un segreto committato. Non riportare i valori nella documentazione.
+
+## Preferenze utente
+
+8. [ ] Aggiungere una pagina delle preferenze utente con possibilità di cambiare la password.
