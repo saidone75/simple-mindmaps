@@ -19,6 +19,7 @@
 package org.saidone.mindmaps.service;
 
 import jakarta.annotation.PreDestroy;
+import lombok.NonNull;
 import lombok.val;
 import org.apache.hc.client5.http.DnsResolver;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -38,6 +39,8 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Set;
+import java.util.Arrays;
+import java.util.Objects;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -59,8 +62,41 @@ public class ImageDownloadService {
     @Value("${wikimedia.user-agent:AliceSimpleMindMaps/1.0}")
     private String userAgent;
 
-    public record Download(byte[] data, String mediaType) {}
-    private record Result(String redirect, byte[] data) {}
+    public record Download(byte[] data, String mediaType) {
+        @Override
+        public boolean equals(Object other) {
+            return this == other || other instanceof Download(byte[] data1, String type)
+                    && Arrays.equals(data, data1) && Objects.equals(mediaType, type);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * Arrays.hashCode(data) + Objects.hashCode(mediaType);
+        }
+
+        @Override
+        public @NonNull String toString() {
+            return String.format("Download[data=%s, mediaType=%s]", Arrays.toString(data), mediaType);
+        }
+    }
+
+    private record Result(String redirect, byte[] data) {
+        @Override
+        public boolean equals(Object other) {
+            return this == other || other instanceof Result(String redirect1, byte[] data1)
+                    && Objects.equals(redirect, redirect1) && Arrays.equals(data, data1);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * Objects.hashCode(redirect) + Arrays.hashCode(data);
+        }
+
+        @Override
+        public @NonNull String toString() {
+            return String.format("Result[redirect=%s, data=%s]", redirect, Arrays.toString(data));
+        }
+    }
 
     public Download download(String source) {
         try {
