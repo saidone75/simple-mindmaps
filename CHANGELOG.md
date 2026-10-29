@@ -15,6 +15,12 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Immagini nello zainetto del gioco mostrate con lo stesso zoom, spostamento e inquadratura impostati nell’editor.
+- Pannelli del nodo e dell’immagine mutuamente esclusivi: aprirne uno chiude l’altro e i controlli dell’immagine mantengono aperto il relativo pannello.
+- L’indirizzo principale `/` reindirizza a `/maps`, evitando la pagina 404.
+- Stato accessibile degli switch di creazione mappa e salvataggio immagini sincronizzato con la selezione effettiva.
+- Gestione esplicita dei metadati GIF mancanti durante il ridimensionamento delle animazioni, evitando dereferenziazioni di valori nulli.
+
 - Apertura del pannello immagini anche cliccando su un’immagine ritagliata o ingrandita, mantenendo il trascinamento per regolarne l’inquadratura.
 - Messaggio di download immagine non riuscito con il nome del nodo interessato.
 - Messaggi della ricerca immagini azzerati al cambio di nodo; risposte e errori tardivi non mostrano più lo stato del nodo precedente.
