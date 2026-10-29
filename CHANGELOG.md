@@ -9,6 +9,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Messaggio di download immagine non riuscito con il nome del nodo interessato.
 - Messaggi della ricerca immagini azzerati al cambio di nodo; risposte e errori tardivi non mostrano più lo stato del nodo precedente.
 
 ## [0.3.2] - 2026-10-29

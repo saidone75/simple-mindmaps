@@ -1556,7 +1556,7 @@ function queueImageStorage() {
                         400: 'Non riesco a preparare l’immagine. Scegli un altro link o formato.',
                         409: 'L’immagine è cambiata durante il salvataggio.',
                         413: 'L’immagine supera il limite di 25 MB.',
-                        502: 'Non riesco a scaricare questa immagine. Controlla il link.'
+                        502: `Non riesco a scaricare l’immagine del nodo "${node.text}". Controlla il link.`
                     }
                 });
                 // This endpoint must return a server image ID, never an arbitrary URL.
