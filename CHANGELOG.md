@@ -7,6 +7,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-10-29
+
 ### Changed
 
 - Comandi dell’editor immagini rappresentati da icone per ricerca e rimozione, con etichette accessibili e descrizioni al passaggio del mouse. Rimosso il pulsante di applicazione del link, già salvato automaticamente, e uniformato il selettore dei file allo stile dell’editor.
@@ -183,7 +185,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
-[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/saidone75/simple-mindmap/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/saidone75/simple-mindmap/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/saidone75/simple-mindmap/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/saidone75/simple-mindmap/compare/v0.2.0...v0.2.1
