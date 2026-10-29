@@ -517,21 +517,21 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 @keyframes wonderland-ultra-smooth {
     0% { transform: translateY(0) rotate(0deg); }
 
-    10% { transform: translateY(-6px) rotate(0deg); }
+    10% { transform: translateY(calc(-6px * var(--loading-hop-scale, 1))) rotate(0deg); }
 
     20% { transform: translateY(0) rotate(0deg); }
 
-    30% { transform: translateY(-12px) rotate(0deg); }
+    30% { transform: translateY(calc(-12px * var(--loading-hop-scale, 1))) rotate(0deg); }
 
     40% { transform: translateY(0) rotate(0deg); }
 
     45% { transform: translateY(0) rotate(0deg) scale(1.10, 0.90); }
 
-    60% { transform: translateY(-90px) rotate(180deg) scale(1); }
+    60% { transform: translateY(calc(-90px * var(--loading-hop-scale, 1))) rotate(180deg) scale(1); }
 
     75% { transform: translateY(0) rotate(360deg) scale(1.10, 0.90); }
 
-    90% { transform: translateY(-5px) rotate(360deg); }
+    90% { transform: translateY(calc(-5px * var(--loading-hop-scale, 1))) rotate(360deg); }
 
     100% { transform: translateY(0) rotate(360deg); }
 }
