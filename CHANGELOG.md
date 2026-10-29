@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Fixed
+
+- Messaggi della ricerca immagini azzerati al cambio di nodo; risposte e errori tardivi non mostrano più lo stato del nodo precedente.
+
 ## [0.3.2] - 2026-10-29
 
 ### Changed
