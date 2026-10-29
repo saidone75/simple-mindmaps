@@ -8,6 +8,8 @@ Punti aperti raggruppati per area logica. Le verifiche tecniche derivano dalla r
 
 2. [ ] Aggiungere un gioco con una linea del tempo in cui collocare le immagini nelle tappe corrette.
 
+10. [ ] Mostrare un solo pannello dell’editor alla volta: aprendo `node-editor-overlay` nascondere `image-editor-overlay` e viceversa.
+
 ## Importazione ed esportazione
 
 3. [ ] Esportare e importare le mappe in formato ZIP.
