@@ -69,13 +69,11 @@ public class MapImageNormalizer {
                     // originals can be reduced directly by the reader without allocating
                     // their full-resolution bitmap (especially JPEG with native subsampling).
                     val sampling = Math.max(1, Math.max(width, height) / MAX_SIZE);
-                    checkPixels((int) Math.ceil((double) width / sampling),
-                            (int) Math.ceil((double) height / sampling));
+                    checkPixels((int) Math.ceil((double) width / sampling), (int) Math.ceil((double) height / sampling));
                     parameters.setSourceSubsampling(sampling, sampling, 0, 0);
                     val decoded = reader.read(0, parameters);
                     checkPixels(decoded.getWidth(), decoded.getHeight());
-                    val image = resize(decoded, Math.max(1, (int) Math.round(width * scale)),
-                            Math.max(1, (int) Math.round(height * scale)), false);
+                    val image = resize(decoded, Math.max(1, (int) Math.round(width * scale)), Math.max(1, (int) Math.round(height * scale)), false);
                     return encode(image);
                 } finally {
                     reader.dispose();
@@ -182,8 +180,12 @@ public class MapImageNormalizer {
     private ImageDownloadService.Download resizeAnimation(ImageReader reader) throws Exception {
         val count = reader.getNumImages(true);
         if (count > 500) throw new IllegalArgumentException("Too many animation frames");
-        val streamTree = reader.getStreamMetadata().getAsTree("javax_imageio_gif_stream_1.0");
+        val sourceMetadata = reader.getStreamMetadata();
+        if (sourceMetadata == null) throw new IllegalArgumentException("Metadati dell’animazione GIF mancanti.");
+        val streamTree = sourceMetadata.getAsTree("javax_imageio_gif_stream_1.0");
+        if (streamTree == null) throw new IllegalArgumentException("Metadati dell’animazione GIF non validi.");
         val screen = child(streamTree, "LogicalScreenDescriptor");
+        if (screen == null) throw new IllegalArgumentException("Descrittore delle dimensioni GIF mancante.");
         val width = number(screen, "logicalScreenWidth");
         val height = number(screen, "logicalScreenHeight");
         checkPixels(width, height);
@@ -205,12 +207,16 @@ public class MapImageNormalizer {
                 checkPixels(frameWidth, frameHeight);
                 pixels += (long) frameWidth * frameHeight;
                 if (pixels > 200_000_000) throw new IllegalArgumentException("Animation too large");
-                val tree = reader.getImageMetadata(i).getAsTree("javax_imageio_gif_image_1.0");
+                val frameMetadata = reader.getImageMetadata(i);
+                if (frameMetadata == null) throw new IllegalArgumentException("Metadati del frame GIF mancanti.");
+                val tree = frameMetadata.getAsTree("javax_imageio_gif_image_1.0");
+                if (tree == null) throw new IllegalArgumentException("Metadati del frame GIF non validi.");
                 val descriptor = child(tree, "ImageDescriptor");
+                if (descriptor == null) throw new IllegalArgumentException("Descrittore del frame GIF mancante.");
                 val left = (int) Math.floor(number(descriptor, "imageLeftPosition") * scale);
                 val top = (int) Math.floor(number(descriptor, "imageTopPosition") * scale);
-                val frame = resize(reader.read(i), Math.max(1, Math.min(targetWidth - left, (int) Math.round(frameWidth * scale))),
-                        Math.max(1, Math.min(targetHeight - top, (int) Math.round(frameHeight * scale))), true);
+                val frame = resize(reader.read(i), Math.clamp((int) Math.round(frameWidth * scale), 1, Math.max(1, targetWidth - left)),
+                        Math.clamp((int) Math.round(frameHeight * scale), 1, Math.max(1, targetHeight - top)), true);
                 attribute(descriptor, "imageLeftPosition", left);
                 attribute(descriptor, "imageTopPosition", top);
                 attribute(descriptor, "imageWidth", frame.getWidth());
