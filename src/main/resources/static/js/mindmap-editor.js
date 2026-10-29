@@ -1375,7 +1375,7 @@ searchNodeImagesButton.addEventListener('click', async () => {
     };
     searchNodeImagesButton.disabled = true;
     searchNodeImagesButton.setAttribute('aria-busy', 'true');
-    searchNodeImagesButton.querySelector('span').textContent = '⏳';
+    searchNodeImagesButton.querySelector('span').textContent = '🐇';
     showStatus(`Sto cercando immagini per "${query}"…`);
     try {
         await flushAutosave();
