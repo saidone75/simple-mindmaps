@@ -242,9 +242,20 @@
             button.type = 'button'; button.className = 'game-image'; button.dataset.id = card.id;
             button.draggable = true; button.setAttribute('aria-pressed', 'false');
             button.setAttribute('aria-label', `Seleziona immagine ${index + 1}`);
-            const img = document.createElement('img'); img.src = card.uri; img.alt = `Immagine ${index + 1}`;
-            img.addEventListener('error', () => { feedback.textContent = 'Un’immagine si sta facendo aspettare! Chiedi una mano a un adulto: presto potrai tornare a giocare.'; });
-            button.appendChild(img);
+            const size = getNodeImageSize(card);
+            const box = { x: 0, y: 0, ...size };
+            const clipId = `tray-image-${card.id}`;
+            const preview = make('svg', {viewBox: `0 0 ${size.width} ${size.height}`,
+                role: 'img', 'aria-label': `Immagine ${index + 1}`});
+            const defs = make('defs');
+            const clip = make('clipPath', {id: clipId});
+            clip.appendChild(make('rect', box));
+            defs.appendChild(clip);
+            const image = make('image', {...box, href: card.uri, 'clip-path': `url(#${clipId})`});
+            positionCroppedImage(image, card, box, card.uri);
+            image.addEventListener('error', () => { feedback.textContent = 'Un’immagine si sta facendo aspettare! Chiedi una mano a un adulto: presto potrai tornare a giocare.'; });
+            preview.append(defs, image);
+            button.appendChild(preview);
             button.onclick = () => select(card.id);
             button.ondragstart = event => { select(card.id); event.dataTransfer.setData('text/plain', card.id); };
             cardButtons.set(card.id, button);
