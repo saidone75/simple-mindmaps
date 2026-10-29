@@ -1599,7 +1599,7 @@ imageStorageSwitch.addEventListener('change', () => {
     imagePolicyPromise = imagePolicyPromise.then(() => editorRequest(`/api/maps/${state.map.id}/image-storage`, {
         method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enabled })
     })).catch(reportEditorError);
-    imagePolicyPromise.then(() => { if (enabled) queueImageStorage(); });
+    imagePolicyPromise.then(() => { if (enabled) queueImageStorage(); }).catch(reportEditorError);
     updateImageStorageControl(getNodeById(state.selectedNodeId)?.imageUri);
 });
 
@@ -2043,7 +2043,7 @@ mapBackgroundInput?.addEventListener("input", () => {
 mapBackgroundInput?.addEventListener("change", () => {
     state.map.backgroundColor = mapBackgroundInput.value;
     editingBackground = false;
-    saveMapBackground();
+    void saveMapBackground();
 });
 
 async function createNode(payload) {
@@ -2154,7 +2154,7 @@ async function saveBeforeLeaving(proceed) {
     try {
         if (editingBackground) {
             editingBackground = false;
-            saveMapBackground();
+            void saveMapBackground();
         }
         let saveError;
         do {
@@ -2184,7 +2184,7 @@ for (const form of document.querySelectorAll('.editor-page form')) {
         event.preventDefault();
         // The first submit already ran validation. Submit natively after saving:
         // requestSubmit can be ignored while the browser is still dispatching that event.
-        saveBeforeLeaving(() => HTMLFormElement.prototype.submit.call(form));
+        void saveBeforeLeaving(() => HTMLFormElement.prototype.submit.call(form));
     });
 }
 
@@ -2192,7 +2192,7 @@ document.querySelector('.back-link')?.addEventListener('click', event => {
     if (event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
     event.preventDefault();
     const href = event.currentTarget.href;
-    saveBeforeLeaving(() => location.assign(href));
+    void saveBeforeLeaving(() => location.assign(href));
 });
 
 globalThis.addEventListener('beforeunload', event => {
@@ -2576,7 +2576,7 @@ if (autoLayoutOnOpen) {
 
 // Flush and lock the editor while producing a portable snapshot, then resume editing.
 document.getElementById('export-json-btn')?.addEventListener('click', () => {
-    saveBeforeLeaving(async () => {
+    void saveBeforeLeaving(async () => {
         try {
             const blob = await globalThis.MindMapHttp.request(`/api/maps/${state.map.id}/export/json`, {}, {
                 format: 'json-file', serverMessages: true, httpErrorMessage: 'Non riesco a esportare la mappa. Riprova.'

@@ -20,6 +20,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Gestione esplicita delle Promise nelle operazioni dell’editor per politica immagini, sfondo, navigazione, invio dei form ed esportazione, preservando le code di salvataggio e la gestione degli errori.
 - Stile `TRUE_SUMMER` dell’editor riconosciuto anche dal backend, mantenendo la compatibilità con i preset precedenti.
 - Record dei download immagini con `equals`, `hashCode` e `toString` basati sul contenuto degli array di byte.
 
