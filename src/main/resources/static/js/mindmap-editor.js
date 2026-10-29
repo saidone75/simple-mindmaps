@@ -1319,8 +1319,8 @@ function refreshOverlaysAfterPointerEnd(wasDragging, dragMoved) {
     if (selectedNode) {
         if (shouldHideNodeEditorAfterPointerEnd(wasDragging, dragMoved, justOpenedContextMenu)) {
             hideNodeEditorOverlay();
-        } else {
-            if (!imageEditorOverlay?.classList.contains("visible")) showNodeEditorOverlay(selectedNode);
+        } else if (!imageEditorOverlay?.classList.contains("visible")) {
+            showNodeEditorOverlay(selectedNode);
         }
     }
 
@@ -2613,14 +2613,6 @@ if (stylePresetInput) {
 }
 selectNode(null);
 render();
-if (autoLayoutOnOpen) {
-    reorderMap().catch(error => {
-        console.error("Impossibile salvare il riordino iniziale della mappa", error);
-        reportEditorError(error);
-    }).finally(queueImageStorage);
-} else {
-    queueImageStorage();
-}
 
 // Flush and lock the editor while producing a portable snapshot, then resume editing.
 document.getElementById('export-json-btn')?.addEventListener('click', () => {
@@ -2643,3 +2635,16 @@ document.getElementById('export-json-btn')?.addEventListener('click', () => {
         }
     });
 });
+
+if (autoLayoutOnOpen) {
+    try {
+        await reorderMap();
+    } catch (error) {
+        console.error("Impossibile salvare il riordino iniziale della mappa", error);
+        reportEditorError(error);
+    } finally {
+        queueImageStorage();
+    }
+} else {
+    queueImageStorage();
+}
