@@ -1013,7 +1013,13 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
 
 function selectNode(nodeId, options = {}) {
     const showNodeOverlay = options.showNodeOverlay !== false;
-    if (state.selectedNodeId !== nodeId) formEditGroup = null;
+    if (state.selectedNodeId !== nodeId) {
+        formEditGroup = null;
+        const searchStatus = document.getElementById('image-search-status');
+        searchStatus.textContent = '';
+        searchStatus.hidden = true;
+        delete searchStatus.dataset.nodeId;
+    }
     state.selectedNodeId = nodeId;
     const node = getNodeById(nodeId);
     if (!node) return;
@@ -1361,11 +1367,16 @@ searchNodeImagesButton.addEventListener('click', async () => {
     if (typeof terms !== 'string' || !terms.trim() || getNodeById(node.id) !== node || leavingEditor || state.isApplyingHistory) return;
     const query = terms.trim();
     const status = document.getElementById('image-search-status');
+    status.dataset.nodeId = String(node.id);
+    const showStatus = message => {
+        if (state.selectedNodeId !== node.id || status.dataset.nodeId !== String(node.id) || getNodeById(node.id) !== node) return;
+        status.textContent = message;
+        status.hidden = false;
+    };
     searchNodeImagesButton.disabled = true;
     searchNodeImagesButton.setAttribute('aria-busy', 'true');
     searchNodeImagesButton.querySelector('span').textContent = '⏳';
-    status.hidden = false;
-    status.textContent = `Sto cercando immagini per "${query}"…`;
+    showStatus(`Sto cercando immagini per "${query}"…`);
     try {
         await flushAutosave();
         if (imageSavePromise) await imageSavePromise;
@@ -1378,13 +1389,13 @@ searchNodeImagesButton.addEventListener('click', async () => {
             serverMessages: true, httpErrorMessage: 'Non riesco a cercare immagini su Wikimedia. Riprova.'
         });
         if (leavingEditor || state.isApplyingHistory || getNodeById(node.id) !== node || node.text !== originalText || node.imageUri !== originalImage) {
-            status.textContent = 'Il nodo è cambiato durante la ricerca. Premi Cerca per riprovare.';
+            showStatus('Il nodo è cambiato durante la ricerca. Premi Cerca per riprovare.');
             return;
         }
         const used = new Set(state.map.nodes.filter(other => other.id !== node.id).map(other => other.imageUri));
         const images = [...new Set(result.images || [])].filter(uri => typeof uri === 'string' && !used.has(uri)).slice(0, 9);
         if (!images.length) {
-            status.textContent = 'Non ho trovato nuove immagini adatte. Prova a rendere il testo del nodo più preciso.';
+            showStatus('Non ho trovato nuove immagini adatte. Prova a rendere il testo del nodo più preciso.');
             return;
         }
         pushUndoSnapshot();
@@ -1401,9 +1412,9 @@ searchNodeImagesButton.addEventListener('click', async () => {
         }
         render();
         await runAutosave(node);
-        status.textContent = `Ho trovato ${images.length} immagini per "${node.text}". Puoi scegliere tra le alternative qui sotto.`;
+        showStatus(`Ho trovato ${images.length} immagini per "${node.text}". Puoi scegliere tra le alternative qui sotto.`);
     } catch (error) {
-        status.textContent = error.message || 'Ricerca non riuscita. Riprova.';
+        showStatus(error.message || 'Ricerca non riuscita. Riprova.');
     } finally {
         searchNodeImagesButton.disabled = false;
         searchNodeImagesButton.removeAttribute('aria-busy');
@@ -1545,7 +1556,7 @@ function queueImageStorage() {
                         400: 'Non riesco a preparare l’immagine. Scegli un altro link o formato.',
                         409: 'L’immagine è cambiata durante il salvataggio.',
                         413: 'L’immagine supera il limite di 25 MB.',
-                        502: 'Non riesco a scaricare questa immagine. Controlla il link.'
+                        502: `Non riesco a scaricare l’immagine del nodo "${node.text}". Controlla il link.`
                     }
                 });
                 // This endpoint must return a server image ID, never an arbitrary URL.
