@@ -7,6 +7,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Added
+
+- Trascinamento dell’immagine dentro il riquadro del nodo per regolarne il ritaglio, con inquadratura salvata e mantenuta nel gioco, nelle copie e nei file esportati. Aggiunte le colonne `image_position_x` e `image_position_y` ai nodi.
+
 ### Fixed
 
 - Messaggio di download immagine non riuscito con il nome del nodo interessato.
