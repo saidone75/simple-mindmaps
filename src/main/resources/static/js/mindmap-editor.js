@@ -1348,43 +1348,33 @@ document.addEventListener("click", event => {
     closeContextMenu();
 });
 
-document.getElementById("apply-image-url-btn").addEventListener("click", () => {
-    const node = getNodeById(state.selectedNodeId);
-    if (!node) return;
-    pushUndoSnapshot();
-    node.imageUri = normalizeImageUri(imageUrlInput.value);
-    if (hasNodeImage(node)) {
-        node.emoji = "";
-        if (nodeEmojiInput) nodeEmojiInput.value = "";
-    }
-    ensureNodeImageSize(node);
-    imageUrlInput.value = node.imageUri || "";
-    updateImagePreview(node.imageUri || "");
-    render();
-    if (nodeEditorOverlay) {
-        nodeEditorOverlay.classList.add("visible");
-        updateNodeEditorOverlay(node);
-    }
-    queueAutoSubmitSelectedNode();
-});
-
 const searchNodeImagesButton = document.getElementById('search-node-images-btn');
 searchNodeImagesButton.addEventListener('click', async () => {
     const node = getNodeById(state.selectedNodeId);
     if (!node || leavingEditor || state.isApplyingHistory || searchNodeImagesButton.disabled) return;
+    const terms = await openDialog({
+        title: 'Cerca immagini su Wikimedia',
+        message: 'Conferma o modifica le parole da cercare. Aggiungi dettagli per trovare immagini più pertinenti.',
+        mode: 'prompt',
+        value: node.text || ''
+    });
+    if (typeof terms !== 'string' || !terms.trim() || getNodeById(node.id) !== node || leavingEditor || state.isApplyingHistory) return;
+    const query = terms.trim();
     const status = document.getElementById('image-search-status');
     searchNodeImagesButton.disabled = true;
     searchNodeImagesButton.setAttribute('aria-busy', 'true');
-    searchNodeImagesButton.textContent = 'Cerco…';
+    searchNodeImagesButton.querySelector('span').textContent = '⏳';
     status.hidden = false;
-    status.textContent = `Sto cercando immagini per "${node.text}"…`;
+    status.textContent = `Sto cercando immagini per "${query}"…`;
     try {
         await flushAutosave();
         if (imageSavePromise) await imageSavePromise;
         if (getNodeById(node.id) !== node) return;
         const originalText = node.text;
         const originalImage = node.imageUri;
-        const result = await globalThis.MindMapHttp.request(`/api/nodes/${node.id}/image-search`, { method: 'POST' }, {
+        const result = await globalThis.MindMapHttp.request(`/api/nodes/${node.id}/image-search`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ query })
+        }, {
             serverMessages: true, httpErrorMessage: 'Non riesco a cercare immagini su Wikimedia. Riprova.'
         });
         if (leavingEditor || state.isApplyingHistory || getNodeById(node.id) !== node || node.text !== originalText || node.imageUri !== originalImage) {
@@ -1417,7 +1407,7 @@ searchNodeImagesButton.addEventListener('click', async () => {
     } finally {
         searchNodeImagesButton.disabled = false;
         searchNodeImagesButton.removeAttribute('aria-busy');
-        searchNodeImagesButton.textContent = 'Cerca';
+        searchNodeImagesButton.querySelector('span').textContent = '🔍';
     }
 });
 

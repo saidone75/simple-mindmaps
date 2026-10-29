@@ -292,7 +292,10 @@ public class MindMapService {
         }
     }
 
-    public List<String> searchNodeImages(Long nodeId) {
+    public List<String> searchNodeImages(Long nodeId, String query) {
+        if (query == null || query.isBlank() || query.length() > 280) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.BAD_REQUEST, "Inserisci parole di ricerca entro 280 caratteri.");
+        }
         val node = nodeRepository.findById(nodeId)
                 .orElseThrow(() -> new ResponseStatusException(NOT_FOUND, "Nodo non trovato"));
         val map = getMap(node.getMapId());
@@ -302,7 +305,7 @@ public class MindMapService {
         }
         // Network requests and semantic ranking run without a SQLite write transaction.
         return normalizeImageCandidates(wikimediaImageSearchService.searchImages(
-                new String[]{imageSearchSubject(node.getText()), imageSearchSubject(map.getTitle())}, "advanced", excluded));
+                new String[]{imageSearchSubject(query), imageSearchSubject(map.getTitle())}, "advanced", excluded));
     }
 
     private String imageSearchSubject(String text) {
@@ -682,7 +685,7 @@ public class MindMapService {
     private String normalizeStylePreset(String stylePreset) {
         if (stylePreset == null || stylePreset.isBlank()) return DEFAULT_STYLE_PRESET;
         return switch (stylePreset.trim().toUpperCase()) {
-            case "PLAYFUL", "OCEAN", "CANDY", DEFAULT_STYLE_PRESET -> stylePreset.trim().toUpperCase();
+            case "PLAYFUL", "OCEAN", "CANDY", "TRUE_SUMMER", DEFAULT_STYLE_PRESET -> stylePreset.trim().toUpperCase();
             default -> DEFAULT_STYLE_PRESET;
         };
     }

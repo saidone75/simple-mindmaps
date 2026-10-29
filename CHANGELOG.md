@@ -7,8 +7,20 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Changed
+
+- Comandi dell’editor immagini rappresentati da icone per ricerca e rimozione, con etichette accessibili e descrizioni al passaggio del mouse. Rimosso il pulsante di applicazione del link, già salvato automaticamente, e uniformato il selettore dei file allo stile dell’editor.
+- Il pulsante «Cerca» dell’editor immagini chiede conferma delle parole di ricerca in un campo precompilato con il testo del nodo e modificabile, prima di avviare la ricerca semantica Wikimedia.
+- Prompt di sistema AI estratto in un file Markdown UTF-8 nelle risorse, caricato e verificato all’avvio; file esterno configurabile tramite `APP_OPENAI_SYSTEM_PROMPT`.
+- Prompt AI riorganizzato con regole nel messaggio di sistema e dati utente separati in JSON; linguaggio per la primaria, titoli anche di una parola, dimensioni indicative e massimo 30 nodi, indizi concreti, contesto essenziale nelle parole chiave delle immagini e uso esplicito del testo di riferimento. Schema JSON allineato con stili consentiti, immagini inizialmente vuote e limiti sui contenuti.
+
+### Removed
+
+- Rimossa `LegacyMapImageMigration`, usata per trasferire le immagini BLOB della vecchia implementazione nella cartella del server.
+
 ### Fixed
 
+- Stile `TRUE_SUMMER` dell’editor riconosciuto anche dal backend, mantenendo la compatibilità con i preset precedenti.
 - Record dei download immagini con `equals`, `hashCode` e `toString` basati sul contenuto degli array di byte.
 
 ### Security
