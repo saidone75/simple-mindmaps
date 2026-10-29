@@ -30,7 +30,7 @@
 
     <groupId>org.saidone</groupId>
     <artifactId>mindmaps</artifactId>
-    <version>0.3.2</version>
+    <version>0.3.3-SNAPSHOT</version>
     <name>Alice's Simple Mind Maps</name>
     <description>Alice's Simple Mind Maps - App per creare mappe mentali</description>
 
