@@ -1506,7 +1506,8 @@ for (const field of autosubmitFields) {
 }
 if (imageWidthInput) imageWidthInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
 if (imageHeightInput) imageHeightInput.addEventListener("change", () => queueAutoSubmitSelectedNode());
-function updateImagePreview(uri) {
+function updateImagePreview(value) {
+    const uri = normalizeImageUri(value);
     updateImageStorageControl(uri);
     for (const option of imageCandidates.children) option.setAttribute('aria-pressed', String(option.dataset.uri === uri));
     if (uri) {
@@ -1557,22 +1558,27 @@ function queueImageStorage() {
                         502: 'Non riesco a scaricare questa immagine. Controlla il link.'
                     }
                 });
+                // This endpoint must return a server image ID, never an arbitrary URL.
+                const storedId = typeof saved.imageUri === 'string'
+                    ? /^\/images\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.exec(saved.imageUri)?.[1] : null;
+                if (!storedId) throw new Error('Il server ha restituito un riferimento immagine non valido.');
+                const storedImageUri = `/images/${encodeURIComponent(storedId)}`;
                 if (getNodeById(node.id) !== node || node.imageUri !== source) continue;
                 // Only update the image: text and geometry may have changed during the download.
-                node.imageUri = saved.imageUri;
+                node.imageUri = storedImageUri;
                 for (const other of state.map.nodes) {
-                    if (other.imageCandidates) other.imageCandidates = other.imageCandidates.map(uri => uri === source ? saved.imageUri : uri);
+                    if (other.imageCandidates) other.imageCandidates = other.imageCandidates.map(uri => uri === source ? storedImageUri : uri);
                 }
                 // Automatic storage is not a user edit; history keeps the same image reference.
                 for (const snapshot of [...state.undoStack, ...state.redoStack, state.interactionSnapshot].filter(Boolean)) {
                     for (const previous of snapshot.map.nodes) {
-                        if (previous.id === node.id && previous.imageUri === source) previous.imageUri = saved.imageUri;
-                        if (previous.imageCandidates) previous.imageCandidates = previous.imageCandidates.map(uri => uri === source ? saved.imageUri : uri);
+                        if (previous.id === node.id && previous.imageUri === source) previous.imageUri = storedImageUri;
+                        if (previous.imageCandidates) previous.imageCandidates = previous.imageCandidates.map(uri => uri === source ? storedImageUri : uri);
                     }
                 }
                 if (state.selectedNodeId === node.id) {
-                    imageUrlInput.value = saved.imageUri;
-                    updateImagePreview(saved.imageUri);
+                    imageUrlInput.value = storedImageUri;
+                    updateImagePreview(storedImageUri);
                     if (state.imageOverlayNodeId === node.id) renderImageCandidates(node);
                 }
                 requestRender();
@@ -1608,7 +1614,7 @@ imageStorageSwitch.addEventListener('change', () => {
 });
 
 function renderImageCandidates(node) {
-    const candidates = [...new Set(node.imageCandidates || [])].slice(0, 9);
+    const candidates = [...new Set((node.imageCandidates || []).map(normalizeImageUri).filter(Boolean))].slice(0, 9);
     imageAlternatives.hidden = candidates.length === 0;
     imageCandidates.replaceChildren();
     const usedImages = new Set(state.map.nodes.filter(other => other.id !== node.id).map(other => other.imageUri));
@@ -1677,14 +1683,17 @@ function applyFormToNode(node) {
 }
 
 function normalizeImageUri(value) {
-    const trimmed = (value || "").trim();
-    if (!trimmed.length) return null;
-    if (/^\/images\/[a-f0-9-]{36}$/.test(trimmed)) return trimmed;
-    if (trimmed.startsWith("data:image/")) return trimmed;
+    if (typeof value !== 'string') return null;
+    const trimmed = value.trim();
+    if (!trimmed || /[\u0000-\u001f\u007f]/.test(trimmed)) return null;
+    const local = /^\/images\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.exec(trimmed);
+    if (local) return `/images/${encodeURIComponent(local[1])}`;
+    // FileReader uploads are base64 images; reject HTML and other active data URLs.
+    if (/^data:image\/(?:jpeg|png|gif|webp|svg\+xml);base64,[a-z0-9+/]+={0,2}$/i.test(trimmed)) return trimmed;
     if (!URL.canParse(trimmed)) return null;
     const parsed = new URL(trimmed);
-    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
-        return parsed.toString();
+    if ((parsed.protocol === 'http:' || parsed.protocol === 'https:') && !parsed.username && !parsed.password) {
+        return parsed.href;
     }
     return null;
 }
