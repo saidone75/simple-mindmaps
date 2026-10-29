@@ -282,6 +282,7 @@ async function restoreEditorState(snapshot) {
     }
     state.map = restored.map;
     imageStorageSwitch.checked = state.map.storeImagesLocally !== false;
+    imageStorageSwitch.setAttribute("aria-checked", String(imageStorageSwitch.checked));
     state.selectedNodeId = remap(snapshot.selectedNodeId);
     if (stylePresetInput) stylePresetInput.value = state.map.stylePreset;
     refreshMapTitle();
@@ -1642,6 +1643,7 @@ function queueImageStorage() {
 
 imageStorageSwitch.addEventListener('change', () => {
     const enabled = imageStorageSwitch.checked;
+    imageStorageSwitch.setAttribute("aria-checked", String(enabled));
     state.map.storeImagesLocally = enabled;
     imageSaveFailures.clear();
     imagePolicyPromise = imagePolicyPromise.then(() => editorRequest(`/api/maps/${state.map.id}/image-storage`, {
@@ -2599,6 +2601,7 @@ document.addEventListener("keydown", async event => {
 });
 
 imageStorageSwitch.checked = state.map.storeImagesLocally !== false;
+imageStorageSwitch.setAttribute("aria-checked", String(imageStorageSwitch.checked));
 state.map.stylePreset = getCurrentStylePresetName();
 refreshMapTitle();
 if (stylePresetInput) {
