@@ -69,9 +69,10 @@
 
     if (bunnyButton) {
         bunnyButton.addEventListener('click', () => {
-            bunnyButton.classList.remove('is-somersaulting');
-            void bunnyButton.offsetWidth;
-            bunnyButton.classList.add('is-somersaulting');
+            const somersault = bunnyButton.getAnimations()
+                .find(animation => animation.animationName === 'bunny-somersault');
+            if (somersault) somersault.currentTime = 0;
+            else bunnyButton.classList.add('is-somersaulting');
         });
 
         bunnyButton.addEventListener('animationend', (event) => {
