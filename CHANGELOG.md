@@ -29,6 +29,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Messaggio di download immagine non riuscito con il nome del nodo interessato.
 - Messaggi della ricerca immagini azzerati al cambio di nodo; risposte e errori tardivi non mostrano più lo stato del nodo precedente.
 
+### Changed
+
+- JavaScript del gioco semplificato eliminando ternari annidati e il parametro predefinito intermedio dell’helper SVG, senza modificare il comportamento.
+
 ## [0.3.2] - 2026-10-29
 
 ### Changed
