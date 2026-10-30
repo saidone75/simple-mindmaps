@@ -18,9 +18,10 @@
 
 package org.saidone.mindmaps.service;
 
-import lombok.val;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.batik.bridge.*;
+import org.apache.batik.transcoder.SVGAbstractTranscoder;
 import org.apache.batik.transcoder.TranscoderInput;
 import org.apache.batik.transcoder.TranscoderOutput;
 import org.apache.batik.transcoder.image.PNGTranscoder;
@@ -30,13 +31,11 @@ import org.springframework.web.server.ResponseStatusException;
 import org.w3c.dom.Node;
 
 import javax.imageio.*;
-import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilderFactory;
-import java.awt.AlphaComposite;
-import java.awt.RenderingHints;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.ByteArrayInputStream;
@@ -168,9 +167,9 @@ public class MapImageNormalizer {
                 };
             }
         };
-        transcoder.addTranscodingHint(PNGTranscoder.KEY_MAX_WIDTH, (float) MAX_SIZE);
-        transcoder.addTranscodingHint(PNGTranscoder.KEY_MAX_HEIGHT, (float) MAX_SIZE);
-        transcoder.addTranscodingHint(PNGTranscoder.KEY_EXECUTE_ONLOAD, false);
+        transcoder.addTranscodingHint(SVGAbstractTranscoder.KEY_MAX_WIDTH, (float) MAX_SIZE);
+        transcoder.addTranscodingHint(SVGAbstractTranscoder.KEY_MAX_HEIGHT, (float) MAX_SIZE);
+        transcoder.addTranscodingHint(SVGAbstractTranscoder.KEY_EXECUTE_ONLOAD, false);
         try (val bytes = new ByteArrayOutputStream()) {
             transcoder.transcode(new TranscoderInput(document), new TranscoderOutput(bytes));
             return bytes.toByteArray();
