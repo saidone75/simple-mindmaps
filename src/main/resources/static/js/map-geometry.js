@@ -327,3 +327,11 @@ function enableMapPinchZoom(viewport, drawing, { getZoom, setZoom, min, max, onS
     window.addEventListener('blur', end);
     return { get active() { return gesture !== null; } };
 }
+
+function revealTouchMapViewport(event, viewport) {
+    if (event.pointerType !== 'touch') return;
+    const rect = viewport.getBoundingClientRect();
+    if (rect.top < 0 || rect.bottom > window.innerHeight) {
+        viewport.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'instant' });
+    }
+}

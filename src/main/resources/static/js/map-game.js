@@ -414,6 +414,8 @@
     // Drag only the background; image targets keep their click and drop behavior.
     const panViewport = svg.closest?.('.game-board-scroll') || svg.parentElement;
     let pan = null;
+    let suppressPanClick = false;
+    panViewport.addEventListener('pointerdown', () => { suppressPanClick = false; }, { capture: true });
     function endPan(event) {
         if (!pan || (event?.pointerId != null && event.pointerId !== pan.pointerId)) return;
         const pointerId = pan.pointerId;
@@ -426,25 +428,41 @@
         min: 10, max: 250, onStart: () => endPan()
     });
     panViewport?.addEventListener('pointerdown', event => {
-        if (gamePinch.active || !board || pan || !event.isPrimary || event.button !== 0 || event.target.closest('.game-target, button')) return;
+        if (gamePinch.active || !board || pan || !event.isPrimary || event.button !== 0 || (event.target.closest('button') || (event.pointerType !== 'touch' && event.target.closest('.game-target')))) return;
+        revealTouchMapViewport(event, panViewport);
+        suppressPanClick = false;
         pan = {
             pointerId: event.pointerId,
             x: event.clientX, y: event.clientY,
             left: panViewport.scrollLeft, top: panViewport.scrollTop
         };
-        panViewport.setPointerCapture(event.pointerId);
+        if (event.pointerType !== 'touch') panViewport.setPointerCapture(event.pointerId);
         panViewport.classList.add('is-panning');
         event.preventDefault();
     });
     panViewport?.addEventListener('pointermove', event => {
         if (!pan || pan.pointerId !== event.pointerId) return;
+        if (!suppressPanClick) {
+            if (Math.hypot(event.clientX - pan.x, event.clientY - pan.y) <= 3) return;
+            suppressPanClick = true;
+            panViewport.setPointerCapture(event.pointerId);
+        }
         panViewport.scrollLeft = pan.left - (event.clientX - pan.x);
         panViewport.scrollTop = pan.top - (event.clientY - pan.y);
         event.preventDefault();
     });
+    panViewport?.addEventListener('click', event => {
+        if (!suppressPanClick) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }, { capture: true });
     panViewport?.addEventListener('pointerup', endPan);
     panViewport?.addEventListener('pointercancel', endPan);
-    panViewport?.addEventListener('lostpointercapture', endPan);
+    panViewport?.addEventListener('lostpointercapture', event => {
+        // Child nodes lose implicit touch capture when the viewport takes over.
+        // Only loss of the viewport's own capture ends the pan.
+        if (event.target === panViewport) endPan(event);
+    });
     globalThis.addEventListener?.('blur', () => endPan());
     zoom.oninput = resize;
     globalThis.addEventListener?.('resize', resize);
