@@ -533,3 +533,12 @@
     animation: wonderland-ultra-smooth 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
     will-change: transform;
 }
+
+@media (max-width: 760px) {
+    .canvas-scroll-area {
+        height: 60svh;
+        max-height: 60dvh;
+        min-height: 0;
+        overscroll-behavior: contain;
+    }
+}

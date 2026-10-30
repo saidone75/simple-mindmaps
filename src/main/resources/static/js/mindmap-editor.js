@@ -894,6 +894,7 @@ function renderNodeImage(group, node, width) {
     positionCroppedImage(image, node, { x: imageX, y: imageY, width: imageWidth, height: imageHeight });
     image.addEventListener("pointerdown", event => {
         event.stopPropagation();
+        if (event.pointerType === 'touch') { startCanvasPan(event); return; }
         if (!canStartPointerInteraction(event)) return;
         const metrics = cropImageMetrics(node.imageUri, { width: imageWidth, height: imageHeight }, node.imageZoom);
         if (!metrics || (metrics.overflowX < .01 && metrics.overflowY < .01)) return;
@@ -1026,7 +1027,10 @@ function renderBranchLabel(node, cx, cy, x1, y1, x2, y2, target) {
     label.textContent = truncate(branchText, 26);
     const angle = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
     label.setAttribute("transform", `rotate(${Math.max(-24, Math.min(24, angle))}, ${cx}, ${cy - 6})`);
-    label.addEventListener("pointerdown", event => event.stopPropagation());
+    label.addEventListener("pointerdown", event => {
+        event.stopPropagation();
+        if (event.pointerType === 'touch') startCanvasPan(event);
+    });
     label.addEventListener("click", async event => {
         event.stopPropagation();
         await quickEditBranchText(node.id).catch(reportEditorError);
@@ -1089,6 +1093,7 @@ function captureInteractionPointer() {
 }
 
 function startDrag(event) {
+    if (event.pointerType === 'touch') { event.stopPropagation(); startCanvasPan(event); return; }
     if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
     const nodeId = Number(event.currentTarget.dataset.id);
@@ -1160,9 +1165,11 @@ function startNodeResize(event) {
 
 function startCanvasPan(event) {
     if (!canvasViewport || !canStartPointerInteraction(event)) return;
-    if (event.target.closest('.node-group, .branch-label, button, input, select, textarea, a, [contenteditable]')) return;
+    if (event.target.closest('button, input, select, textarea, a, [contenteditable]')) return;
+    if (event.pointerType !== 'touch' && event.target.closest('.node-group, .branch-label')) return;
+    revealTouchMapViewport(event, canvasViewport);
     interactionPointerId = event.pointerId;
-    captureInteractionPointer();
+    if (event.pointerType !== 'touch') captureInteractionPointer();
     state.pan = {
         startClientX: event.clientX,
         startClientY: event.clientY,
@@ -1285,6 +1292,11 @@ function flushPointerMove(allowPan = true) {
 document.addEventListener("pointermove", event => {
     if (editorPinch.active) return;
     if (event.pointerId !== interactionPointerId) return;
+    if (state.pan && !state.pan.moved) {
+        if (Math.hypot(event.clientX - state.pan.startClientX, event.clientY - state.pan.startClientY) <= 3) return;
+        captureInteractionPointer();
+        state.pan.moved = true;
+    }
     if (state.drag && !state.drag.moved) {
         if (Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY) <= 3) return;
         // Capture on a stable ancestor only once a tap becomes a drag.

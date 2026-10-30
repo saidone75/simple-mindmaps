@@ -16,6 +16,9 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Pan touch nel gioco non più interrotto dal trasferimento della cattura del puntatore da un nodo al contenitore della mappa.
+- Pan touch della mappa disponibile anche sopra nodi e immagini; trascinamento distinto dal tocco per evitare selezioni o risposte involontarie nel gioco.
+- Area della mappa su mobile limitata all’altezza visibile e portata in vista all’avvio del pan, evitando di dover alternare trascinamento interno e scorrimento della pagina; contenuto il passaggio dello scroll alla pagina ai bordi.
 - Immagini nello zainetto del gioco mostrate con lo stesso zoom, spostamento e inquadratura impostati nell’editor.
 - Pannelli del nodo e dell’immagine mutuamente esclusivi: aprirne uno chiude l’altro e i controlli dell’immagine mantengono aperto il relativo pannello.
 - L’indirizzo principale `/` reindirizza a `/maps`, evitando la pagina 404.
