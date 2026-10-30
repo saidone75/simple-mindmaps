@@ -25,21 +25,24 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.saidone.mindmaps.dto.MindMapDto;
 import org.saidone.mindmaps.dto.MapGenerationRequestDto;
+import org.saidone.mindmaps.dto.MindMapDto;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpHeaders;
 import org.springframework.core.io.Resource;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
 
-import java.util.*;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.IllegalFormatException;
+import java.util.List;
+import java.util.Map;
 
-@Component
+@Service
 @RequiredArgsConstructor
 @Slf4j
 public class OpenAiMapGenerationService implements MapGenerationService {
@@ -56,9 +59,9 @@ public class OpenAiMapGenerationService implements MapGenerationService {
     private Resource systemPromptResource;
     private String systemPromptTemplate;
 
-    private Map<String, Object> cachedQuizSchema;
+    private Map<String, Object> cachedMindMapSchema;
 
-    private static final String QUIZ_JSON_SCHEMA_TEMPLATE = """
+    private static final String MIND_MAP_JSON_SCHEMA = """
             {
               "type": "object",
               "additionalProperties": false,
@@ -117,7 +120,7 @@ public class OpenAiMapGenerationService implements MapGenerationService {
     @PostConstruct
     void initSchema() {
         try {
-            objectMapper.readTree(QUIZ_JSON_SCHEMA_TEMPLATE);
+            objectMapper.readTree(MIND_MAP_JSON_SCHEMA);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("Schema JSON di OpenAI non valido.", e);
         }
@@ -179,23 +182,23 @@ public class OpenAiMapGenerationService implements MapGenerationService {
                 "json_schema", Map.of(
                         "name", "mindmap_dto_request",
                         "strict", true,
-                        "schema", parseQuizSchema()
+                        "schema", parseMindMapSchema()
                 )
         );
     }
 
-    private Map<String, Object> parseQuizSchema() {
-        if (cachedQuizSchema != null) {
-            return cachedQuizSchema;
+    private Map<String, Object> parseMindMapSchema() {
+        if (cachedMindMapSchema != null) {
+            return cachedMindMapSchema;
         }
         try {
-            val schema = objectMapper.readValue(QUIZ_JSON_SCHEMA_TEMPLATE, new TypeReference<Map<String, Object>>() {
+            val schema = objectMapper.readValue(MIND_MAP_JSON_SCHEMA, new TypeReference<Map<String, Object>>() {
             });
             if (!"object".equals(schema.get("type"))) {
                 throw new IllegalStateException("Schema OpenAI non valido: type deve essere 'object'.");
             }
-            cachedQuizSchema = schema;
-            return cachedQuizSchema;
+            cachedMindMapSchema = schema;
+            return cachedMindMapSchema;
         } catch (Exception e) {
             throw new IllegalStateException("Schema JSON di OpenAI non valido.", e);
         }

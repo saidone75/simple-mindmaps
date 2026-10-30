@@ -16,6 +16,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Riavvio della capriola del coniglietto nel login tramite l’animazione corrente, senza `void` né ricalcoli forzati del layout.
 - Pan touch nel gioco non più interrotto dal trasferimento della cattura del puntatore da un nodo al contenitore della mappa.
 - Pan touch della mappa disponibile anche sopra nodi e immagini; trascinamento distinto dal tocco per evitare selezioni o risposte involontarie nel gioco.
 - Area della mappa su mobile limitata all’altezza visibile e portata in vista all’avvio del pan, evitando di dover alternare trascinamento interno e scorrimento della pagina; contenuto il passaggio dello scroll alla pagina ai bordi.
