@@ -13,12 +13,12 @@ Versione in sviluppo: **0.3.3-SNAPSHOT**. Ultima release: **0.3.2**. Le novità 
 ## Funzionalità
 
 - Mappe create da zero, da template o generate con AI. Durante la generazione, lo spinner mostra l’attività corrente: creazione della mappa, controllo dei collegamenti, ricerca di un’immagine per ciascun nodo e salvataggio.
-- Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. **Adatta alla griglia** allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
+- Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. *Adatta alla griglia* allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
-- Nell’editor immagini, **Cerca** apre un campo con il testo del nodo modificabile prima della conferma, poi avvia la ricerca semantica su Wikimedia usando le parole scelte e il titolo della mappa come contesto: applica il primo risultato e mostra fino a nove alternative.
+- Nell’editor immagini, *Cerca* apre un campo con il testo del nodo modificabile prima della conferma, poi avvia la ricerca semantica su Wikimedia usando le parole scelte e il titolo della mappa come contesto: applica il primo risultato e mostra fino a nove alternative.
 - Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa; quelle già usate da altri nodi non sono selezionabili.
-- Lo switch **Salva immagini**, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. I file scaricati possono pesare fino a 25 MB e vengono adattati entro 1024 × 1024 px senza ingrandirli; le GIF animate mantengono l’animazione. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
+- Lo switch *Salva immagini*, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. I file scaricati possono pesare fino a 25 MB e vengono adattati entro 1024 × 1024 px senza ingrandirli; le GIF animate mantengono l’animazione. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
 - Duplicazione ed eliminazione delle mappe.
 - Esportazione in PNG e PDF, con formati A4 e A3 per il PDF; importazione ed esportazione delle mappe in JSON.
 - Accesso con account e mappe private per ciascun proprietario.
@@ -105,22 +105,22 @@ Per costruire il JAR saltando l'esecuzione dei test è disponibile `bash build.s
 ### Pubblicare una mappa
 
 1. Nell'editor, aggiungi almeno un'immagine ai nodi.
-2. Apri la card **Da mappa a gioco**, chiusa per impostazione predefinita, e premi **Pubblica come gioco**.
+2. Apri la card *Da mappa a gioco*, chiusa per impostazione predefinita, e premi *Pubblica come gioco*.
 3. Copia il link pubblico e condividilo con i bambini: non occorre un account per giocare.
 
 La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti, colori, disposizione e dimensioni dei nodi. Le modifiche successive nell'editor non cambiano il gioco già pubblicato.
 
-**Aggiorna gioco pubblicato** crea una nuova copia e un nuovo link, disattivando quello precedente. **Ritira pubblicazione** disabilita il link e impedisce ulteriori tentativi nelle partite già avviate.
+*Aggiorna gioco pubblicato* crea una nuova copia e un nuovo link, disattivando quello precedente. *Ritira pubblicazione* disabilita il link e impedisce ulteriori tentativi nelle partite già avviate.
 
 Ogni insegnante ha anche una **pagina pubblica dei giochi**, con il nome utente nell’indirizzo (per esempio `/play/teachers/alice`), raggiungibile dall’elenco delle mappe e dall’editor. Il suo indirizzo resta lo stesso quando aggiungi, aggiorni o ritiri un gioco. Mostra un pulsante grande per ogni mappa pubblicata, con l’immagine del nodo principale o un’icona di riserva: basta sceglierne uno per iniziare. Il link mostrato dopo la pubblicazione continua ad aprire il singolo gioco.
 
 ### Giocare
 
-Premi **Giochiamo!** e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare uno degli indizi associati all’immagine trascinata, scelto a caso, oppure un incoraggiamento se non ce ne sono. Puoi scrivere fino a tre indizi per nodo nell’editor; nelle nuove mappe AI vengono generati automaticamente.
+Premi *Giochiamo!* e trascina ogni immagine nella sua casella, oppure selezionala e tocca la destinazione. Dopo un errore compare uno degli indizi associati all’immagine trascinata, scelto a caso, oppure un incoraggiamento se non ce ne sono. Puoi scrivere fino a tre indizi per nodo nell’editor; nelle nuove mappe AI vengono generati automaticamente.
 
-Usa **−** per rimpicciolire e **+** per ingrandire la mappa; trascina lo sfondo con la manina per spostarti. **Vedi tutta la mappa** la adatta alla finestra.
+Su dispositivi touch puoi avvicinare o allontanare due dita per regolare lo zoom, sia nell’editor sia nel gioco. Usa *−* per rimpicciolire e *+* per ingrandire la mappa; trascina lo sfondo con la manina per spostarti. *Vedi tutta la mappa* la adatta alla finestra.
 
-Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personalizzabili dall’insegnante. Errori e tempo non penalizzano il bambino. Alla fine puoi premere **Giochiamo ancora ↻** oppure **Scegli un altro gioco** per tornare alla pagina dell’insegnante. Il pulsante **Suoni attivi** permette di attivare o disattivare l’audio.
+Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personalizzabili dall’insegnante. Errori e tempo non penalizzano il bambino. Alla fine puoi premere *Giochiamo ancora ↻* oppure *Scegli un altro gioco* per tornare alla pagina dell’insegnante. Il pulsante *Suoni attivi* permette di attivare o disattivare l’audio.
 
 ## Persistenza ed esportazione
 
@@ -130,7 +130,7 @@ Il job di pulizia delle immagini orfane viene eseguito ogni notte alle 03:00: co
 
 Le password degli utenti sono memorizzate come hash BCrypt. Le mappe private sono accessibili solo al proprietario; i link pubblici consentono di giocare senza accedere all'editor.
 
-Per trasferire o conservare una mappa modificabile, usa **Esporta** in fondo alla toolbar dell’editor: scarica un file JSON con struttura, aspetto, indizi, titoli premio e immagini salvate sul server. I link alle immagini esterne restano link. Da **Modelli pronti → Importa mappa**, seleziona il file per creare una nuova mappa privata e aprirla nell’editor, senza modificare le mappe esistenti. Sono supportati file fino a 100 MB con un massimo di 1000 nodi; le immagini incorporate vengono salvate e normalizzate sul server, mantenendo le GIF animate. La pubblicazione del gioco va eseguita nuovamente dalla mappa importata.
+Per trasferire o conservare una mappa modificabile, usa *Esporta* in fondo alla toolbar dell’editor: scarica un file JSON con struttura, aspetto, indizi, titoli premio e immagini salvate sul server. I link alle immagini esterne restano link. Da *Modelli pronti → Importa mappa*, seleziona il file per creare una nuova mappa privata e aprirla nell’editor, senza modificare le mappe esistenti. Sono supportati file fino a 100 MB con un massimo di 1000 nodi; le immagini incorporate vengono salvate e normalizzate sul server, mantenendo le GIF animate. La pubblicazione del gioco va eseguita nuovamente dalla mappa importata.
 
 Per esportare un’immagine della mappa, il browser invia l'SVG corrente al backend, che produce il file PNG o PDF scaricabile. Il PDF supporta A4 e A3.
 

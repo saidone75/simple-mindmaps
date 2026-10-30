@@ -9,9 +9,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
-- Zoom dell’immagine nel riquadro del nodo dal 100% al 400%, regolabile nell’editor immagini e salvato nel campo `image_zoom`, con supporto Annulla/Ripristina e mantenimento nel gioco, nelle copie e nei file esportati.
+- **Pinch-to-zoom a due dita** nell’editor e nel gioco, centrato tra le dita e coordinato con pan e trascinamento.
+- **Zoom dell’immagine nel riquadro del nodo** dal 100% al 400%, regolabile nell’editor immagini e salvato nel campo `image_zoom`, con supporto Annulla/Ripristina e mantenimento nel gioco, nelle copie e nei file esportati.
 
-- Trascinamento dell’immagine dentro il riquadro del nodo per regolarne il ritaglio, con inquadratura salvata e mantenuta nel gioco, nelle copie e nei file esportati. Aggiunte le colonne `image_position_x` e `image_position_y` ai nodi.
+- **Trascinamento dell’immagine dentro il riquadro del nodo** per regolarne il ritaglio, con inquadratura salvata e mantenuta nel gioco, nelle copie e nei file esportati. Aggiunte le colonne `image_position_x` e `image_position_y` ai nodi.
 
 ### Fixed
 
@@ -32,7 +33,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Durante la ricerca immagini, il pulsante mostra lo stesso coniglietto animato dello spinner, con salti e capriola rimpiccioliti, al posto della clessidra.
 - Comandi dell’editor immagini rappresentati da icone per ricerca e rimozione, con etichette accessibili e descrizioni al passaggio del mouse. Rimosso il pulsante di applicazione del link, già salvato automaticamente, e uniformato il selettore dei file allo stile dell’editor.
 - Il pulsante *Cerca* dell’editor immagini chiede conferma delle parole di ricerca in un campo precompilato con il testo del nodo e modificabile, prima di avviare la ricerca semantica Wikimedia.
-- Prompt di sistema AI estratto in un file Markdown UTF-8 nelle risorse, caricato e verificato all’avvio; file esterno configurabile tramite `APP_OPENAI_SYSTEM_PROMPT`.
+- **Prompt di sistema AI** estratto in un file Markdown UTF-8 nelle risorse, caricato e verificato all’avvio; file esterno configurabile tramite `APP_OPENAI_SYSTEM_PROMPT`.
 - Prompt AI riorganizzato con regole nel messaggio di sistema e dati utente separati in JSON; linguaggio per la primaria, titoli anche di una parola, dimensioni indicative e massimo 30 nodi, indizi concreti, contesto essenziale nelle parole chiave delle immagini e uso esplicito del testo di riferimento. Schema JSON allineato con stili consentiti, immagini inizialmente vuote e limiti sui contenuti.
 
 ### Removed
@@ -64,7 +65,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
-- Riordino iniziale e manuale più compatto: ogni nodo viene collocato nel punto libero più vicino lungo il proprio ramo, usando le dimensioni effettive e un margine di separazione, senza espandere uniformemente tutta la mappa. La disposizione salvata viene mantenuta nel gioco pubblicato.
+- **Riordino iniziale e manuale più compatto**: ogni nodo viene collocato nel punto libero più vicino lungo il proprio ramo, usando le dimensioni effettive e un margine di separazione, senza espandere uniformemente tutta la mappa. La disposizione salvata viene mantenuta nel gioco pubblicato.
 - Card dei modelli pronti spostata sotto *Le mie mappe*, pulsante della pagina pubblica dei giochi distanziato dal testo introduttivo e pubblicazione del gioco richiudibile, chiusa per impostazione predefinita e aperta dopo la pubblicazione o l’aggiornamento, anche in caso di errore.
 - Toolbar dell’editor riordinata con lo switch *Salva immagini* a destra, dopo la griglia.
 - Limite di download delle immagini esterne aumentato a 25 MB prima della normalizzazione.
@@ -76,17 +77,17 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 ### Added
 
 - Pulsante *Adatta alla griglia* nella toolbar: allinea tutti i nodi alla posizione più vicina e arrotonda larghezza e altezza a multipli della griglia, rispettando lo spazio minimo del contenuto; salvataggio automatico e supporto Annulla/Ripristina.
-- Importazione ed esportazione delle mappe in JSON, con nodi, collegamenti, stile, indizi, titoli premio e immagini locali incorporate nel file. L’importazione crea una nuova mappa privata con nuovi riferimenti alle immagini; controllo del formato e dei collegamenti, limite di 100 MB per file e 1000 nodi. Comando *Importa mappa* al primo posto a sinistra nella griglia dei modelli pronti, con le stesse dimensioni e un colore distinto, ed *Esporta* in fondo alla toolbar dell’editor, dopo lo switch delle immagini.
-- Job notturno configurabile per le immagini orfane, con controllo dei riferimenti in mappe, alternative e copie pubblicate, sette giorni di conservazione dall’individuazione e cancellazione dei file dopo il commit del database.
+- **Importazione ed esportazione delle mappe in JSON**, con nodi, collegamenti, stile, indizi, titoli premio e immagini locali incorporate nel file. L’importazione crea una nuova mappa privata con nuovi riferimenti alle immagini; controllo del formato e dei collegamenti, limite di 100 MB per file e 1000 nodi. Comando *Importa mappa* al primo posto a sinistra nella griglia dei modelli pronti, con le stesse dimensioni e un colore distinto, ed *Esporta* in fondo alla toolbar dell’editor, dopo lo switch delle immagini.
+- **Job notturno configurabile per le immagini orfane**, con controllo dei riferimenti in mappe, alternative e copie pubblicate, sette giorni di conservazione dall’individuazione e cancellazione dei file dopo il commit del database.
 - Switch nella toolbar dell’editor, attivo per impostazione predefinita e salvato per mappa, per scaricare e conservare le immagini esterne nella cartella del server, con metadati e riferimenti nel database. Normalizzazione entro 1024 × 1024 px senza ingrandimento, JPEG per immagini opache, PNG per trasparenze e conversione SVG; le GIF animate mantengono fotogrammi, tempi e ripetizione. Elaborazione in background, compatibilità con giochi, copie ed esportazioni e nuova tabella `map_image` per i metadati; cartella configurabile tramite `app.upload.directory`.
 - Fino a nove URL Wikimedia candidati salvati per nodo nelle nuove mappe AI, con anteprime e scelta nell’editor. Supporto alle ricerche semplice e semantica, mantenimento nelle copie e in Annulla/Ripristina, controllo delle immagini già usate da altri nodi. Aggiunta della colonna `image_candidates` alla tabella dei nodi.
-- Pagina pubblica univoca per insegnante con pulsanti illustrati dall’immagine del nodo principale della copia pubblicata, con icona di riserva se assente o non disponibile, per avviare i giochi; dalla festa finale si può rigiocare o tornare alla selezione. Il link di pubblicazione continua ad aprire il singolo gioco.
+- **Pagina pubblica univoca per insegnante** con pulsanti illustrati dall’immagine del nodo principale della copia pubblicata, con icona di riserva se assente o non disponibile, per avviare i giochi; dalla festa finale si può rigiocare o tornare alla selezione. Il link di pubblicazione continua ad aprire il singolo gioco.
 
 ### Fixed
 
 - Salvataggio del riordino iniziale e manuale inserito nella coda di autosalvataggio, evitando scritture concorrenti con modifiche pendenti e permettendo a pubblicazione, navigazione e Annulla/Ripristina di attenderne il completamento.
-- Immagini statiche Wikimedia oltre 40 megapixel ridotte tramite sottocampionamento prima del controllo sul raster decodificato, evitando il rifiuto degli originali ad alta risoluzione e mantenendo il limite finale di 1024 px.
-- Normalizzazione degli SVG Wikimedia con dichiarazione DOCTYPE standard, senza caricare DTD esterni né consentire definizioni XML interne; aggiunto il motivo tecnico nei log quando la preparazione di un’immagine fallisce.
+- **Immagini statiche Wikimedia oltre 40 megapixel** ridotte tramite sottocampionamento prima del controllo sul raster decodificato, evitando il rifiuto degli originali ad alta risoluzione e mantenendo il limite finale di 1024 px.
+- **Normalizzazione degli SVG Wikimedia** con dichiarazione DOCTYPE standard, senza caricare DTD esterni né consentire definizioni XML interne; aggiunto il motivo tecnico nei log quando la preparazione di un’immagine fallisce.
 - Anteprime dei giochi pubblici con spazio fisso riservato e immagini contenute entro 96 × 96 px, per evitare sovrapposizioni con il titolo anche durante il caricamento.
 - Ricerca Wikimedia meno restrittiva: parole senza virgolette per includere varianti grammaticali, soggetti AI più brevi e ampliamento progressivo delle espressioni troppo lunghe. Foto e illustrazioni precedono copertine, frontespizi e anteprime DjVu in entrambe le modalità; nella ricerca semantica i documenti non interrompono prematuramente la raccolta delle immagini.
 - Riferimenti ai genitori dei nodi AI rimappati dopo gli scarti; i figli dei nodi scartati vengono collegati al primo antenato valido, mentre radici mancanti e riferimenti incoerenti fanno ripetere la generazione.
@@ -198,9 +199,9 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Security
 
-- Isolamento delle mappe per proprietario e protezione delle operazioni di modifica e pubblicazione.
-- Limitazione dei tentativi di accesso falliti.
-- Link pubblici casuali e revocabili; aggiornare o ritirare una pubblicazione interrompe anche l'accesso al gioco precedente.
+- **Isolamento delle mappe per proprietario** e protezione delle operazioni di modifica e pubblicazione.
+- **Limitazione dei tentativi di accesso falliti**.
+- **Link pubblici casuali e revocabili**; aggiornare o ritirare una pubblicazione interrompe anche l'accesso al gioco precedente.
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
