@@ -1079,7 +1079,7 @@ function selectNode(nodeId, options = {}) {
 
 function canStartPointerInteraction(event) {
     return event.isPrimary && event.button === 0 && interactionPointerId === null
-        && !state.isApplyingHistory && !leavingEditor;
+        && !state.isApplyingHistory && !leavingEditor && !editorPinch.active;
 }
 
 function captureInteractionPointer() {
@@ -1283,6 +1283,7 @@ function flushPointerMove(allowPan = true) {
 }
 
 document.addEventListener("pointermove", event => {
+    if (editorPinch.active) return;
     if (event.pointerId !== interactionPointerId) return;
     if (state.drag && !state.drag.moved) {
         if (Math.hypot(event.clientX - state.drag.startClientX, event.clientY - state.drag.startClientY) <= 3) return;
@@ -2648,3 +2649,14 @@ if (autoLayoutOnOpen) {
 } else {
     queueImageStorage();
 }
+
+const editorPinch = enableMapPinchZoom(canvasViewport, svg, {
+    getZoom: () => Number(zoomInput.value),
+    setZoom: value => { zoomInput.value = String(value); applyCanvasViewport(); },
+    min: MIN_ZOOM_PERCENT, max: MAX_ZOOM_PERCENT,
+    onStart: () => {
+        finishPointerInteraction(null, true);
+        if (state.zoomAnimationFrame) cancelAnimationFrame(state.zoomAnimationFrame);
+        state.zoomAnimationFrame = null;
+    }
+});

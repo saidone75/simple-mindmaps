@@ -421,8 +421,12 @@
         panViewport.classList.remove('is-panning');
         if (panViewport.hasPointerCapture(pointerId)) panViewport.releasePointerCapture(pointerId);
     }
+    const gamePinch = enableMapPinchZoom(panViewport, svg, {
+        getZoom: () => Number(zoom.value), setZoom: changeZoom,
+        min: 10, max: 250, onStart: () => endPan()
+    });
     panViewport?.addEventListener('pointerdown', event => {
-        if (!board || pan || !event.isPrimary || event.button !== 0 || event.target.closest('.game-target, button')) return;
+        if (gamePinch.active || !board || pan || !event.isPrimary || event.button !== 0 || event.target.closest('.game-target, button')) return;
         pan = {
             pointerId: event.pointerId,
             x: event.clientX, y: event.clientY,

@@ -9,6 +9,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Pinch-to-zoom a due dita nell’editor e nel gioco, centrato tra le dita e coordinato con pan e trascinamento.
 - Zoom dell’immagine nel riquadro del nodo dal 100% al 400%, regolabile nell’editor immagini e salvato nel campo `image_zoom`, con supporto Annulla/Ripristina e mantenimento nel gioco, nelle copie e nei file esportati.
 
 - Trascinamento dell’immagine dentro il riquadro del nodo per regolarne il ritaglio, con inquadratura salvata e mantenuta nel gioco, nelle copie e nei file esportati. Aggiunte le colonne `image_position_x` e `image_position_y` ai nodi.

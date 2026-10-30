@@ -269,3 +269,61 @@ function positionCroppedImage(element, node, box, uri = node.imageUri) {
     if (entry.width) apply();
     else void entry.ready.then(apply);
 }
+
+// Share two-finger zoom between the editor and the public game.
+function enableMapPinchZoom(viewport, drawing, { getZoom, setZoom, min, max, onStart }) {
+    let gesture = null;
+    let frame = null;
+    let pending = null;
+    let suppressClick = false;
+    const midpoint = touches => ({ x: (touches[0].clientX + touches[1].clientX) / 2,
+        y: (touches[0].clientY + touches[1].clientY) / 2 });
+    const distance = touches => Math.hypot(touches[0].clientX - touches[1].clientX,
+        touches[0].clientY - touches[1].clientY);
+    function update() {
+        frame = null;
+        if (!gesture || !pending) return;
+        const value = pending;
+        pending = null;
+        setZoom(Math.max(min, Math.min(max, gesture.zoom * value.distance / gesture.distance)));
+        const zoom = getZoom();
+        const rect = drawing.getBoundingClientRect();
+        viewport.scrollLeft += rect.left + gesture.x * zoom - value.x;
+        viewport.scrollTop += rect.top + gesture.y * zoom - value.y;
+    }
+    function end() {
+        if (frame !== null) cancelAnimationFrame(frame);
+        update();
+        gesture = null;
+        pending = null;
+    }
+    viewport.addEventListener('touchstart', event => {
+        if (gesture || event.touches.length !== 2) return;
+        const span = distance(event.touches);
+        if (span < 1) return;
+        const point = midpoint(event.touches);
+        const rect = drawing.getBoundingClientRect();
+        const zoom = getZoom();
+        gesture = { distance: span, zoom, x: (point.x - rect.left) / zoom, y: (point.y - rect.top) / zoom };
+        suppressClick = true;
+        onStart();
+        event.preventDefault();
+    }, { capture: true, passive: false });
+    viewport.addEventListener('touchmove', event => {
+        if (!gesture) return;
+        event.preventDefault();
+        if (event.touches.length !== 2) return;
+        pending = { ...midpoint(event.touches), distance: distance(event.touches) };
+        if (frame === null) frame = requestAnimationFrame(update);
+    }, { capture: true, passive: false });
+    viewport.addEventListener('touchend', event => { if (event.touches.length < 2) end(); }, { capture: true });
+    viewport.addEventListener('touchcancel', end, { capture: true });
+    viewport.addEventListener('pointerdown', () => { if (!gesture) suppressClick = false; }, { capture: true });
+    viewport.addEventListener('click', event => {
+        if (!suppressClick) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+    }, { capture: true });
+    window.addEventListener('blur', end);
+    return { get active() { return gesture !== null; } };
+}
