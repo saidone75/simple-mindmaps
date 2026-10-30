@@ -16,6 +16,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Il pan della mappa non riapre più automaticamente il pannello del nodo selezionato al termine del trascinamento.
 - Riavvio della capriola del coniglietto nel login tramite l’animazione corrente, senza `void` né ricalcoli forzati del layout.
 - Pan touch nel gioco non più interrotto dal trasferimento della cattura del puntatore da un nodo al contenitore della mappa.
 - Pan touch della mappa disponibile anche sopra nodi e immagini; trascinamento distinto dal tocco per evitare selezioni o risposte involontarie nel gioco.
