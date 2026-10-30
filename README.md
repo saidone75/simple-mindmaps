@@ -13,7 +13,7 @@ Versione in sviluppo: **0.3.3-SNAPSHOT**. Ultima release: **0.3.2**. Le novità 
 ## Funzionalità
 
 - Mappe create da zero, da template o generate con AI. Durante la generazione, lo spinner mostra l’attività corrente: creazione della mappa, controllo dei collegamenti, ricerca di un’immagine per ciascun nodo e salvataggio.
-- Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. **Adatta alla griglia** allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
+- Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. *Adatta alla griglia* allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
 - Nell’editor immagini, *Cerca* apre un campo con il testo del nodo modificabile prima della conferma, poi avvia la ricerca semantica su Wikimedia usando le parole scelte e il titolo della mappa come contesto: applica il primo risultato e mostra fino a nove alternative.
@@ -27,13 +27,13 @@ Versione in sviluppo: **0.3.3-SNAPSHOT**. Ultima release: **0.3.2**. Le novità 
 
 ## Requisiti
 
-- *JDK 21*.
-- *Linux x86_64* per il runtime nativo PyTorch incluso nel POM; altre piattaforme richiedono dipendenze native compatibili.
-- *Maven 3.6.3 o successivo*; consigliato Maven 3.9+.
+- **JDK 21**.
+- **Linux x86_64** per il runtime nativo PyTorch incluso nel POM; altre piattaforme richiedono dipendenze native compatibili.
+- **Maven 3.6.3 o successivo**; consigliato Maven 3.9+.
 - Un browser moderno.
 - Connessione a Internet al primo avvio per scaricare il modello di embedding e le librerie native richieste da DJL/PyTorch. La generazione AI e la ricerca Wikimedia richiedono inoltre accesso ai rispettivi servizi.
 
-Lo stack comprende *Spring Boot 4.1.2*, Spring Security, Spring Data JPA, Thymeleaf, SQLite e JavaScript senza framework frontend.
+Lo stack comprende **Spring Boot 4.1.2**, Spring Security, Spring Data JPA, Thymeleaf, SQLite e JavaScript senza framework frontend.
 
 ## Avvio locale
 
@@ -55,7 +55,7 @@ export SPRING_PROFILES_ACTIVE=dev
 mvn spring-boot:run
 ```
 
-Apri *http://localhost:9080/maps* ed effettua l'accesso. L'utente iniziale viene creato solo se entrambe le variabili sono valorizzate e l'account non esiste già. Cambiare le variabili non modifica la password di un account esistente.
+Apri **http://localhost:9080/maps** ed effettua l'accesso. L'utente iniziale viene creato solo se entrambe le variabili sono valorizzate e l'account non esiste già. Cambiare le variabili non modifica la password di un account esistente.
 
 In alternativa, dopo avere configurato le credenziali, `bash run.sh` avvia il profilo `dev` con il debugger Java sulla porta `9000`.
 
@@ -112,7 +112,7 @@ La pubblicazione salva una copia della mappa con gli stessi testi, collegamenti,
 
 *Aggiorna gioco pubblicato* crea una nuova copia e un nuovo link, disattivando quello precedente. *Ritira pubblicazione* disabilita il link e impedisce ulteriori tentativi nelle partite già avviate.
 
-Ogni insegnante ha anche una *pagina pubblica dei giochi*, con il nome utente nell’indirizzo (per esempio `/play/teachers/alice`), raggiungibile dall’elenco delle mappe e dall’editor. Il suo indirizzo resta lo stesso quando aggiungi, aggiorni o ritiri un gioco. Mostra un pulsante grande per ogni mappa pubblicata, con l’immagine del nodo principale o un’icona di riserva: basta sceglierne uno per iniziare. Il link mostrato dopo la pubblicazione continua ad aprire il singolo gioco.
+Ogni insegnante ha anche una **pagina pubblica dei giochi**, con il nome utente nell’indirizzo (per esempio `/play/teachers/alice`), raggiungibile dall’elenco delle mappe e dall’editor. Il suo indirizzo resta lo stesso quando aggiungi, aggiorni o ritiri un gioco. Mostra un pulsante grande per ogni mappa pubblicata, con l’immagine del nodo principale o un’icona di riserva: basta sceglierne uno per iniziare. Il link mostrato dopo la pubblicazione continua ad aprire il singolo gioco.
 
 ### Giocare
 
@@ -124,7 +124,7 @@ Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personal
 
 ## Persistenza ed esportazione
 
-Il database SQLite è salvato in *`./data/mindmaps.db`*, rispetto alla directory da cui viene avviata l'applicazione. Non è richiesto un server database esterno. Conserva le directory `data` e `upload` tra gli avvii e includile entrambe nei backup: contengono database e immagini salvate. La cartella delle immagini è configurabile con `app.upload.directory` (o `APP_UPLOAD_DIRECTORY`).
+Il database SQLite è salvato in **`./data/mindmaps.db`**, rispetto alla directory da cui viene avviata l'applicazione. Non è richiesto un server database esterno. Conserva le directory `data` e `upload` tra gli avvii e includile entrambe nei backup: contengono database e immagini salvate. La cartella delle immagini è configurabile con `app.upload.directory` (o `APP_UPLOAD_DIRECTORY`).
 
 Il job di pulizia delle immagini orfane viene eseguito ogni notte alle 03:00: considera mappe, alternative e copie pubblicate, ed elimina i file solo dopo il commit della rimozione dei metadati. Un’immagine deve risultare orfana da almeno sette giorni prima di essere eliminata. Il job rimuove anche i file senza metadati più vecchi del periodo di conservazione. Configurazione: `app.image-cleanup.enabled`, `app.image-cleanup.cron` e `app.image-cleanup.retention-days`.
 
@@ -161,4 +161,4 @@ Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint d
 
 Per proporre miglioramenti, apri una issue o una pull request nel repository.
 
-Il progetto è distribuito con licenza *GNU GPL v3 o successiva*.
+Il progetto è distribuito con licenza **GNU GPL v3 o successiva**.
