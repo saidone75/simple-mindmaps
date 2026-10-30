@@ -57,7 +57,7 @@ public class MapImageFiles {
             case "image/svg+xml" -> ".svg";
             default -> throw new ResponseStatusException(BAD_REQUEST, "Formato immagine non supportato");
         };
-        val fileName = UUID.fromString(id) + extension;
+        val fileName = String.format("%s%s", UUID.fromString(id), extension);
         val destination = resolve(fileName);
         try {
             Files.createDirectories(baseDirectory());
@@ -65,20 +65,28 @@ public class MapImageFiles {
                 if (!Arrays.equals(data, Files.readAllBytes(destination))) throw new IOException("Image filename conflict");
                 return fileName;
             }
-            val temporary = Files.createTempFile(baseDirectory(), "." + id, ".part");
-            try {
-                Files.write(temporary, data);
-                try {
-                    Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
-                } catch (AtomicMoveNotSupportedException ex) {
-                    Files.move(temporary, destination);
-                }
-            } finally {
-                Files.deleteIfExists(temporary);
-            }
+            writeAtomically(id, data, destination);
             return fileName;
         } catch (IOException ex) {
             throw new ResponseStatusException(INTERNAL_SERVER_ERROR, "Non riesco a salvare il file immagine sul server.", ex);
+        }
+    }
+
+    private void writeAtomically(String id, byte[] data, Path destination) throws IOException {
+        val temporary = Files.createTempFile(baseDirectory(), String.format(".%s", id), ".part");
+        try {
+            Files.write(temporary, data);
+            moveAtomically(temporary, destination);
+        } finally {
+            Files.deleteIfExists(temporary);
+        }
+    }
+
+    private void moveAtomically(Path source, Path destination) throws IOException {
+        try {
+            Files.move(source, destination, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ex) {
+            Files.move(source, destination);
         }
     }
 
