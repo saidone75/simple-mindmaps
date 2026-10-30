@@ -33,6 +33,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 - JavaScript del gioco semplificato eliminando ternari annidati e il parametro predefinito intermedio dell’helper SVG, senza modificare il comportamento.
 
+### Security
+
+- Abilitata la protezione CSRF con token di sessione per form e API, compresi avvio e tentativi dei giochi pubblici; token trasmesso dalle pagine Thymeleaf alle richieste JavaScript.
+
 ## [0.3.2] - 2026-10-29
 
 ### Changed

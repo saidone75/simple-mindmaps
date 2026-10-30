@@ -21,7 +21,6 @@ Punti aperti raggruppati per area logica. Le verifiche tecniche derivano dalla r
 
 5. [ ] Completare i limiti e la validazione lato server per titolo/testo, dimensione e schemi delle immagini `data:`/URL, numero di nodi generati, colori dei nodi e valori di font/stile. Conservare i controlli già presenti: dimensioni dei nodi/immagini limitate, profondità limitata, normalizzazione di indizi/descrizioni e validazione del colore dello sfondo della mappa (`dto`, `MindMapService`, `MapGenerationApplicationService`).
 
-6. [ ] Ripristinare la protezione CSRF per le operazioni autenticate e passare il token nei form e nelle richieste JavaScript; definire separatamente il trattamento degli endpoint pubblici del gioco. Attualmente CSRF è disabilitato globalmente (`SecurityConfig`).
 
 7. [ ] Spostare i valori sensibili della configurazione locale in variabili d’ambiente o file esterni non versionati, per non includerli nei JAR generati. Verificato che i fallback sensibili sono nella modifica locale di `application.yml`, mentre il file in `HEAD` ha fallback vuoti: non risulta da questa verifica un segreto committato. Non riportare i valori nella documentazione.
 
