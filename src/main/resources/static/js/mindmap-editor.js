@@ -1363,7 +1363,8 @@ function finishPointerInteraction(event, cancelled = false) {
 
     if (renderFrame != null) render();
     resetPointerInteractionState();
-    if (interacted) refreshOverlaysAfterPointerEnd(wasDragging, dragMoved);
+    // Panning only changes the viewport; it must not reopen an editor panel.
+    if (dragMoved || resizeState) refreshOverlaysAfterPointerEnd(wasDragging, dragMoved);
     flushResizeAutosave(resizeState);
 }
 
