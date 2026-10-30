@@ -105,7 +105,9 @@
                     }
                     const cadence = offset - 7 * beat;
                     for (let step = 0; .12 + step * beat < cadence - .001; step++) {
-                        const chord = step < 9 ? [48, 64, 67] : step < 15 ? [53, 65, 69] : [55, 67, 71];
+                        let chord = [55, 67, 71];
+                        if (step < 9) chord = [48, 64, 67];
+                        else if (step < 15) chord = [53, 65, 69];
                         const bass = frequency(step % 2 ? chord[0] + 12 : chord[0]);
                         note(bass, .12 + step * beat, beat * .65, 'square', bass, .012);
                         const harmony = frequency(chord[1 + step % 2]);
@@ -138,9 +140,9 @@
     const levelLabel = document.getElementById('game-level-label');
     const levelPrize = document.getElementById('game-level-prize');
     let bounds;
-    const make = (name, attrs = {}, text) => {
+    const make = (name, attrs, text) => {
         const el = document.createElementNS(SVG_NS, name);
-        for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
+        for (const [key, value] of Object.entries(attrs ?? {})) el.setAttribute(key, value);
         if (text !== undefined) el.textContent = text;
         return el;
     };
@@ -272,7 +274,10 @@
             const previousLevel = lastResult?.level || 1;
             lastResult = result;
             if (result.correct) {
-                sounds.play(result.level === 5 ? 'complete' : result.level > previousLevel ? 'level' : 'correct');
+                let sound = 'correct';
+                if (result.level === 5) sound = 'complete';
+                else if (result.level > previousLevel) sound = 'level';
+                sounds.play(sound);
                 const card = imagesById.get(cardId);
                 const cardButton = cardButtons.get(cardId);
                 const restoreCardFocus = cardButton?.contains(document.activeElement);
@@ -350,7 +355,8 @@
         for (const node of nodes) {
             const {width, height} = nodeSizes.get(node.id);
             const imageNode = hasNodeImage(node);
-            const group = make('g', {'data-node-id': node.id, class: imageNode ? `game-target${matched.has(node.id) ? ' matched' : ''}` : ''});
+            const targetClass = matched.has(node.id) ? 'game-target matched' : 'game-target';
+            const group = make('g', {'data-node-id': node.id, class: imageNode ? targetClass : ''});
             const radius = getNodeCornerRadius(node, depths.get(node.id) || 0);
             group.appendChild(make('rect', {x:node.x, y:node.y, width,height, rx:radius, fill:node.color || '#D9D2E9', stroke:'#546170', 'stroke-width':1.5}));
             if (imageNode) {
@@ -373,7 +379,8 @@
             const font = Number(node.fontSize) || 18, lineHeight = Math.max(16, Math.round(font*1.2));
             const emoji = imageNode ? '' : normalizeNodeEmoji(node.emoji);
             if (emoji) group.appendChild(make('text', {x:node.x+width/2,y:node.y+28,'text-anchor':'middle','dominant-baseline':'middle'},emoji));
-            const firstY = imageNode ? node.y+height-16-(lines.length-1)*lineHeight : node.y+(height-(lines.length-1)*lineHeight)/2+(emoji?14:0);
+            const emojiOffset = emoji ? 14 : 0;
+            const firstY = imageNode ? node.y+height-16-(lines.length-1)*lineHeight : node.y+(height-(lines.length-1)*lineHeight)/2+emojiOffset;
             const text = make('text', {'text-anchor':'middle','dominant-baseline':'middle',class:'node-text','font-size':font});
             if (node.textColor) text.style.fill = node.textColor;
             lines.forEach((line,i) => text.appendChild(make('tspan',{x:node.x+width/2,y:firstY+i*lineHeight,'font-size':line.isDescription?Math.max(12,Math.round(font*.78)):font,'font-weight':line.isDescription?'500':'700'},line.text)));
