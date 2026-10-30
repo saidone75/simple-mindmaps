@@ -147,8 +147,12 @@
         return el;
     };
     async function request(path, body) {
+        const headers = new Headers({ 'Content-Type': 'application/json' });
+        const token = document.querySelector('meta[name="_csrf"]')?.content;
+        const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+        if (token && header) headers.set(header, token);
         const response = await fetch(`${endpoint}/${path}`, {
-            method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})
+            method: 'POST', headers, body: JSON.stringify(body || {})
         });
         if (!response.ok) throw new Error(response.status === 404 ? 'Questo gioco non è più disponibile. Chiedi un nuovo link e torna a giocare!' : 'Facciamo una piccola pausa: riprova tra poco, puoi farcela!');
         return response.json();

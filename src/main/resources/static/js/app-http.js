@@ -30,7 +30,15 @@
     } = {}) {
         let response;
         try {
-            response = await fetch(url, options);
+            const headers = new Headers(options.headers);
+            const method = (options.method || 'GET').toUpperCase();
+            const target = new URL(url, location.href);
+            if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method) && target.origin === location.origin) {
+                const token = document.querySelector('meta[name="_csrf"]')?.content;
+                const header = document.querySelector('meta[name="_csrf_header"]')?.content;
+                if (token && header) headers.set(header, token);
+            }
+            response = await fetch(url, { ...options, headers });
         } catch (error) {
             if (error.name === 'AbortError') throw error;
             throw new Error('Connessione al server non riuscita. Le modifiche potrebbero non essere salvate. Controlla la connessione e riprova.');

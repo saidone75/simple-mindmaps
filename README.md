@@ -136,7 +136,7 @@ Per esportare un’immagine della mappa, il browser invia l'SVG corrente al back
 
 ## Endpoint principali
 
-Le pagine usano Thymeleaf e l'editor comunica con le API interne. Gli endpoint di gestione richiedono l'autenticazione.
+Le pagine usano Thymeleaf e l’editor comunica con le API interne. Gli endpoint di gestione richiedono l’autenticazione. Form e richieste JavaScript che modificano dati inviano il token CSRF di sessione, anche nei giochi pubblici. Dopo un aggiornamento dell’applicazione, ricarica le pagine già aperte prima di inviare modifiche.
 
 | Metodo | Percorso                    | Funzione                                                                      |
 |--------|-----------------------------|-------------------------------------------------------------------------------|
