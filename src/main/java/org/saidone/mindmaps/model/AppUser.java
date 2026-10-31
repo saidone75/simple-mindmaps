@@ -22,6 +22,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Data
 @Entity
@@ -46,6 +47,6 @@ public class AppUser {
 
     @PrePersist
     public void prePersist() {
-        createdAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 }

@@ -18,6 +18,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Fuso orario del server specificato esplicitamente nei timestamp di creazione e aggiornamento di utenti e mappe.
 - Un tap o clic sullo sfondo della mappa deseleziona il nodo e chiude entrambi i pannelli dell’editor.
 - Trascinamento touch dei nodi ripristinato nell’editor: il nodo selezionato si può spostare, mentre il gesto sui nodi non selezionati continua a trascinare la mappa.
 - Ripristinato il pan touch dell’immagine nel riquadro quando il relativo pannello è aperto; sugli altri nodi o sulle immagini senza ritaglio resta disponibile il pan della mappa.

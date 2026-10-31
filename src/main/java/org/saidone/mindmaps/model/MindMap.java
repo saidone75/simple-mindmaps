@@ -22,6 +22,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Data
 @Entity
@@ -69,8 +70,8 @@ public class MindMap {
         if (stylePreset == null || stylePreset.isBlank()) {
             stylePreset = "CLASSIC";
         }
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now(ZoneId.systemDefault());
+        updatedAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 
     @PreUpdate
@@ -78,7 +79,7 @@ public class MindMap {
         if (stylePreset == null || stylePreset.isBlank()) {
             stylePreset = "CLASSIC";
         }
-        updatedAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now(ZoneId.systemDefault());
     }
 
 }
