@@ -126,6 +126,16 @@ Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personal
 
 Il database SQLite è salvato in **`./data/mindmaps.db`**, rispetto alla directory da cui viene avviata l'applicazione. Non è richiesto un server database esterno. Conserva le directory `data` e `upload` tra gli avvii e includile entrambe nei backup: contengono database e immagini salvate. La cartella delle immagini è configurabile con `app.upload.directory` (o `APP_UPLOAD_DIRECTORY`).
 
+Il database viene salvato automaticamente ogni notte alle **02:00**, nel fuso orario del server, in `./backups`. Il job usa `VACUUM INTO`, verifica l’integrità della copia e mantiene gli ultimi **30 backup**. Le copie precedenti vengono eliminate soltanto dopo un backup riuscito. Configurazione tramite `DB_BACKUP_ENABLED`, `DB_BACKUP_CRON`, `DB_BACKUP_DIRECTORY` e `DB_BACKUP_RETENTION_COUNT`; un valore di conservazione inferiore a 1 disattiva la cancellazione delle copie. Il job è attivo per impostazione predefinita e può essere disabilitato con `DB_BACKUP_ENABLED=false`; le proprietà `app.db-backup.*` sono configurabili anche esternamente. Sono definite in `application.yml`.
+
+Per cambiare l’orario, modifica `app.db-backup.cron` oppure imposta `DB_BACKUP_CRON` prima dell’avvio. Ad esempio, per eseguire il backup ogni notte alle **03:30**:
+
+```bash
+export DB_BACKUP_CRON="0 30 3 * * *"
+```
+
+Il cron usa sei campi (secondi, minuti, ore, giorno del mese, mese, giorno della settimana). La nuova pianificazione viene applicata al riavvio dell’applicazione.
+
 Il job di pulizia delle immagini orfane viene eseguito ogni notte alle 03:00: considera mappe, alternative e copie pubblicate, ed elimina i file solo dopo il commit della rimozione dei metadati. Un’immagine deve risultare orfana da almeno sette giorni prima di essere eliminata. Il job rimuove anche i file senza metadati più vecchi del periodo di conservazione. Configurazione: `app.image-cleanup.enabled`, `app.image-cleanup.cron` e `app.image-cleanup.retention-days`.
 
 Le password degli utenti sono memorizzate come hash BCrypt. Le mappe private sono accessibili solo al proprietario; i link pubblici consentono di giocare senza accedere all'editor.

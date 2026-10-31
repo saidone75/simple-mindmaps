@@ -29,7 +29,6 @@ import org.saidone.mindmaps.repository.MindMapRepository;
 import org.saidone.mindmaps.repository.NodeRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -47,7 +46,6 @@ import java.util.Set;
 import java.util.ArrayList;
 
 @Component
-@EnableScheduling
 @RequiredArgsConstructor
 @Slf4j
 @ConditionalOnProperty(prefix = "app.image-cleanup", name = "enabled", havingValue = "true", matchIfMissing = true)
