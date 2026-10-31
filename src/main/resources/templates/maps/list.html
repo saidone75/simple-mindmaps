@@ -98,12 +98,15 @@
 
 
     <section class="section-card">
-        <div class="section-header">
+        <div class="section-intro">
+            <span class="section-kicker">🗂️ La tua raccolta</span>
             <h2>Le mie mappe</h2>
-            <span th:text="${#lists.size(maps)} + ' mappa/e'"></span>
+            <p th:text="${#lists.size(maps)} + ' mappa/e'"></p>
         </div>
+        <p id="map-order-status" role="status" aria-live="polite" hidden></p>
         <div class="map-grid" th:if="${!#lists.isEmpty(maps)}">
-            <article class="map-card" th:each="map : ${maps}">
+            <article class="map-card" th:each="map : ${maps}" th:attr="data-map-id=${map.id}">
+                <button type="button" class="map-reorder-handle" title="Trascina per riordinare; usa le frecce per spostare" th:attr="aria-label=${'Sposta la mappa: ' + map.title}">⠿</button>
                 <h3 th:text="${map.title}">Titolo</h3>
                 <p>Ultima modifica: <span th:text="${#temporals.format(map.updatedAt, 'dd/MM/yyyy HH:mm')}"></span></p>
                 <div class="card-actions">

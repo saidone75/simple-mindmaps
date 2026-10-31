@@ -75,7 +75,26 @@ public class MindMapService {
     private static final Gson PRIZES_JSON = new Gson();
 
     public List<MindMap> findAll() {
-        return mindMapRepository.findByOwnerUsernameIgnoreCaseOrderByUpdatedAtDesc(currentUserService.getCurrentUser().getUsername());
+        return mindMapRepository.findByOwnerUsernameIgnoreCaseOrderByUpdatedAtDesc(currentUserService.getCurrentUser().getUsername())
+                .stream().sorted(java.util.Comparator.comparing(MindMap::getDisplayOrder,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))).toList();
+    }
+
+    @Transactional
+    public void reorderMaps(List<Long> ids) {
+        val owner = currentUserService.getCurrentUser();
+        val owned = mindMapRepository.findByOwnerUsernameIgnoreCaseOrderByUpdatedAtDesc(owner.getUsername());
+        val expected = owned.stream().map(MindMap::getId).collect(java.util.stream.Collectors.toSet());
+        if (ids == null || ids.size() != expected.size() || !new HashSet<>(ids).equals(expected)) {
+            throw new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT,
+                    "L’elenco delle mappe è cambiato. Ricarica la pagina prima di riordinarle.");
+        }
+        // Bulk updates preserve the actual last-edit timestamp of each map.
+        for (int i = 0; i < ids.size(); i++) {
+            if (mindMapRepository.updateDisplayOrder(ids.get(i), owner.getId(), i) != 1) {
+                throw new ResponseStatusException(org.springframework.http.HttpStatus.CONFLICT, "Elenco mappe cambiato.");
+            }
+        }
     }
 
     public MindMapDto findMapWithNodes(Long id) {

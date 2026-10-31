@@ -221,4 +221,82 @@
             globalThis.hideLoading();
         }
     });
+    const mapGrid = document.querySelector('.map-grid');
+    const orderStatus = document.getElementById('map-order-status');
+    let cardDrag = null;
+    let savingOrder = false;
+    const cards = () => [...mapGrid.querySelectorAll('.map-card')];
+    async function saveCardOrder(previous, focusHandle) {
+        const ordered = cards();
+        if (ordered.every((card, index) => card === previous[index])) return;
+        savingOrder = true;
+        mapGrid.inert = true;
+        orderStatus.hidden = false;
+        orderStatus.textContent = 'Sto salvando l’ordine delle mappe…';
+        try {
+            await globalThis.MindMapHttp.request('/api/maps/order', {
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ids: ordered.map(card => Number(card.dataset.mapId)) })
+            }, { format: 'empty', serverMessages: true,
+                messages: { 409: 'L’elenco è cambiato. Ricarica la pagina prima di riordinare le mappe.' } });
+            orderStatus.textContent = 'Ordine delle mappe salvato.';
+        } catch (error) {
+            mapGrid.append(...previous);
+            orderStatus.textContent = error.message;
+        } finally {
+            savingOrder = false;
+            mapGrid.inert = false;
+            focusHandle.focus({ preventScroll: true });
+        }
+    }
+    mapGrid?.addEventListener('pointerdown', event => {
+        const handle = event.target.closest('.map-reorder-handle');
+        if (!handle || savingOrder || cardDrag || !event.isPrimary || event.button !== 0) return;
+        cardDrag = { card: handle.closest('.map-card'), handle, previous: cards(), pointerId: event.pointerId,
+            startX: event.clientX, startY: event.clientY, moved: false };
+        mapGrid.setPointerCapture(event.pointerId);
+        event.preventDefault();
+    });
+    mapGrid?.addEventListener('pointermove', event => {
+        if (!cardDrag || event.pointerId !== cardDrag.pointerId) return;
+        if (!cardDrag.moved && Math.hypot(event.clientX - cardDrag.startX, event.clientY - cardDrag.startY) < 5) return;
+        cardDrag.moved = true;
+        cardDrag.card.classList.add('is-reordering');
+        const target = document.elementFromPoint(event.clientX, event.clientY)?.closest('.map-card');
+        if (target && target !== cardDrag.card && target.parentElement === mapGrid) {
+            const items = cards();
+            if (items.indexOf(cardDrag.card) < items.indexOf(target)) target.after(cardDrag.card);
+            else target.before(cardDrag.card);
+        }
+        if (event.clientY < 60) window.scrollBy(0, -18);
+        else if (event.clientY > window.innerHeight - 60) window.scrollBy(0, 18);
+        event.preventDefault();
+    });
+    function finishCardDrag(event, cancel = false) {
+        if (!cardDrag || event.pointerId !== cardDrag.pointerId) return;
+        const drag = cardDrag;
+        cardDrag = null;
+        drag.card.classList.remove('is-reordering');
+        if (mapGrid.hasPointerCapture(drag.pointerId)) mapGrid.releasePointerCapture(drag.pointerId);
+        if (cancel) mapGrid.append(...drag.previous);
+        else void saveCardOrder(drag.previous, drag.handle);
+    }
+    mapGrid?.addEventListener('pointerup', event => finishCardDrag(event));
+    mapGrid?.addEventListener('pointercancel', event => finishCardDrag(event, true));
+    mapGrid?.addEventListener('lostpointercapture', event => {
+        if (event.target === mapGrid) finishCardDrag(event, true);
+    });
+    mapGrid?.addEventListener('keydown', event => {
+        const handle = event.target.closest('.map-reorder-handle');
+        if (!handle || savingOrder || cardDrag || !['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(event.key)) return;
+        event.preventDefault();
+        const previous = cards();
+        const card = handle.closest('.map-card');
+        const direction = ['ArrowLeft', 'ArrowUp'].includes(event.key) ? -1 : 1;
+        const target = previous[previous.indexOf(card) + direction];
+        if (!target) return;
+        if (direction < 0) target.before(card);
+        else target.after(card);
+        void saveCardOrder(previous, handle);
+    });
 })();
