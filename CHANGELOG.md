@@ -38,7 +38,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
-- Intestazione di *Le mie mappe* uniformata alle altre sezioni, con kicker, titolo e conteggio delle mappe.
+- Intestazione della raccolta uniformata alle altre sezioni, con il solo titolo *La tua raccolta* in stile kicker e il conteggio delle mappe.
 - JavaScript del gioco semplificato eliminando ternari annidati e il parametro predefinito intermedio dell’helper SVG, senza modificare il comportamento.
 
 ### Security
