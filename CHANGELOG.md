@@ -17,6 +17,9 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Un tap o clic sullo sfondo della mappa deseleziona il nodo e chiude entrambi i pannelli dell’editor.
+- Trascinamento touch dei nodi ripristinato nell’editor: il nodo selezionato si può spostare, mentre il gesto sui nodi non selezionati continua a trascinare la mappa.
+- Ripristinato il pan touch dell’immagine nel riquadro quando il relativo pannello è aperto; sugli altri nodi o sulle immagini senza ritaglio resta disponibile il pan della mappa.
 - Il pan della mappa non riapre più automaticamente il pannello del nodo selezionato al termine del trascinamento.
 - Riavvio della capriola del coniglietto nel login tramite l’animazione corrente, senza `void` né ricalcoli forzati del layout.
 - Pan touch nel gioco non più interrotto dal trasferimento della cattura del puntatore da un nodo al contenitore della mappa.
