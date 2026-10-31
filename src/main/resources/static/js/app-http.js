@@ -55,7 +55,7 @@
             return undefined;
         }
         const expected = (format === 'json' || format === 'json-file') ? /application\/(?:[\w.-]+\+)?json/i : format === 'image' ? /image\//i
-            : format === 'png' ? /image\/png/i : /application\/pdf/i;
+            : format === 'png' ? /image\/png/i : format === 'zip' ? /application\/zip/i : /application\/pdf/i;
         if (!expected.test(contentType)) throw new Error('Risposta inattesa dal server. Verifica l’accesso e riprova.');
         try {
             const result = format === 'json' ? await response.json() : await response.blob();

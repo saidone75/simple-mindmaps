@@ -7,8 +7,6 @@ Punti aperti raggruppati per area logica. Le verifiche tecniche derivano dalla r
 
 ## Importazione ed esportazione
 
-1. [ ] Esportare e importare le mappe in formato ZIP.
-
 2. [ ] Limitare dimensione del payload SVG e numero di pixel raster nell’esportazione. Verificare e rendere esplicita la policy effettiva di Batik per risorse esterne e script, senza presumere che siano tutti consentiti: il codice applicativo si limita a risolvere le variabili CSS e usa un `PNGTranscoder` con configurazione predefinita. L’accesso al file locale o alla rete tramite SVG non è stato dimostrato nella revisione (`MindMapRestController`, `MindMapExportRenderer`).
 
 ## Generazione delle mappe e ricerca immagini

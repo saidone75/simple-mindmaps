@@ -9,6 +9,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Esportazione delle mappe in ZIP con manifest `map.json` e immagini locali separate, comprese le alternative; importazione ZIP compatibile con i precedenti JSON, con controlli su percorsi, file duplicati e dimensioni decompresse.
+
 - Card di *Le mie mappe* riordinabili tramite maniglia con mouse, touch o frecce della tastiera; ordine salvato per insegnante nel campo `display_order`, senza alterare la data di modifica delle mappe.
 - Backup notturno SQLite con la classe di Quizmaker: `VACUUM INTO`, verifica d’integrità, file temporaneo e spostamento atomico. Cron configurabile in `application.yml` (default alle 02:00), con 30 copie conservate in `./backups` e configurazione tramite variabili d’ambiente.
 - **Pinch-to-zoom a due dita** nell’editor e nel gioco, centrato tra le dita e coordinato con pan e trascinamento.
