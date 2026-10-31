@@ -17,6 +17,11 @@ spring:
 server:
   port: 9080
 app:
+  db-backup:
+    enabled: ${DB_BACKUP_ENABLED:true}
+    cron: ${DB_BACKUP_CRON:0 0 2 * * *}
+    directory: ${DB_BACKUP_DIRECTORY:./backups}
+    retention-count: ${DB_BACKUP_RETENTION_COUNT:30}
   openai:
     api-key: ${OPENAI_API_KEY:}
     model: ${OPENAI_MODEL:gpt-6-luna}
