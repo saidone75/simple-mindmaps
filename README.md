@@ -140,7 +140,7 @@ Il job di pulizia delle immagini orfane viene eseguito ogni notte alle 03:00: co
 
 Le password degli utenti sono memorizzate come hash BCrypt. Le mappe private sono accessibili solo al proprietario; i link pubblici consentono di giocare senza accedere all'editor.
 
-Per trasferire o conservare una mappa modificabile, usa *Esporta* in fondo alla toolbar dell’editor: scarica un file ZIP con `map.json` (struttura, aspetto, indizi e titoli premio) e le immagini salvate sul server nella cartella `images/`, senza duplicare quelle condivise tra nodi. I link alle immagini esterne restano link. Da *Modelli pronti → Importa mappa*, seleziona un file ZIP o un precedente JSON per creare una nuova mappa privata e aprirla nell’editor, senza modificare le mappe esistenti. Sono supportati file fino a 100 MB, con limite di 100 MB anche sui dati decompressi degli ZIP, immagini fino a 25 MB e un massimo di 1000 nodi; le immagini incorporate vengono salvate e normalizzate sul server, mantenendo le GIF animate. La pubblicazione del gioco va eseguita nuovamente dalla mappa importata.
+Usa *Esporta* nell’editor per scaricare la mappa e le immagini locali in un file ZIP. Da *Modelli pronti → Importa mappa* puoi caricare ZIP o precedenti JSON e creare una nuova mappa privata.
 
 Per esportare un’immagine della mappa, il browser invia l'SVG corrente al backend, che produce il file PNG o PDF scaricabile. Il PDF supporta A4 e A3.
 
@@ -148,25 +148,25 @@ Per esportare un’immagine della mappa, il browser invia l'SVG corrente al back
 
 Le pagine usano Thymeleaf e l’editor comunica con le API interne. Gli endpoint di gestione richiedono l’autenticazione. Form e richieste JavaScript che modificano dati inviano il token CSRF di sessione, anche nei giochi pubblici. Dopo un aggiornamento dell’applicazione, ricarica le pagine già aperte prima di inviare modifiche.
 
-| Metodo | Percorso                    | Funzione                                                                      |
-|--------|-----------------------------|-------------------------------------------------------------------------------|
-| `GET`  | `/login`                    | Accesso                                                                       |
-| `GET`  | `/maps`                     | Elenco delle proprie mappe                                                    |
-| `GET`  | `/maps/{id}`                | Editor                                                                        |
-| `GET`  | `/api/maps/{id}`            | Dati della mappa privata                                                      |
-| `POST` | `/api/map-generations`      | Avvia una creazione AI in background e restituisce l’identificativo           |
-| `GET`  | `/api/map-generations/{id}` | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
-| `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco                                                       |
-| `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione                                                    |
-| `GET` | `/api/maps/{id}/export/zip` | Archivio ZIP con mappa e immagini locali |
-| `GET` | `/api/maps/{id}/export/json` | Esportazione JSON precedente, mantenuta per compatibilità |
-| `POST` | `/api/maps/import` | Importazione di un file ZIP o JSON in una nuova mappa privata |
-| `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG                                                     |
-| `POST` | `/api/maps/{id}/export/pdf` | Esportazione PDF dall'SVG                                                     |
-| `GET`  | `/play/teachers/{teacherName}` | Pagina pubblica dei giochi dell’insegnante                                     |
-| `GET`  | `/play/{token}`             | Pagina pubblica del gioco                                                     |
-| `POST` | `/play/{token}/start`       | Avvio di una partita pubblica                                                 |
-| `POST` | `/play/{token}/attempt`     | Verifica di un abbinamento                                                    |
+| Metodo | Percorso                       | Funzione                                                                      |
+|--------|--------------------------------|-------------------------------------------------------------------------------|
+| `GET`  | `/login`                       | Accesso                                                                       |
+| `GET`  | `/maps`                        | Elenco delle proprie mappe                                                    |
+| `GET`  | `/maps/{id}`                   | Editor                                                                        |
+| `GET`  | `/api/maps/{id}`               | Dati della mappa privata                                                      |
+| `POST` | `/api/map-generations`         | Avvia una creazione AI in background e restituisce l’identificativo           |
+| `GET`  | `/api/map-generations/{id}`    | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
+| `POST` | `/maps/{id}/publish`           | Pubblicazione del gioco                                                       |
+| `POST` | `/maps/{id}/unpublish`         | Ritiro della pubblicazione                                                    |
+| `GET`  | `/api/maps/{id}/export/zip`    | Archivio ZIP con mappa e immagini locali                                      |
+| `GET`  | `/api/maps/{id}/export/json`   | Esportazione JSON precedente, mantenuta per compatibilità                     |
+| `POST` | `/api/maps/import`             | Importazione di un file ZIP o JSON in una nuova mappa privata                 |
+| `POST` | `/api/maps/{id}/export/png`    | Esportazione PNG dall'SVG                                                     |
+| `POST` | `/api/maps/{id}/export/pdf`    | Esportazione PDF dall'SVG                                                     |
+| `GET`  | `/play/teachers/{teacherName}` | Pagina pubblica dei giochi dell’insegnante                                    |
+| `GET`  | `/play/{token}`                | Pagina pubblica del gioco                                                     |
+| `POST` | `/play/{token}/start`          | Avvio di una partita pubblica                                                 |
+| `POST` | `/play/{token}/attempt`        | Verifica di un abbinamento                                                    |
 
 ## Contributi e licenza
 
