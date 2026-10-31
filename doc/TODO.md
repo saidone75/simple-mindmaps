@@ -27,3 +27,7 @@ Punti aperti raggruppati per area logica. Le verifiche tecniche derivano dalla r
 ## Preferenze utente
 
 8. [ ] Aggiungere una pagina delle preferenze utente con possibilità di cambiare la password.
+
+## Backup
+
+9. [ ] Aggiungere un job per il backup del database.
