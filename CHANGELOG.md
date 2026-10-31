@@ -9,6 +9,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Added
 
+- Card di *Le mie mappe* riordinabili tramite maniglia con mouse, touch o frecce della tastiera; ordine salvato per insegnante nel campo `display_order`, senza alterare la data di modifica delle mappe.
 - Backup notturno SQLite con la classe di Quizmaker: `VACUUM INTO`, verifica d’integrità, file temporaneo e spostamento atomico. Cron configurabile in `application.yml` (default alle 02:00), con 30 copie conservate in `./backups` e configurazione tramite variabili d’ambiente.
 - **Pinch-to-zoom a due dita** nell’editor e nel gioco, centrato tra le dita e coordinato con pan e trascinamento.
 - **Zoom dell’immagine nel riquadro del nodo** dal 100% al 400%, regolabile nell’editor immagini e salvato nel campo `image_zoom`, con supporto Annulla/Ripristina e mantenimento nel gioco, nelle copie e nei file esportati.
@@ -37,6 +38,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Intestazione di *Le mie mappe* uniformata alle altre sezioni, con kicker, titolo e conteggio delle mappe.
 - JavaScript del gioco semplificato eliminando ternari annidati e il parametro predefinito intermedio dell’helper SVG, senza modificare il comportamento.
 
 ### Security

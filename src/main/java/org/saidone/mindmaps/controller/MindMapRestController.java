@@ -40,6 +40,14 @@ public class MindMapRestController {
 
     private static final Slugify SLG = Slugify.builder().build();
 
+    public record MapOrderRequest(java.util.List<Long> ids) {}
+
+    @PutMapping("/maps/order")
+    @ResponseStatus(org.springframework.http.HttpStatus.NO_CONTENT)
+    public void reorderMaps(@RequestBody MapOrderRequest request) {
+        mindMapService.reorderMaps(request.ids());
+    }
+
     @GetMapping("/maps/{id}")
     public MindMapDto getMap(@PathVariable Long id) {
         return mindMapService.findMapWithNodes(id);

@@ -25,6 +25,12 @@ import java.util.List;
 import java.util.Optional;
 
 public interface MindMapRepository extends JpaRepository<MindMap, Long> {
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("update MindMap m set m.displayOrder = :position where m.id = :id and m.owner.id = :ownerId")
+    int updateDisplayOrder(@org.springframework.data.repository.query.Param("id") Long id,
+                           @org.springframework.data.repository.query.Param("ownerId") Long ownerId,
+                           @org.springframework.data.repository.query.Param("position") int position);
+
     Optional<MindMap> findByPublicToken(String publicToken);
     List<MindMap> findByOwnerIdAndPublicTokenIsNotNullAndPublishedSnapshotIsNotNullOrderByUpdatedAtDesc(Long ownerId);
     List<MindMap> findByOwnerUsernameIgnoreCaseOrderByUpdatedAtDesc(String username);

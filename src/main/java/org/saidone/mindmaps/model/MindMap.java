@@ -35,6 +35,8 @@ public class MindMap {
     @Column(nullable = false)
     private String title;
 
+    private Integer displayOrder;
+
     @Column
     private String stylePreset;
 
