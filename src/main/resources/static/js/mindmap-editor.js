@@ -894,10 +894,15 @@ function renderNodeImage(group, node, width) {
     positionCroppedImage(image, node, { x: imageX, y: imageY, width: imageWidth, height: imageHeight });
     image.addEventListener("pointerdown", event => {
         event.stopPropagation();
-        if (event.pointerType === 'touch') { startCanvasPan(event); return; }
+        const editingThisImage = state.imageOverlayNodeId === node.id
+            && imageEditorOverlay.classList.contains('visible');
+        if (event.pointerType === 'touch' && !editingThisImage) { startCanvasPan(event); return; }
         if (!canStartPointerInteraction(event)) return;
         const metrics = cropImageMetrics(node.imageUri, { width: imageWidth, height: imageHeight }, node.imageZoom);
-        if (!metrics || (metrics.overflowX < .01 && metrics.overflowY < .01)) return;
+        if (!metrics || (metrics.overflowX < .01 && metrics.overflowY < .01)) {
+            if (event.pointerType === 'touch') startCanvasPan(event);
+            return;
+        }
         interactionPointerId = event.pointerId;
         captureInteractionPointer();
         beginInteractionSnapshot();
@@ -1093,10 +1098,14 @@ function captureInteractionPointer() {
 }
 
 function startDrag(event) {
-    if (event.pointerType === 'touch') { event.stopPropagation(); startCanvasPan(event); return; }
+    const nodeId = Number(event.currentTarget.dataset.id);
+    if (event.pointerType === 'touch' && state.selectedNodeId !== nodeId) {
+        event.stopPropagation();
+        startCanvasPan(event);
+        return;
+    }
     if (!canStartPointerInteraction(event)) return;
     event.stopPropagation();
-    const nodeId = Number(event.currentTarget.dataset.id);
     const node = getNodeById(nodeId);
     if (!node) return;
 
@@ -1393,6 +1402,11 @@ document.addEventListener("click", event => {
         if (event.target === svg || event.target.closest(".canvas-scroll-area") || event.target.closest(".canvas-panel")) {
             hideNodeEditorOverlay();
             hideImageEditorOverlay();
+            if (event.target.closest('.canvas-scroll-area') && !event.target.closest('.branch-label')) {
+                selectNode(null);
+                state.hoveredNodeId = null;
+                requestRender();
+            }
         }
     }
     if (!event.target.closest(".image-editor-overlay") && !event.target.closest(".node-group")) {
