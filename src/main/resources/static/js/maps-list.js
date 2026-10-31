@@ -206,7 +206,7 @@
         globalThis.showLoading('Sto importando la mappa…');
         try {
             const result = await globalThis.MindMapHttp.request('/api/maps/import', {
-                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: file
+                method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file
             }, {
                 serverMessages: true,
                 messages: { 400: 'Il file non contiene una mappa valida o completa.', 413: 'Il file della mappa supera il limite di 100 MB.' },

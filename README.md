@@ -20,7 +20,7 @@ Versione in sviluppo: **0.3.3-SNAPSHOT**. Ultima release: **0.3.2**. Le novità 
 - Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa; quelle già usate da altri nodi non sono selezionabili.
 - Lo switch *Salva immagini*, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. I file scaricati possono pesare fino a 25 MB e vengono adattati entro 1024 × 1024 px senza ingrandirli; le GIF animate mantengono l’animazione. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
 - Duplicazione ed eliminazione delle mappe. Le card di *Le mie mappe* si possono riordinare trascinando la maniglia ⠿, anche su dispositivi touch, oppure usando le frecce quando la maniglia ha il focus. L’ordine viene salvato automaticamente.
-- Esportazione in PNG e PDF, con formati A4 e A3 per il PDF; importazione ed esportazione delle mappe in JSON.
+- Esportazione in PNG e PDF, con formati A4 e A3 per il PDF; importazione ed esportazione delle mappe in ZIP, con importazione compatibile con i precedenti JSON.
 - Accesso con account e mappe private per ciascun proprietario.
 - Pubblicazione di giochi delle immagini tramite link pubblico revocabile.
 - Interfacce adattate a computer, tablet e dispositivi mobili.
@@ -140,7 +140,7 @@ Il job di pulizia delle immagini orfane viene eseguito ogni notte alle 03:00: co
 
 Le password degli utenti sono memorizzate come hash BCrypt. Le mappe private sono accessibili solo al proprietario; i link pubblici consentono di giocare senza accedere all'editor.
 
-Per trasferire o conservare una mappa modificabile, usa *Esporta* in fondo alla toolbar dell’editor: scarica un file JSON con struttura, aspetto, indizi, titoli premio e immagini salvate sul server. I link alle immagini esterne restano link. Da *Modelli pronti → Importa mappa*, seleziona il file per creare una nuova mappa privata e aprirla nell’editor, senza modificare le mappe esistenti. Sono supportati file fino a 100 MB con un massimo di 1000 nodi; le immagini incorporate vengono salvate e normalizzate sul server, mantenendo le GIF animate. La pubblicazione del gioco va eseguita nuovamente dalla mappa importata.
+Usa *Esporta* nell’editor per scaricare la mappa e le immagini locali in un file ZIP. Da *Modelli pronti → Importa mappa* puoi caricare ZIP o precedenti JSON e creare una nuova mappa privata.
 
 Per esportare un’immagine della mappa, il browser invia l'SVG corrente al backend, che produce il file PNG o PDF scaricabile. Il PDF supporta A4 e A3.
 
@@ -148,24 +148,25 @@ Per esportare un’immagine della mappa, il browser invia l'SVG corrente al back
 
 Le pagine usano Thymeleaf e l’editor comunica con le API interne. Gli endpoint di gestione richiedono l’autenticazione. Form e richieste JavaScript che modificano dati inviano il token CSRF di sessione, anche nei giochi pubblici. Dopo un aggiornamento dell’applicazione, ricarica le pagine già aperte prima di inviare modifiche.
 
-| Metodo | Percorso                    | Funzione                                                                      |
-|--------|-----------------------------|-------------------------------------------------------------------------------|
-| `GET`  | `/login`                    | Accesso                                                                       |
-| `GET`  | `/maps`                     | Elenco delle proprie mappe                                                    |
-| `GET`  | `/maps/{id}`                | Editor                                                                        |
-| `GET`  | `/api/maps/{id}`            | Dati della mappa privata                                                      |
-| `POST` | `/api/map-generations`      | Avvia una creazione AI in background e restituisce l’identificativo           |
-| `GET`  | `/api/map-generations/{id}` | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
-| `POST` | `/maps/{id}/publish`        | Pubblicazione del gioco                                                       |
-| `POST` | `/maps/{id}/unpublish`      | Ritiro della pubblicazione                                                    |
-| `GET` | `/api/maps/{id}/export/json` | File JSON della mappa con immagini locali incorporate |
-| `POST` | `/api/maps/import` | Importazione di un file JSON in una nuova mappa privata |
-| `POST` | `/api/maps/{id}/export/png` | Esportazione PNG dall'SVG                                                     |
-| `POST` | `/api/maps/{id}/export/pdf` | Esportazione PDF dall'SVG                                                     |
-| `GET`  | `/play/teachers/{teacherName}` | Pagina pubblica dei giochi dell’insegnante                                     |
-| `GET`  | `/play/{token}`             | Pagina pubblica del gioco                                                     |
-| `POST` | `/play/{token}/start`       | Avvio di una partita pubblica                                                 |
-| `POST` | `/play/{token}/attempt`     | Verifica di un abbinamento                                                    |
+| Metodo | Percorso                       | Funzione                                                                      |
+|--------|--------------------------------|-------------------------------------------------------------------------------|
+| `GET`  | `/login`                       | Accesso                                                                       |
+| `GET`  | `/maps`                        | Elenco delle proprie mappe                                                    |
+| `GET`  | `/maps/{id}`                   | Editor                                                                        |
+| `GET`  | `/api/maps/{id}`               | Dati della mappa privata                                                      |
+| `POST` | `/api/map-generations`         | Avvia una creazione AI in background e restituisce l’identificativo           |
+| `GET`  | `/api/map-generations/{id}`    | Restituisce stato, attività corrente e nodi preparati della propria richiesta |
+| `POST` | `/maps/{id}/publish`           | Pubblicazione del gioco                                                       |
+| `POST` | `/maps/{id}/unpublish`         | Ritiro della pubblicazione                                                    |
+| `GET`  | `/api/maps/{id}/export/zip`    | Archivio ZIP con mappa e immagini locali                                      |
+| `GET`  | `/api/maps/{id}/export/json`   | Esportazione JSON precedente, mantenuta per compatibilità                     |
+| `POST` | `/api/maps/import`             | Importazione di un file ZIP o JSON in una nuova mappa privata                 |
+| `POST` | `/api/maps/{id}/export/png`    | Esportazione PNG dall'SVG                                                     |
+| `POST` | `/api/maps/{id}/export/pdf`    | Esportazione PDF dall'SVG                                                     |
+| `GET`  | `/play/teachers/{teacherName}` | Pagina pubblica dei giochi dell’insegnante                                    |
+| `GET`  | `/play/{token}`                | Pagina pubblica del gioco                                                     |
+| `POST` | `/play/{token}/start`          | Avvio di una partita pubblica                                                 |
+| `POST` | `/play/{token}/attempt`        | Verifica di un abbinamento                                                    |
 
 ## Contributi e licenza
 

@@ -52,13 +52,22 @@ public class MapTransferController {
         val map = maps.findMapWithNodes(id);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CACHE_CONTROL, "no-store")
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + SLUG.slugify(map.getTitle()) + ".json\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=\"%s.json\"", SLUG.slugify(map.getTitle())))
                 .body(transfer.exportMap(id));
+    }
+
+    @GetMapping(value = "/{id}/export/zip", produces = "application/zip")
+    public ResponseEntity<byte[]> exportZip(@PathVariable Long id) throws IOException {
+        val map = maps.findMapWithNodes(id);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CACHE_CONTROL, "no-store")
+                .header(HttpHeaders.CONTENT_DISPOSITION, String.format("attachment; filename=\"%s.zip\"", SLUG.slugify(map.getTitle())))
+                .body(transfer.exportZip(id));
     }
 
     public record ImportedMap(Long id) {}
 
-    @PostMapping(value = "/import", consumes = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/import", consumes = {MediaType.APPLICATION_JSON_VALUE, "application/zip", MediaType.APPLICATION_OCTET_STREAM_VALUE})
     public ImportedMap importMap(HttpServletRequest request) throws IOException {
         if (request.getContentLengthLong() > MapTransferService.MAX_FILE_BYTES) throw tooLarge();
         val data = request.getInputStream().readNBytes(MapTransferService.MAX_FILE_BYTES + 1);
