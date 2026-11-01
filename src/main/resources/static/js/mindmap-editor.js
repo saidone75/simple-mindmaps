@@ -308,7 +308,7 @@ const { pushUndoSnapshot, beginInteractionSnapshot, commitInteractionSnapshot,
         await imagePolicyPromise;
         await flushAutosave();
         await backgroundSavePromise;
-        while (activeEditorRequests.size) await Promise.all([...activeEditorRequests]);
+        await waitForActiveEditorRequests();
     },
     setBusy: busy => {
         document.querySelector(".editor-page").inert = busy;
@@ -1599,66 +1599,74 @@ function nextImageToStore() {
         && !imageSaveFailures.has(`${node.id}:${node.imageUri}`));
 }
 
+async function storeNextImage() {
+    if (!imageStorageSwitch.checked) return;
+    await flushAutosave();
+    const node = nextImageToStore();
+    if (!node) return;
+    await storeImageNode(node);
+    return storeNextImage();
+}
+
+async function storeImageNode(node) {
+    const source = node.imageUri;
+    const message = `Sto salvando l’immagine del nodo "${node.text}"…`;
+    saveImageStatus.textContent = message;
+    if (autosaveStatus) autosaveStatus.textContent = message;
+    try {
+        const saved = await editorRequest(`/api/nodes/${node.id}/image`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUri: source })
+        }, 'json', {
+            serverMessages: true,
+            messages: {
+                400: 'Non riesco a preparare l’immagine. Scegli un altro link o formato.',
+                409: 'L’immagine è cambiata durante il salvataggio.',
+                413: 'L’immagine supera il limite di 25 MB.',
+                502: `Non riesco a scaricare l’immagine del nodo "${node.text}". Controlla il link.`
+            }
+        });
+        // This endpoint must return a server image ID, never an arbitrary URL.
+        const storedId = typeof saved.imageUri === 'string'
+            ? /^\/images\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.exec(saved.imageUri)?.[1] : null;
+        if (!storedId) throw new Error('Il server ha restituito un riferimento immagine non valido.');
+        const storedImageUri = `/images/${encodeURIComponent(storedId)}`;
+        if (getNodeById(node.id) !== node || node.imageUri !== source) return;
+        // Only update the image: text and geometry may have changed during the download.
+        node.imageUri = storedImageUri;
+        for (const other of state.map.nodes) {
+            if (other.imageCandidates) other.imageCandidates = other.imageCandidates.map(uri => uri === source ? storedImageUri : uri);
+        }
+        // Automatic storage is not a user edit; history keeps the same image reference.
+        for (const snapshot of [...state.undoStack, ...state.redoStack, state.interactionSnapshot].filter(Boolean)) {
+            for (const previous of snapshot.map.nodes) {
+                if (previous.id === node.id && previous.imageUri === source) previous.imageUri = storedImageUri;
+                if (previous.imageCandidates) previous.imageCandidates = previous.imageCandidates.map(uri => uri === source ? storedImageUri : uri);
+            }
+        }
+        if (state.selectedNodeId === node.id) {
+            imageUrlInput.value = storedImageUri;
+            updateImagePreview(storedImageUri);
+            if (state.imageOverlayNodeId === node.id) renderImageCandidates(node);
+        }
+        requestRender();
+        // This follows any autosaves queued during the download, preserving the internal reference.
+        await runAutosave(node);
+    } catch (error) {
+        imageSaveFailures.add(`${node.id}:${source}`);
+        // Download failure leaves the original image intact and does not block publication.
+        failedEditorRequests.delete(`POST /api/nodes/${node.id}/image`);
+        reportEditorError(error);
+        saveImageStatus.textContent = `Immagine non salvata: ${node.text}. Il link originale resta disponibile.`;
+    }
+}
+
 function queueImageStorage() {
     if (imageSavePromise || !imageStorageSwitch.checked || state.isApplyingHistory || !nextImageToStore()) return;
     let interrupted = false;
     imageSavePromise = (async () => {
         await imagePolicyPromise;
         await styleSavePromise;
-        while (imageStorageSwitch.checked) {
-            await flushAutosave();
-            const node = nextImageToStore();
-            if (!node) break;
-            const source = node.imageUri;
-            const message = `Sto salvando l’immagine del nodo "${node.text}"…`;
-            saveImageStatus.textContent = message;
-            if (autosaveStatus) autosaveStatus.textContent = message;
-            try {
-                const saved = await editorRequest(`/api/nodes/${node.id}/image`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ imageUri: source })
-                }, 'json', {
-                    serverMessages: true,
-                    messages: {
-                        400: 'Non riesco a preparare l’immagine. Scegli un altro link o formato.',
-                        409: 'L’immagine è cambiata durante il salvataggio.',
-                        413: 'L’immagine supera il limite di 25 MB.',
-                        502: `Non riesco a scaricare l’immagine del nodo "${node.text}". Controlla il link.`
-                    }
-                });
-                // This endpoint must return a server image ID, never an arbitrary URL.
-                const storedId = typeof saved.imageUri === 'string'
-                    ? /^\/images\/([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/.exec(saved.imageUri)?.[1] : null;
-                if (!storedId) throw new Error('Il server ha restituito un riferimento immagine non valido.');
-                const storedImageUri = `/images/${encodeURIComponent(storedId)}`;
-                if (getNodeById(node.id) !== node || node.imageUri !== source) continue;
-                // Only update the image: text and geometry may have changed during the download.
-                node.imageUri = storedImageUri;
-                for (const other of state.map.nodes) {
-                    if (other.imageCandidates) other.imageCandidates = other.imageCandidates.map(uri => uri === source ? storedImageUri : uri);
-                }
-                // Automatic storage is not a user edit; history keeps the same image reference.
-                for (const snapshot of [...state.undoStack, ...state.redoStack, state.interactionSnapshot].filter(Boolean)) {
-                    for (const previous of snapshot.map.nodes) {
-                        if (previous.id === node.id && previous.imageUri === source) previous.imageUri = storedImageUri;
-                        if (previous.imageCandidates) previous.imageCandidates = previous.imageCandidates.map(uri => uri === source ? storedImageUri : uri);
-                    }
-                }
-                if (state.selectedNodeId === node.id) {
-                    imageUrlInput.value = storedImageUri;
-                    updateImagePreview(storedImageUri);
-                    if (state.imageOverlayNodeId === node.id) renderImageCandidates(node);
-                }
-                requestRender();
-                // This follows any autosaves queued during the download, preserving the internal reference.
-                await runAutosave(node);
-            } catch (error) {
-                imageSaveFailures.add(`${node.id}:${source}`);
-                // Download failure leaves the original image intact and does not block publication.
-                failedEditorRequests.delete(`POST /api/nodes/${node.id}/image`);
-                reportEditorError(error);
-                saveImageStatus.textContent = `Immagine non salvata: ${node.text}. Il link originale resta disponibile.`;
-            }
-        }
+        await storeNextImage();
     })().catch(error => { interrupted = true; reportEditorError(error); }).finally(() => {
         imageSavePromise = null;
         if (autosaveStatus && !hasFailedSaves()) autosaveStatus.textContent = imageSaveFailures.size
@@ -1951,15 +1959,15 @@ async function buildExportSvg() {
     transientControls.forEach(control => control.remove());
 
     const exportImages = Array.from(clone.querySelectorAll("image"));
-    for (const image of exportImages) {
+    await exportImages.reduce((previous, image) => previous.then(async () => {
         const href = await normalizeExportImageHref(image.getAttribute("href") || image.getAttributeNS("http://www.w3.org/1999/xlink", "href"));
         if (!href) {
             image.remove();
-            continue;
+            return;
         }
         image.setAttribute("href", href);
         image.setAttributeNS("http://www.w3.org/1999/xlink", "xlink:href", href);
-    }
+    }), Promise.resolve());
 
     return new XMLSerializer().serializeToString(clone);
 }
@@ -2220,6 +2228,23 @@ function hasUnsavedChanges() {
         || activeEditorRequests.size > 0 || state.isApplyingHistory || hasFailedSaves();
 }
 
+function waitForActiveEditorRequests() {
+    if (!activeEditorRequests.size) return Promise.resolve();
+    return Promise.all(activeEditorRequests).then(waitForActiveEditorRequests);
+}
+
+async function waitForEditorSaves(previousError) {
+    const results = await Promise.allSettled([
+        flushAutosave(), backgroundSavePromise, styleSavePromise, imagePolicyPromise, imageSavePromise, ...activeEditorRequests
+    ]);
+    const failed = results.find(result => result.status === 'rejected');
+    const error = previousError || failed?.reason;
+    if (imageSavePromise || pendingStyleChanges || state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size) {
+        return waitForEditorSaves(error);
+    }
+    if (error) throw error;
+}
+
 async function saveBeforeLeaving(proceed) {
     if (leavingEditor || state.isApplyingHistory) return;
     leavingEditor = true;
@@ -2234,15 +2259,7 @@ async function saveBeforeLeaving(proceed) {
             editingBackground = false;
             void saveMapBackground();
         }
-        let saveError;
-        do {
-            const results = await Promise.allSettled([
-                flushAutosave(), backgroundSavePromise, styleSavePromise, imagePolicyPromise, imageSavePromise, ...activeEditorRequests
-            ]);
-            const failed = results.find(result => result.status === 'rejected');
-            if (failed && !saveError) saveError = failed.reason;
-        } while (imageSavePromise || pendingStyleChanges || state.pendingAutosaves.size || state.autosaveCount || activeEditorRequests.size);
-        if (saveError) throw saveError;
+        await waitForEditorSaves();
         // Background saves report errors without rejecting their queue promise.
         if (hasFailedSaves()) throw new Error('Ci sono modifiche non salvate. Controlla il messaggio di errore e riprova prima di continuare.');
         allowEditorUnload = true;
@@ -2277,7 +2294,6 @@ globalThis.addEventListener('beforeunload', event => {
     if (allowEditorUnload || !hasUnsavedChanges()) return;
     // Closing/reloading cannot reliably await fetch; let the browser warn instead.
     event.preventDefault();
-    event.returnValue = '';
 });
 
 globalThis.addEventListener('pageshow', () => {

@@ -42,6 +42,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Code asincrone dell’editor riorganizzate senza `await` nei cicli, preservando la sequenza di download e salvataggi; iterazione diretta delle richieste attive e rimozione di `beforeunload.returnValue` deprecato.
 - Intestazione della raccolta uniformata alle altre sezioni.
 - JavaScript del gioco semplificato eliminando ternari annidati e il parametro predefinito intermedio dell’helper SVG, senza modificare il comportamento.
 
