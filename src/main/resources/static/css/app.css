@@ -17,28 +17,38 @@
  */
 
 :root {
+    /* Superfici */
     --bg: #eef5fb;
     --card: #fbfdff;
     --surface: #f7fbfe;
     --surface-soft: #f3f8fc;
     --soft: #e1edf7;
-    --danger-soft: #f6e8ef;
-    --success-soft: #e9f4ef;
     --white: #ffffff;
     --transparent: transparent;
+
+    /* Testi e bordi */
     --ink: #314256;
     --muted: #6f8193;
     --branch-label: #52677a;
     --sketch-ink: #4e6f69;
     --border: #c9d7e6;
-    --success-border: #bdd8cf;
-    --danger-border: #e1b8c3;
     --connector: #8799aa;
     --node-stroke: #647789;
+
+    /* Accenti e stati */
     --accent: #6f9fc9;
     --accent-dark: #4f7fa9;
     --danger: #b45b6a;
+    --danger-soft: #f6e8ef;
+    --danger-border: #e1b8c3;
     --ok: #5f8d7b;
+    --success-soft: #e9f4ef;
+    --success-border: #bdd8cf;
+    --import-accent: #277d78;
+    --import-accent-dark: #1c605c;
+    --import-accent-hover: #174f4c;
+
+    /* Ombre e sovrapposizioni */
     --shadow: rgba(49, 66, 86, 0.12);
     --overlay: rgba(251, 253, 255, 0.82);
     --focus-ring: rgba(111, 159, 201, 0.22);
@@ -46,6 +56,8 @@
     --loading-bg: rgba(238, 245, 251, 0.92);
     --login-bg: rgba(251, 253, 255, 0.88);
     --login-orb: rgba(184, 211, 232, 0.36);
+
+    /* Colori iniziali dei nodi */
     --node-color-root: #f3d9a5;
     --node-color-default: #b8d3e8;
     --node-color-template-green: #bfd8cf;
@@ -293,9 +305,9 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 .template-btn { width: 100%; min-height: 72px; font-size: 1.05rem; }
 
-.import-map-btn { background: linear-gradient(135deg, #277d78, #1c605c); }
+.import-map-btn { background: linear-gradient(135deg, var(--import-accent), var(--import-accent-dark)); }
 
-.import-map-btn:hover { background: #174f4c; }
+.import-map-btn:hover { background: var(--import-accent-hover); }
 
 .map-card { background: var(--surface); }
 

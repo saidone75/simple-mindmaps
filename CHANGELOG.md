@@ -20,6 +20,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Animazioni e transizioni del gioco attivate solo senza preferenza di movimento ridotto; mantenuti i feedback statici e rimossi gli spostamenti al passaggio del mouse in modalità ridotta.
 - Fuso orario del server specificato esplicitamente nei timestamp di creazione e aggiornamento di utenti e mappe.
 - Un tap o clic sullo sfondo della mappa deseleziona il nodo e chiude entrambi i pannelli dell’editor.
 - Trascinamento touch dei nodi ripristinato nell’editor: il nodo selezionato si può spostare, mentre il gesto sui nodi non selezionati continua a trascinare la mappa.
