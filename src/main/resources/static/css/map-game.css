@@ -89,7 +89,7 @@
     box-shadow: 0 4px 0 #503389;
     min-height: 48px;
     padding: 13px 24px;
-    transition: transform .15s, box-shadow .15s;
+
 }
 
 #start-game:hover { background: #6544ac; transform: translateY(-2px); box-shadow: 0 6px 0 #503389; }
@@ -116,7 +116,7 @@
 #game-progress::-webkit-progress-bar { background: #f1eaf7; border-radius: 99px; }
 
 /* Keep browser-specific pseudo-elements in separate rules. */
-#game-progress::-webkit-progress-value { background: #75b99b; border-radius: 99px; transition: width .4s ease; }
+#game-progress::-webkit-progress-value { background: #75b99b; border-radius: 99px;  }
 
 #game-progress::-moz-progress-bar { background: #75b99b; border-radius: 99px; }
 
@@ -157,7 +157,7 @@
     border-radius: 17px;
     box-shadow: 0 4px 0 #dcd0e7;
     cursor: grab;
-    transition: transform .18s, border-color .18s, box-shadow .18s;
+
 }
 
 .game-image:nth-child(odd) { transform: rotate(-2deg); }
@@ -261,25 +261,23 @@
 
 .game-target { cursor: pointer; }
 
-.game-target > rect:first-child { filter: drop-shadow(0 4px 3px #49375c14); transition: stroke .2s; }
+.game-target > rect:first-child { filter: drop-shadow(0 4px 3px #49375c14);  }
 
 .game-target:focus > rect:first-child,
 .game-target.drop-ready > rect:first-child { stroke: #8c65c7; stroke-width: 5; }
 
 .game-target.matched > rect:first-child { stroke: #66a681; stroke-width: 3; }
 
-.game-target.just-matched { transform-box: fill-box; transform-origin: center; animation: happy-pop .6s ease both; }
+.game-target.just-matched { transform-box: fill-box; transform-origin: center;  }
 
-.game-target.just-matched > rect:first-child { animation: happy-glow 1s ease; }
+.game-target.just-matched > rect:first-child {  }
 
 .game-celebration { pointer-events: none; }
 
 .celebration-particle,
 .celebration-ring { transform-box: fill-box; transform-origin: center; }
 
-.celebration-particle { animation: sparkle-flight .95s cubic-bezier(.15,.7,.3,1) both; }
 
-.celebration-ring { animation: celebration-ring .8s ease-out both; }
 
 .game-unavailable { max-width: 640px; text-align: center; padding-top: 15vh; }
 
@@ -345,7 +343,7 @@
 .game-completion-card > :not(.game-completion-confetti) { position: relative; z-index: 1; }
 .game-completion-card .game-completion-dismiss { position: absolute; top: 10px; right: 10px; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: #efe5fc; color: #6948aa; font-size: 26px; }
 .game-completion-trophy { font-size: 76px; line-height: 1.3; margin-bottom: 16px; }
-.game-completion[open] .game-completion-trophy { animation: happy-pop .7s ease both; }
+.game-completion[open] .game-completion-trophy {  }
 .game-completion h2 { margin: 14px 0 10px; font-size: clamp(2rem, 8vw, 3rem); letter-spacing: -.04em; color: #6544ac; }
 .game-completion-award { margin: 0 0 8px; line-height: 1.5; }
 .game-completion-prize { margin: 0 0 16px; color: #8a6518; font-size: clamp(1.15rem, 4vw, 1.5rem); font-weight: 800; overflow-wrap: anywhere; }
@@ -368,7 +366,7 @@
     height: 15px;
     border-radius: 3px;
     background: var(--confetti-color);
-    animation: confetti-fall 3s var(--confetti-delay) ease-out both;
+
 }
 @keyframes confetti-fall {
     from { transform: translateY(0) rotate(0); opacity: 1; }
@@ -395,6 +393,10 @@
 
     .game-celebration,
     .game-completion-confetti { display: none; }
+
+    #start-game:hover,
+    .game-image,
+    .game-image:hover { transform: none; }
 }
 
 .game-zoom-controls { display: grid; gap: 8px; min-width: 0; }
@@ -494,4 +496,17 @@
         min-height: 0;
         overscroll-behavior: contain;
     }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    #start-game { transition: transform .15s, box-shadow .15s; }
+    #game-progress::-webkit-progress-value { transition: width .4s ease; }
+    .game-image { transition: transform .18s, border-color .18s, box-shadow .18s; }
+    .game-target > rect:first-child { transition: stroke .2s; }
+    .game-target.just-matched { animation: happy-pop .6s ease both; }
+    .game-target.just-matched > rect:first-child { animation: happy-glow 1s ease; }
+    .celebration-particle { animation: sparkle-flight .95s cubic-bezier(.15,.7,.3,1) both; }
+    .celebration-ring { animation: celebration-ring .8s ease-out both; }
+    .game-completion[open] .game-completion-trophy { animation: happy-pop .7s ease both; }
+    .game-completion-confetti span { animation: confetti-fall 3s var(--confetti-delay) ease-out both; }
 }
