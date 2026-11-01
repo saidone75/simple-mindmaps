@@ -31,6 +31,8 @@ import org.saidone.mindmaps.repository.NodeRepository;
 import org.saidone.mindmaps.security.CurrentUserService;
 import org.saidone.mindmaps.service.ai.GenerationProgress;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
@@ -72,6 +74,7 @@ public class MindMapService {
     private final CurrentUserService currentUserService;
 
     private final NodeMapper nodeMapper;
+    private final PlatformTransactionManager transactions;
     private static final Gson PRIZES_JSON = new Gson();
 
     public List<MindMap> findAll() {
@@ -188,15 +191,36 @@ public class MindMapService {
         return saved;
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public MindMap createFromGeneratedMap(MindMapDto generatedMap, boolean searchWikimediaImages) {
         return createFromGeneratedMap(generatedMap, searchWikimediaImages, GenerationProgress.NONE);
     }
 
-    @Transactional
+    @Transactional(Transactional.TxType.NOT_SUPPORTED)
     public MindMap createFromGeneratedMap(MindMapDto generatedMap, boolean searchWikimediaImages, GenerationProgress progress) {
         val totalNodes = generatedMap.getNodes().size();
-        progress.update("Sto preparando i nodi della mappa…", 0, totalNodes);
+        val preparedImages = new ArrayList<GeneratedNodeImages>(totalNodes);
+        val usedImageUrls = new HashSet<String>();
+        for (int index = 0; index < totalNodes; index++) {
+            val node = generatedMap.getNodes().get(index);
+            if (searchWikimediaImages) {
+                progress.update(String.format("Sto cercando un’immagine per il nodo \"%s\"…", node.getText()), index, totalNodes);
+                val candidates = normalizeImageCandidates(wikimediaImageSearchService.searchImages(
+                        normalizeImageKeywords(node), null, usedImageUrls));
+                val imageUri = candidates.isEmpty() ? null : candidates.getFirst();
+                preparedImages.add(new GeneratedNodeImages(
+                        imageUri != null && usedImageUrls.add(imageUri) ? imageUri : null, candidates));
+            } else {
+                preparedImages.add(new GeneratedNodeImages(normalizeImageUri(node.getImageUri()), List.of()));
+            }
+        }
+        progress.update("Sto salvando la mappa…", totalNodes, totalNodes);
+        return new TransactionTemplate(transactions).execute(status -> saveGeneratedMap(generatedMap, preparedImages));
+    }
+
+    private record GeneratedNodeImages(String uri, List<String> candidates) {}
+
+    private MindMap saveGeneratedMap(MindMapDto generatedMap, List<GeneratedNodeImages> preparedImages) {
         val title = generatedMap.getTitle() == null || generatedMap.getTitle().isBlank()
                 ? "Mappa generata con AI"
                 : generatedMap.getTitle().trim();
@@ -211,10 +235,8 @@ public class MindMapService {
         val saved = mindMapRepository.save(map);
 
         val createdNodeIdsByIndex = new ArrayList<Long>();
-        val usedImageUrls = new HashSet<String>();
         for (int index = 0; index < generatedMap.getNodes().size(); index++) {
             val nodeDto = generatedMap.getNodes().get(index);
-            progress.update("Sto preparando il nodo \"%s\"…".formatted(nodeDto.getText()), index, totalNodes);
 
             Long parentId = null;
             val parentRef = nodeDto.getParentId();
@@ -239,22 +261,14 @@ public class MindMapService {
             node.setBranchText(normalizeBranchText(nodeDto.getBranchText()));
             node.setBranchWidth(normalizeBranchWidth(nodeDto.getBranchWidth()));
             node.setBranchCurve(normalizeBranchCurve(nodeDto.getBranchCurve()));
-            if (searchWikimediaImages) {
-                progress.update("Sto cercando un’immagine per il nodo \"%s\"…".formatted(nodeDto.getText()), index, totalNodes);
-                val candidates = normalizeImageCandidates(wikimediaImageSearchService.searchImages(
-                        normalizeImageKeywords(nodeDto), null, usedImageUrls));
-                node.setImageCandidates(candidates);
-                val imageUri = candidates.isEmpty() ? null : candidates.getFirst();
-                node.setImageUri(imageUri != null && usedImageUrls.add(imageUri) ? imageUri : null);
-            } else {
-                node.setImageUri(normalizeImageUri(nodeDto.getImageUri()));
-            }
+            val image = preparedImages.get(index);
+            node.setImageCandidates(image.candidates());
+            node.setImageUri(image.uri());
             nodeRepository.save(node);
 
             createdNodeIdsByIndex.add(node.getId());
         }
 
-        progress.update("Sto salvando la mappa…", totalNodes, totalNodes);
         return saved;
     }
 
