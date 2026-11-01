@@ -52,7 +52,7 @@ public class DatabaseBackupScheduler {
     @Value("${spring.datasource.url:}")
     private String datasourceUrl;
 
-    @Value("${app.db-backup.directory:./backups}")
+    @Value("${app.db-backup.directory:./backup}")
     private String backupDirectory;
 
     @Value("${app.db-backup.retention-count:30}")
