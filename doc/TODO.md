@@ -11,7 +11,6 @@ Punti aperti raggruppati per area logica. Le verifiche tecniche derivano dalla r
 
 ## Generazione delle mappe e ricerca immagini
 
-3. [ ] Spostare ricerche Wikimedia e ranking semantico fuori dalla transazione di scrittura. `createFromGeneratedMap` salva la mappa prima delle chiamate esterne e mantiene aperta la transazione per tutti i nodi; con SQLite questo può trattenere il blocco di scrittura durante le attese di rete (`MindMapService`).
 
 4. [ ] Disaccoppiare la creazione della mappa dalla ricerca delle immagini: mostrare l’editor appena la struttura è pronta e proseguire le ricerche in background, in parallelo. Nei nodi in attesa mostrare un placeholder con il coniglietto animato dello spinner, sostituendolo progressivamente con l’immagine trovata. Gli aggiornamenti devono preservare le modifiche dell’utente e gestire anche ricerche senza risultati o fallite.
 
