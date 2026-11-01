@@ -2200,7 +2200,7 @@ function runAutosave(node) {
 async function flushAutosave() {
     const saves = [];
     if (state.autosavePromise) saves.push(state.autosavePromise);
-    for (const pending of [...state.pendingAutosaves.values()]) {
+    for (const pending of state.pendingAutosaves.values()) {
         const currentNode = getNodeById(pending.nodeId);
         if (currentNode) saves.push(runAutosave(currentNode));
         else {
