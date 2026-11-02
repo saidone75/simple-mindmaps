@@ -1,0 +1,116 @@
+<!--
+  ~ Alice's Simple Mind Maps
+  ~ Copyright (C) 2026 Miss Alice & Saidone
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Preferenze utente · Alice's Simple Mind Maps</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="page-shell">
+    <header class="hero-card">
+        <div>
+            <h1>Preferenze utente</h1>
+            <p th:text="${username}">utente</p>
+        </div>
+        <a class="secondary-btn small-btn" th:href="@{/maps}">Torna alle mappe</a>
+    </header>
+    <section class="section-card form-card" aria-labelledby="password-title">
+        <div class="section-intro">
+            <h2 id="password-title">Cambia password</h2>
+            <p>Usa almeno 8 caratteri. Dopo il salvataggio dovrai accedere di nuovo.</p>
+        </div>
+        <p th:if="${passwordError}" class="field-error" id="password-error" role="alert" th:text="${passwordError}"></p>
+        <form th:action="@{/preferences/password}" method="post" class="home-form">
+            <div class="form-field">
+                <label for="current-password">Password attuale</label>
+                <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required>
+            </div>
+            <div class="form-field">
+                <label for="new-password">Nuova password</label>
+                <input id="new-password" name="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+            </div>
+            <div class="form-field">
+                <label for="confirmation">Conferma nuova password</label>
+                <input id="confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+            </div>
+            <div class="form-actions"><button type="submit">Salva password</button></div>
+        </form>
+    </section>
+    <details th:if="${account.manager}" id="users" class="section-card form-card users-panel" th:open="${userMessage != null or userError != null}">
+        <summary class="users-heading"><span aria-hidden="true">👥</span><span><strong>Gestione utenti</strong><span>Crea account e gestisci accesso, permessi e generazione AI.</span></span></summary>
+        <div class="users-content">
+        <output th:if="${userMessage}" class="flash-ok" th:text="${userMessage}"></output>
+        <p th:if="${userError}" class="field-error" role="alert" th:text="${userError}"></p>
+        <h3>Crea utente</h3>
+        <form th:action="@{/preferences/users/create}" method="post" class="home-form">
+            <div class="form-field">
+                <label for="create-username">Nome utente</label>
+                <input id="create-username" name="username" type="text" autocomplete="off" minlength="3" maxlength="80" pattern="[a-zA-Z0-9._@-]+" required>
+            </div>
+            <div class="form-field">
+                <label for="create-password">Password iniziale</label>
+                <input id="create-password" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+            </div>
+            <div class="form-actions"><button type="submit">Crea utente</button></div>
+        </form>
+        <h3>Utenti</h3>
+        <details th:each="user : ${users}" class="section-card user-card">
+            <summary><strong th:text="${user.username}">utente</strong><span class="user-status">
+                <span th:text="${user.role.name() == 'ADMIN' ? 'Amministratore' : (user.role.name() == 'CO_ADMIN' ? 'Co-amministratore' : 'Utente')}">Ruolo</span>
+                · <span th:text="${user.enabled ? 'Attivo' : 'Bloccato'}">Stato</span>
+                · <span th:text="${user.aiEnabled ? 'AI abilitata' : 'AI disabilitata'}">AI</span>
+            </span></summary>
+            <th:block th:if="${user.id != account.id and (account.role.name() == 'ADMIN' or user.role.name() != 'ADMIN')}">
+                <form th:action="@{/preferences/users/{id}/update(id=${user.id})}" method="post" class="home-form">
+                    <div class="checkbox-group">
+                    <label class="checkbox-label"><input type="checkbox" role="switch" aria-checked="false" th:attr="aria-checked=${user.enabled}" name="enabled" value="true" th:checked="${user.enabled}"> <span>Account abilitato<small class="user-status">Disattiva per bloccare l’accesso, conservando account e mappe.</small></span></label>
+                    <label class="checkbox-label"><input type="checkbox" role="switch" aria-checked="false" th:attr="aria-checked=${user.aiEnabled}" name="aiEnabled" value="true" th:checked="${user.aiEnabled}"> Generazione AI abilitata</label>
+                    <label class="checkbox-label" th:if="${user.role.name() != 'ADMIN'}"><input type="checkbox" role="switch" aria-checked="false" th:attr="aria-checked=${user.role.name() == 'CO_ADMIN'}" name="coAdmin" value="true" th:checked="${user.role.name() == 'CO_ADMIN'}"> Co-amministratore</label>
+                    </div>
+                    <div class="form-actions"><button type="submit" class="secondary-btn small-btn">Salva permessi</button></div>
+                </form>
+                <details>
+                    <summary>Reimposta password</summary>
+                    <form th:action="@{/preferences/users/{id}/password(id=${user.id})}" method="post" class="home-form">
+                        <label th:for="|reset-password-${user.id}|">Nuova password</label>
+                        <input th:id="|reset-password-${user.id}|" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+                        <div class="form-actions"><button type="submit" class="secondary-btn small-btn">Reimposta password</button></div>
+                    </form>
+                </details>
+                <details>
+                    <summary>Cancella utente</summary>
+                    <p>Verranno eliminate anche tutte le mappe dell’utente e le relative pubblicazioni. L’operazione è definitiva.</p>
+                    <form th:action="@{/preferences/users/{id}/delete(id=${user.id})}" method="post" class="home-form">
+                        <label th:for="|delete-user-${user.id}|">Scrivi il nome utente per confermare</label>
+                        <input th:id="|delete-user-${user.id}|" name="confirmation" type="text" autocomplete="off" required>
+                        <div class="form-actions"><button type="submit" class="secondary-btn small-btn">Cancella definitivamente</button></div>
+                    </form>
+                </details>
+            </th:block>
+        </details>
+        </div>
+    </details>
+
+</main>
+<script th:src="@{/js/preferences.js}"></script>
+</body>
+</html>

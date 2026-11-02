@@ -39,7 +39,16 @@ public class CurrentUserService {
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new ResponseStatusException(UNAUTHORIZED, "Utente non autenticato");
         }
-        return appUserRepository.findByUsernameIgnoreCase(authentication.getName())
+        return appUserRepository.findByUsernameIgnoreCase(authentication.getName()).filter(AppUser::isEnabled)
                 .orElseThrow(() -> new ResponseStatusException(UNAUTHORIZED, "Utente non trovato"));
+    }
+    public AppUser requireManager() {
+        val user = getCurrentUser();
+        if (!user.isManager()) throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Operazione riservata agli amministratori.");
+        return user;
+    }
+
+    public void requireAi() {
+        if (!getCurrentUser().isAiEnabled()) throw new ResponseStatusException(org.springframework.http.HttpStatus.FORBIDDEN, "Generazione AI non abilitata per questo account.");
     }
 }

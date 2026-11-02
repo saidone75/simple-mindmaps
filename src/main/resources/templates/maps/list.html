@@ -36,13 +36,14 @@
         </div>
         <form th:action="@{/logout}" method="post" class="logout-form">
             <span th:text="${username}">utente</span>
+            <a class="secondary-btn small-btn" th:href="@{/preferences}">Preferenze</a>
             <button type="submit" class="secondary-btn small-btn">Esci</button>
         </form>
     </header>
 
     <div th:if="${message}" class="flash-ok" th:text="${message}"></div>
 
-    <section class="section-card form-card">
+    <section th:if="${aiEnabled}" class="section-card form-card">
         <div class="section-intro">
             <span class="section-kicker">✨ Generazione assistita</span>
             <h2>Crea mappa con AI</h2>

@@ -39,15 +39,18 @@ public class InitialUserRunner implements ApplicationRunner {
 
     @Override
     public void run(ApplicationArguments args) {
-        if (!initialUserProperties.configured()) {
+        if (initialUserProperties.username() == null || initialUserProperties.username().isBlank()) {
             return;
         }
-        val username = initialUserProperties.username().trim().toLowerCase();
+        val username = initialUserProperties.username().trim().toLowerCase(java.util.Locale.ROOT);
         if (appUserRepository.existsByUsernameIgnoreCase(username)) {
+            userService.initializeAdministrator(username);
             log.info("Utente iniziale '{}' già presente: creazione saltata", username);
             return;
         }
+        if (!initialUserProperties.configured()) return;
         userService.createUser(username, initialUserProperties.password());
+        userService.initializeAdministrator(username);
         log.info("Utente iniziale '{}' creato", username);
     }
 }

@@ -7,6 +7,13 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+### Added
+
+- Gestione utenti nelle preferenze per amministratori e co-amministratori: creazione, elenco, blocco, cancellazione con conferma, reset password e nomina co-amministratori. Ruolo amministratore dell’account iniziale garantito a ogni avvio; protezione del proprio account e dell’ultimo amministratore attivo.
+- Abilitazione AI per utente, modificabile solo dagli amministratori: card nascosta e generazione rifiutata lato server quando disabilitata.
+
+- Pagina *Preferenze* accessibile dall’elenco mappe, con cambio password previa verifica di quella attuale, conferma della nuova e nuovo accesso dopo il salvataggio.
+
 ## [0.3.3] - 2026-11-02
 
 ### Added

@@ -37,6 +37,7 @@ import java.util.Arrays;
 @Slf4j
 public class MapGenerationApplicationService {
 
+    private final org.saidone.mindmaps.security.CurrentUserService currentUser;
     private final MapGenerationService mapGenerationService;
 
     @Value("${app.ai.generation.max-attachment-chars:60000}")
@@ -50,6 +51,7 @@ public class MapGenerationApplicationService {
     }
 
     public MindMapDto generateMindMap(MapGenerationRequestDto request, GenerationProgress progress) {
+        currentUser.requireAi();
         validateRequestLimits(request);
 
         applyReferenceTextLimit(request);

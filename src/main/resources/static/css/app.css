@@ -465,7 +465,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
     .hero-card h1 { font-size: clamp(1.45rem, 8vw, 1.85rem); }
 
-    .logout-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+    .logout-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
 
     .logout-form button { width: auto; }
 
@@ -573,3 +573,18 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 .map-card.is-reordering { opacity: .6; outline: 2px dashed var(--accent-dark); pointer-events: none; }
 .map-reorder-handle:active { cursor: grabbing; }
 .map-reorder-handle:focus-visible { outline: 2px solid var(--accent-dark); outline-offset: 2px; }
+
+.users-heading { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+.users-heading::after { content: "▸"; margin-left: auto; }
+.users-panel[open] > .users-heading::after { content: "▾"; }
+.users-heading > span:first-child { font-size: 2rem; }
+.users-heading strong { display: block; font-size: 1.35rem; }
+.users-heading span span, .user-status { display: block; color: var(--muted); font-size: 0.94rem; }
+.users-content { margin-top: 22px; }
+.user-card summary { cursor: pointer; line-height: 1.6; }
+.user-card > summary > .user-status { display: inline; margin-left: 12px; }
+.user-card > form, .user-card > details, .user-card details[open] > form { margin-top: 16px; }
+
+.user-card details[open] > p { margin: 12px 0 16px; line-height: 1.5; }
+
+.users-content > form + h3 { margin-top: 28px; }
