@@ -45,6 +45,10 @@
             Sei uscito correttamente. A presto!
         </output>
 
+        <output th:if="${param.passwordChanged}" class="login-alert login-alert-ok">
+            Password aggiornata. Accedi con la nuova password.
+        </output>
+
         <form th:action="@{/login}" method="post" class="login-form">
             <div class="login-field">
                 <label for="username">Username</label>

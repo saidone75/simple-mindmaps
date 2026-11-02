@@ -32,6 +32,7 @@ public class UserService {
 
     private final AppUserRepository appUserRepository;
     private final PasswordEncoder passwordEncoder;
+    private final CurrentUserService currentUserService;
 
     @Transactional
     public AppUser createUser(String username, String rawPassword) {
@@ -46,6 +47,26 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(rawPassword));
         user.setEnabled(true);
         return appUserRepository.save(user);
+    }
+
+    @Transactional
+    public void changePassword(String currentPassword, String newPassword, String confirmation) {
+        val user = currentUserService.getCurrentUser();
+        if (currentPassword == null || !passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new IllegalArgumentException("La password attuale non è corretta.");
+        }
+        validatePassword(newPassword);
+        if (newPassword.getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
+            throw new IllegalArgumentException("La nuova password è troppo lunga (massimo 72 byte UTF-8).");
+        }
+        if (!newPassword.equals(confirmation)) {
+            throw new IllegalArgumentException("La conferma non corrisponde alla nuova password.");
+        }
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            throw new IllegalArgumentException("Scegli una password diversa da quella attuale.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        appUserRepository.save(user);
     }
 
     private String normalizeUsername(String username) {

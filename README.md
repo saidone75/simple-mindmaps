@@ -21,7 +21,7 @@ Versione: **0.3.3**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 - Lo switch *Salva immagini*, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file.
 - Duplicazione ed eliminazione delle mappe. Le card di *Le mie mappe* si possono riordinare trascinando la maniglia ⠿, anche su dispositivi touch, oppure usando le frecce quando la maniglia ha il focus.
 - Esportazione in PNG e PDF, con formati A4 e A3 per il PDF; importazione ed esportazione delle mappe in ZIP, con importazione compatibile con i precedenti JSON.
-- Accesso con account e mappe private per ciascun proprietario.
+- Accesso con account e mappe private per ciascun proprietario; cambio password dalla pagina *Preferenze*.
 - Pubblicazione di giochi delle immagini tramite link pubblico revocabile.
 - Interfacce adattate a computer, tablet e dispositivi mobili.
 

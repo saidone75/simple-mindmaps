@@ -465,7 +465,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
     .hero-card h1 { font-size: clamp(1.45rem, 8vw, 1.85rem); }
 
-    .logout-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+    .logout-form { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 8px; }
 
     .logout-form button { width: auto; }
 

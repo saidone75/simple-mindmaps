@@ -1,0 +1,60 @@
+<!--
+  ~ Alice's Simple Mind Maps
+  ~ Copyright (C) 2026 Miss Alice & Saidone
+  ~
+  ~ This program is free software: you can redistribute it and/or modify
+  ~ it under the terms of the GNU General Public License as published by
+  ~ the Free Software Foundation, either version 3 of the License, or
+  ~ (at your option) any later version.
+  ~
+  ~ This program is distributed in the hope that it will be useful,
+  ~ but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~ GNU General Public License for more details.
+  ~
+  ~ You should have received a copy of the GNU General Public License
+  ~ along with this program.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Preferenze utente · Alice's Simple Mind Maps</title>
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+</head>
+<body>
+<main class="page-shell">
+    <header class="hero-card">
+        <div>
+            <h1>Preferenze utente</h1>
+            <p th:text="${username}">utente</p>
+        </div>
+        <a class="secondary-btn small-btn" th:href="@{/maps}">Torna alle mappe</a>
+    </header>
+    <section class="section-card form-card" aria-labelledby="password-title">
+        <div class="section-intro">
+            <h2 id="password-title">Cambia password</h2>
+            <p>Usa almeno 8 caratteri. Dopo il salvataggio dovrai accedere di nuovo.</p>
+        </div>
+        <p th:if="${passwordError}" class="field-error" id="password-error" role="alert" th:text="${passwordError}"></p>
+        <form th:action="@{/preferences/password}" method="post" class="home-form">
+            <div class="form-field">
+                <label for="current-password">Password attuale</label>
+                <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" required>
+            </div>
+            <div class="form-field">
+                <label for="new-password">Nuova password</label>
+                <input id="new-password" name="newPassword" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+            </div>
+            <div class="form-field">
+                <label for="confirmation">Conferma nuova password</label>
+                <input id="confirmation" name="confirmation" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+            </div>
+            <div class="form-actions"><button type="submit">Salva password</button></div>
+        </form>
+    </section>
+</main>
+</body>
+</html>
