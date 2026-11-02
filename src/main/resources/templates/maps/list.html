@@ -102,7 +102,7 @@
             <h2 class="section-kicker">🗂️ La tua raccolta</h2>
             <p th:text="${#lists.size(maps)} + ' mappa/e'"></p>
         </div>
-        <p id="map-order-status" role="status" aria-live="polite" hidden></p>
+        <output id="map-order-status" aria-live="polite" hidden></output>
         <div class="map-grid" th:if="${!#lists.isEmpty(maps)}">
             <article class="map-card" th:each="map : ${maps}" th:attr="data-map-id=${map.id}">
                 <button type="button" class="map-reorder-handle" title="Trascina per riordinare; usa le frecce per spostare" th:attr="aria-label=${'Sposta la mappa: ' + map.title}">⠿</button>

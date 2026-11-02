@@ -20,6 +20,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Messaggi di stato di raccolta, editor, gioco e login esposti con l’elemento semantico `output` per migliorarne l’accessibilità.
 - Ricerche Wikimedia e ranking delle immagini durante la generazione eseguiti prima della transazione di salvataggio, per evitare di mantenere il blocco di scrittura SQLite durante le attese di rete. Mappa e nodi continuano a essere salvati in un’unica transazione.
 
 - Animazioni e transizioni del gioco attivate solo senza preferenza di movimento ridotto; mantenuti i feedback statici e rimossi gli spostamenti al passaggio del mouse in modalità ridotta.

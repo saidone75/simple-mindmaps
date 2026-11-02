@@ -41,9 +41,9 @@
         <div th:if="${param.rate_limited}" class="login-alert login-alert-error" role="alert">
             Troppi tentativi non riusciti. Attendi 15 minuti prima di riprovare.
         </div>
-        <div th:if="${param.logout}" class="login-alert login-alert-ok" role="status">
+        <output th:if="${param.logout}" class="login-alert login-alert-ok">
             Sei uscito correttamente. A presto!
-        </div>
+        </output>
 
         <form th:action="@{/login}" method="post" class="login-form">
             <div class="login-field">
