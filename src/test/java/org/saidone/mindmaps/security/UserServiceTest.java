@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
         "spring.jpa.database-platform=org.hibernate.dialect.H2Dialect",
         "spring.jpa.hibernate.ddl-auto=create-drop"
 })
-@Import({UserService.class, UserServiceTest.PasswordEncoderTestConfig.class})
+@Import({UserService.class, CurrentUserService.class, UserServiceTest.PasswordEncoderTestConfig.class})
 class UserServiceTest {
 
     @Autowired
