@@ -3,7 +3,7 @@
 Un'applicazione per creare mappe mentali e trasformarle in giochi divertenti.
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-[![Java CI](https://github.com/saidone75/simple-mindmap/actions/workflows/build.yml/badge.svg)](https://github.com/saidone75/simple-mindmap/actions/workflows/build.yml)
+[![Java CI](https://github.com/saidone75/simple-mindmaps/actions/workflows/build.yml/badge.svg)](https://github.com/saidone75/simple-mindmaps/actions/workflows/build.yml)
 [![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=security_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
@@ -14,7 +14,7 @@ Versione: **0.3.3**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 - Mappe create da zero, da template o generate con AI.
 - Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. *Adatta alla griglia* allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
-- Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
+- Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti. Le immagini si possono ingrandire e spostare nel riquadro.
 - Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI.
 - Nell’editor immagini, *Cerca* apre un campo con il testo del nodo modificabile prima della conferma, poi avvia la ricerca semantica su Wikimedia usando le parole scelte e il titolo della mappa come contesto: applica il primo risultato e mostra fino a nove alternative.
 - Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa.
@@ -29,7 +29,7 @@ Versione: **0.3.3**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 - **JDK 21**.
 - **Linux x86_64** per il runtime nativo PyTorch incluso nel POM; altre piattaforme richiedono dipendenze native compatibili.
-- **Maven 3.6.3 o successivo**; consigliato Maven 3.9+.
+- **Maven 3.7.0 o successivo**; consigliato Maven 3.9+.
 - Un browser moderno.
 - Connessione a Internet al primo avvio per scaricare il modello di embedding e le librerie native richieste da DJL/PyTorch. La generazione AI e la ricerca Wikimedia richiedono inoltre accesso ai rispettivi servizi.
 
@@ -40,8 +40,8 @@ Lo stack comprende **Spring Boot 4.1.2**, Spring Security, Spring Data JPA, Thym
 Clona il repository e crea la directory dei dati:
 
 ```bash
-git clone https://github.com/saidone75/simple-mindmap.git
-cd simple-mindmap
+git clone https://github.com/saidone75/simple-mindmaps.git
+cd simple-mindmaps
 mkdir -p data
 ```
 
@@ -126,7 +126,7 @@ Ogni immagine sistemata fa avanzare verso uno dei cinque titoli premio, personal
 
 Il database SQLite è salvato in **`./data/mindmaps.db`**, rispetto alla directory da cui viene avviata l'applicazione. Non è richiesto un server database esterno. Conserva le directory `data` e `upload` tra gli avvii e includile entrambe nei backup: contengono database e immagini salvate. La cartella delle immagini è configurabile con `app.upload.directory` (o `APP_UPLOAD_DIRECTORY`).
 
-Il database viene salvato automaticamente ogni notte alle **02:00**, nel fuso orario del server, in `./backups`. Il job usa `VACUUM INTO`, verifica l’integrità della copia e mantiene gli ultimi **30 backup**. Le copie precedenti vengono eliminate soltanto dopo un backup riuscito. Configurazione tramite `DB_BACKUP_ENABLED`, `DB_BACKUP_CRON`, `DB_BACKUP_DIRECTORY` e `DB_BACKUP_RETENTION_COUNT`; un valore di conservazione inferiore a 1 disattiva la cancellazione delle copie. Il job è attivo per impostazione predefinita e può essere disabilitato con `DB_BACKUP_ENABLED=false`; le proprietà `app.db-backup.*` sono configurabili anche esternamente. Sono definite in `application.yml`.
+Il database viene salvato automaticamente ogni notte alle **02:00**, nel fuso orario del server, in `./backup`. Il job usa `VACUUM INTO`, verifica l’integrità della copia e mantiene gli ultimi **30 backup**. Le copie precedenti vengono eliminate soltanto dopo un backup riuscito. Configurazione tramite `DB_BACKUP_ENABLED`, `DB_BACKUP_CRON`, `DB_BACKUP_DIRECTORY` e `DB_BACKUP_RETENTION_COUNT`; un valore di conservazione inferiore a 1 disattiva la cancellazione delle copie. Il job è attivo per impostazione predefinita e può essere disabilitato con `DB_BACKUP_ENABLED=false`; le proprietà `app.db-backup.*` sono configurabili anche esternamente. Sono definite in `application.yml`.
 
 Per cambiare l’orario, modifica `app.db-backup.cron` oppure imposta `DB_BACKUP_CRON` prima dell’avvio. Ad esempio, per eseguire il backup ogni notte alle **03:30**:
 
