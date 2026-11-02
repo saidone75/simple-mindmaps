@@ -429,7 +429,7 @@
     .game-image:hover { transform: none; }
 }
 
-.game-zoom-controls { display: grid; gap: 8px; min-width: 0; }
+.game-zoom-controls { display: grid; gap: 8px; min-width: 0; margin: 0; padding: 0; border: 0; }
 
 .game-zoom-controls > label,
 .game-completion-award,

@@ -53,7 +53,7 @@
             <span id="game-stats">Tante piccole scoperte ti aspettano</span>
             <progress id="game-progress" value="0" max="1" aria-label="Immagini al loro posto"></progress>
         </div>
-        <div class="game-zoom-controls" role="group" aria-label="Grandezza della mappa">
+        <fieldset class="game-zoom-controls" aria-label="Grandezza della mappa">
             <label for="game-zoom">🔍 Guarda più da vicino</label>
             <div class="game-zoom-buttons">
                 <button id="game-zoom-out" type="button" aria-label="Rimpicciolisci la mappa">−</button>
@@ -62,7 +62,7 @@
                 <output id="game-zoom-value" for="game-zoom">100%</output>
                 <button id="game-zoom-fit" type="button">Vedi tutta la mappa</button>
             </div>
-        </div>
+        </fieldset>
         <button id="game-sound" class="secondary-btn" type="button" aria-pressed="true" aria-label="Suoni del gioco">🔊 Suoni attivi</button>
     </div>
     <section id="game-level-card" class="game-level-card" aria-label="Il tuo livello" hidden>

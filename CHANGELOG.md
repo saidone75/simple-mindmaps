@@ -20,6 +20,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Fixed
 
+- Controlli dello zoom nel gioco e immagini alternative nell’editor raggruppati con `fieldset` al posto di `role="group"`, mantenendo etichette accessibili e stile.
 - Messaggi di stato di raccolta, editor, gioco e login esposti con l’elemento semantico `output` per migliorarne l’accessibilità.
 - Ricerche Wikimedia e ranking delle immagini durante la generazione eseguiti prima della transazione di salvataggio, per evitare di mantenere il blocco di scrittura SQLite durante le attese di rete. Mappa e nodi continuano a essere salvati in un’unica transazione.
 
