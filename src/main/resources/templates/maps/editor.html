@@ -52,7 +52,7 @@
         </div>
     </header>
 
-    <p th:if="${publicationMessage}" th:text="${publicationMessage}" role="status"></p>
+    <output th:if="${publicationMessage}" th:text="${publicationMessage}"></output>
     <details class="publication-card" aria-label="Pubblicazione gioco" th:open="${publicationMessage != null}">
         <summary class="publication-heading"><span class="publication-icon" aria-hidden="true">🧩</span><span><strong class="publication-title">Da mappa a gioco</strong><span class="publication-subtitle">Trasforma le tue idee in una scoperta da condividere.</span></span><span class="publication-status" th:if="${publicToken != null}">● Gioco pubblicato</span></summary>
         <div class="publication-panel">
@@ -114,7 +114,7 @@
                     <button type="button" id="export-map-btn" class="secondary-btn small-btn">Esporta</button>
                 </div>
             </div>
-            <p id="autosave-status" role="status" aria-live="polite"></p>
+            <output id="autosave-status" aria-live="polite"></output>
             <p id="editor-request-error" class="field-error" role="alert" hidden></p>
             <div class="canvas-scroll-area">
                 <svg id="mindmap-canvas" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg"></svg>
@@ -179,10 +179,10 @@
                     <button type="button" id="search-node-images-btn" class="secondary-btn small-btn" title="Cerca" aria-label="Cerca"><span aria-hidden="true">🔍</span></button>
                     <button type="button" id="clear-image-btn" class="secondary-btn small-btn" title="Rimuovi" aria-label="Rimuovi"><span aria-hidden="true">🗑️</span></button>
                 </div>
-                <p id="image-search-status" role="status" aria-live="polite" hidden></p>
+                <output id="image-search-status" aria-live="polite" hidden></output>
                 <label for="node-image-upload">Carica un’immagine</label>
                 <input id="node-image-upload" type="file" accept="image/*">
-                <p id="save-image-status" role="status" aria-live="polite"></p>
+                <output id="save-image-status" aria-live="polite"></output>
                 <div class="image-preview-box">
                     <img id="node-image-preview" alt="Anteprima immagine nodo" />
                 </div>
