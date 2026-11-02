@@ -8,18 +8,18 @@ Un'applicazione per creare mappe mentali e trasformarle in giochi divertenti.
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=reliability_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 [![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=saidone75_alice-s-simple-mind-maps&metric=sqale_rating)](https://sonarcloud.io/summary/new_code?id=saidone75_alice-s-simple-mind-maps)
 
-Versione in sviluppo: **0.3.3-SNAPSHOT**. Ultima release: **0.3.2**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
+Versione: **0.3.3**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 ## Funzionalità
 
-- Mappe create da zero, da template o generate con AI. Durante la generazione, lo spinner mostra l’attività corrente: creazione della mappa, controllo dei collegamenti, ricerca di un’immagine per ciascun nodo e salvataggio.
+- Mappe create da zero, da template o generate con AI.
 - Editor SVG con trascinamento dei nodi, riordino compatto senza sovrapposizioni, zoom, pan, griglia e salvataggio automatico. *Adatta alla griglia* allinea posizioni e dimensioni dei nodi, rispettando lo spazio necessario al contenuto. Le modifiche si possono annullare e ripristinare.
 - Personalizzazione di testi, descrizioni, emoji, immagini, colori e collegamenti.
-- Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI. Le ricerche Wikimedia escludono le immagini già assegnate nella stessa mappa; se non viene trovata un’alternativa, il nodo rimane senza immagine.
+- Immagini caricate da file, tramite URL o cercate su Wikimedia durante la generazione AI.
 - Nell’editor immagini, *Cerca* apre un campo con il testo del nodo modificabile prima della conferma, poi avvia la ricerca semantica su Wikimedia usando le parole scelte e il titolo della mappa come contesto: applica il primo risultato e mostra fino a nove alternative.
-- Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa; quelle già usate da altri nodi non sono selezionabili.
-- Lo switch *Salva immagini*, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file. I file scaricati possono pesare fino a 25 MB e vengono adattati entro 1024 × 1024 px senza ingrandirli; le GIF animate mantengono l’animazione. La scelta è salvata per mappa. Se un download non riesce, resta il link originale; spegni e riaccendi lo switch per riprovare.
-- Duplicazione ed eliminazione delle mappe. Le card di *Le mie mappe* si possono riordinare trascinando la maniglia ⠿, anche su dispositivi touch, oppure usando le frecce quando la maniglia ha il focus. L’ordine viene salvato automaticamente.
+- Nelle nuove mappe AI vengono salvate fino a nove immagini Wikimedia candidate per nodo. Clicca sull’immagine nell’editor per vedere le anteprime e scegliere un’alternativa.
+- Lo switch *Salva immagini*, nella toolbar dell’editor, è attivo per impostazione predefinita: conserva le immagini esterne nella cartella del server `./upload` e salva nel database il riferimento al file.
+- Duplicazione ed eliminazione delle mappe. Le card di *Le mie mappe* si possono riordinare trascinando la maniglia ⠿, anche su dispositivi touch, oppure usando le frecce quando la maniglia ha il focus.
 - Esportazione in PNG e PDF, con formati A4 e A3 per il PDF; importazione ed esportazione delle mappe in ZIP, con importazione compatibile con i precedenti JSON.
 - Accesso con account e mappe private per ciascun proprietario.
 - Pubblicazione di giochi delle immagini tramite link pubblico revocabile.
@@ -90,10 +90,10 @@ Per compilare e verificare il progetto con i test già presenti:
 mvn -B clean verify
 ```
 
-L'artefatto eseguibile è `target/mindmaps-0.3.3-SNAPSHOT.jar`. Con credenziali e directory dei dati già configurate:
+L'artefatto eseguibile è `target/mindmaps-0.3.3.jar`. Con credenziali e directory dei dati già configurate:
 
 ```bash
-java -jar target/mindmaps-0.3.3-SNAPSHOT.jar --spring.profiles.active=prod
+java -jar target/mindmaps-0.3.3.jar --spring.profiles.active=prod
 ```
 
 Il profilo `dev` scrive i log in console e su file, mentre `prod` li scrive in `./log/mindmaps.log`. I profili sono di Spring: non occorre un profilo Maven `-Pprod`.

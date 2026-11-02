@@ -7,12 +7,14 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-11-02
+
 ### Added
 
 - Esportazione delle mappe in ZIP con manifest `map.json` e immagini locali separate, comprese le alternative; importazione ZIP compatibile con i precedenti JSON, con controlli su percorsi, file duplicati e dimensioni decompresse.
 
 - Card di *Le mie mappe* riordinabili tramite maniglia con mouse, touch o frecce della tastiera; ordine salvato per insegnante nel campo `display_order`, senza alterare la data di modifica delle mappe.
-- Backup notturno SQLite con la classe di Quizmaker: `VACUUM INTO`, verifica d’integrità, file temporaneo e spostamento atomico. Cron configurabile in `application.yml` (default alle 02:00), con 30 copie conservate in `./backups` e configurazione tramite variabili d’ambiente.
+- Backup notturno SQLite: `VACUUM INTO`, verifica d’integrità, file temporaneo e spostamento atomico. Cron configurabile in `application.yml` (default alle 02:00), con 30 copie conservate in `./backup` e configurazione tramite variabili d’ambiente.
 - **Pinch-to-zoom a due dita** nell’editor e nel gioco, centrato tra le dita e coordinato con pan e trascinamento.
 - **Zoom dell’immagine nel riquadro del nodo** dal 100% al 400%, regolabile nell’editor immagini e salvato nel campo `image_zoom`, con supporto Annulla/Ripristina e mantenimento nel gioco, nelle copie e nei file esportati.
 
@@ -30,7 +32,6 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Trascinamento touch dei nodi ripristinato nell’editor: il nodo selezionato si può spostare, mentre il gesto sui nodi non selezionati continua a trascinare la mappa.
 - Ripristinato il pan touch dell’immagine nel riquadro quando il relativo pannello è aperto; sugli altri nodi o sulle immagini senza ritaglio resta disponibile il pan della mappa.
 - Il pan della mappa non riapre più automaticamente il pannello del nodo selezionato al termine del trascinamento.
-- Riavvio della capriola del coniglietto nel login tramite l’animazione corrente, senza `void` né ricalcoli forzati del layout.
 - Pan touch nel gioco non più interrotto dal trasferimento della cattura del puntatore da un nodo al contenitore della mappa.
 - Pan touch della mappa disponibile anche sopra nodi e immagini; trascinamento distinto dal tocco per evitare selezioni o risposte involontarie nel gioco.
 - Area della mappa su mobile limitata all’altezza visibile e portata in vista all’avvio del pan, evitando di dover alternare trascinamento interno e scorrimento della pagina; contenuto il passaggio dello scroll alla pagina ai bordi.
@@ -48,7 +49,6 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 - Code asincrone dell’editor riorganizzate senza `await` nei cicli, preservando la sequenza di download e salvataggi; iterazione diretta delle richieste attive e rimozione di `beforeunload.returnValue` deprecato.
 - Intestazione della raccolta uniformata alle altre sezioni.
-- JavaScript del gioco semplificato eliminando ternari annidati e il parametro predefinito intermedio dell’helper SVG, senza modificare il comportamento.
 
 ### Security
 
@@ -233,7 +233,8 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 - Validazione delle risposte e calcolo del punteggio sul server.
 - Verifica dell'integrità delle risorse esterne caricate da CDN.
 
-[Unreleased]: https://github.com/saidone75/simple-mindmap/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/saidone75/simple-mindmaps/compare/v0.3.3...HEAD
+[0.3.3]: https://github.com/saidone75/simple-mindmaps/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/saidone75/simple-mindmap/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/saidone75/simple-mindmap/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/saidone75/simple-mindmap/compare/v0.2.1...v0.3.0
