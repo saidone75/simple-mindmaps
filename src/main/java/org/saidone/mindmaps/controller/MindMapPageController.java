@@ -44,9 +44,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class MindMapPageController {
 
     private final MindMapService mindMapService;
+    private final org.saidone.mindmaps.security.CurrentUserService currentUser;
     private final MapGameService mapGameService;
     private final MapGenerationApplicationService mapGenerationApplicationService;
     private final MapGenerationTaskService mapGenerationTasks;
+
+    @org.springframework.web.bind.annotation.ModelAttribute("aiEnabled")
+    public boolean aiEnabled() {
+        return currentUser.getCurrentUser().isAiEnabled();
+    }
 
     @GetMapping
     public String list(Model model, Principal principal) {

@@ -25,5 +25,7 @@ import java.util.Optional;
 
 public interface AppUserRepository extends JpaRepository<AppUser, Long> {
     Optional<AppUser> findByUsernameIgnoreCase(String username);
+    java.util.List<AppUser> findAllByOrderByUsernameAsc();
+    long countByRoleAndEnabledTrue(AppUser.Role role);
     boolean existsByUsernameIgnoreCase(String username);
 }

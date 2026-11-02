@@ -42,6 +42,22 @@ public class AppUser {
     @Column(nullable = false)
     private boolean enabled = true;
 
+    public enum Role { USER, ADMIN, CO_ADMIN }
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, columnDefinition = "varchar(20) default 'USER'")
+    private Role role = Role.USER;
+
+    @Column(nullable = false, columnDefinition = "boolean default true")
+    private boolean aiEnabled = true;
+
+    @Column(nullable = false, columnDefinition = "integer default 0")
+    private int sessionVersion;
+
+    public boolean isManager() {
+        return role == Role.ADMIN || role == Role.CO_ADMIN;
+    }
+
     @Column(nullable = false)
     private LocalDateTime createdAt;
 

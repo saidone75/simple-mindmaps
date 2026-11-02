@@ -57,6 +57,8 @@ public class SecurityConfig {
                         .loginPage("/login")
                         .defaultSuccessUrl("/maps", true)
                         .successHandler((request, response, authentication) -> {
+                            val account = appUserRepository.findByUsernameIgnoreCase(authentication.getName()).orElseThrow();
+                            request.getSession().setAttribute(org.saidone.mindmaps.security.AccountSessionFilter.VERSION, account.getSessionVersion());
                             loginRateLimiter.recordSuccess(request.getParameter("username"), request.getRemoteAddr());
                             response.sendRedirect(request.getContextPath() + "/maps");
                         })
@@ -65,6 +67,7 @@ public class SecurityConfig {
                             response.sendRedirect(request.getContextPath() + "/login?error");
                         })
                         .permitAll())
+                .addFilterBefore(new org.saidone.mindmaps.security.AccountSessionFilter(appUserRepository), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .logout(logout -> logout.logoutSuccessUrl("/login?logout").permitAll());
         return http.build();
@@ -78,7 +81,7 @@ public class SecurityConfig {
             return User.withUsername(user.getUsername())
                     .password(user.getPassword())
                     .disabled(!user.isEnabled())
-                    .roles("USER")
+                    .roles(user.getRole().name())
                     .build();
         };
     }

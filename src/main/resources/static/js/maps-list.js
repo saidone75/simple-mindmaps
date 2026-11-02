@@ -67,7 +67,7 @@
                     ...options, signal: controller.signal, cache: 'no-store',
                     headers: { Accept: 'application/json', ...options.headers }
                 }, {
-                    sessionStatuses: [401, 403],
+                    sessionStatuses: [401],
                     sessionMessage: 'La sessione è scaduta. Accedi di nuovo per continuare.',
                     serverMessages: true,
                     httpErrorMessage: 'Non riesco ad avviare la creazione della mappa. Riprova tra poco.'
@@ -103,7 +103,7 @@
                 if (running) showProgress(next);
             } catch (error) {
                 if (!running) return;
-                if (error.status === 401 || error.status === 404 || error.status === 400) {
+                if (error.status === 401 || error.status === 403 || error.status === 404 || error.status === 400) {
                     fail(error.status === 404
                         ? 'Questa attività non è più disponibile. Controlla Le mie mappe prima di riprovare.' : error.message);
                     return;

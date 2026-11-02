@@ -42,6 +42,7 @@ import static org.springframework.http.HttpStatus.*;
 @RequiredArgsConstructor
 @Slf4j
 public class MapGenerationTaskService {
+    private final org.saidone.mindmaps.security.CurrentUserService currentUser;
     private final MapGenerationApplicationService generation;
     private final MindMapService maps;
     private final ThreadPoolTaskExecutor executor = createExecutor();
@@ -55,6 +56,7 @@ public class MapGenerationTaskService {
     public record Progress(UUID id, Status status, String activity, int completedNodes, int totalNodes, Long mapId) {}
 
     public Progress start(MapGenerationRequestDto request, String owner) {
+        currentUser.requireAi();
         if (request.getTopic() == null || request.getTopic().isBlank()) {
             throw new ResponseStatusException(BAD_REQUEST, "Inserisci un argomento per la mappa.");
         }

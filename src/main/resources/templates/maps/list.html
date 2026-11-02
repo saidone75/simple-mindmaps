@@ -43,7 +43,7 @@
 
     <div th:if="${message}" class="flash-ok" th:text="${message}"></div>
 
-    <section class="section-card form-card">
+    <section th:if="${aiEnabled}" class="section-card form-card">
         <div class="section-intro">
             <span class="section-kicker">✨ Generazione assistita</span>
             <h2>Crea mappa con AI</h2>

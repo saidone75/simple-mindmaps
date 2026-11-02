@@ -138,6 +138,8 @@ Il cron usa sei campi (secondi, minuti, ore, giorno del mese, mese, giorno della
 
 Il job di pulizia delle immagini orfane viene eseguito ogni notte alle 03:00: considera mappe, alternative e copie pubblicate, ed elimina i file solo dopo il commit della rimozione dei metadati. Un’immagine deve risultare orfana da almeno sette giorni prima di essere eliminata. Il job rimuove anche i file senza metadati più vecchi del periodo di conservazione. Configurazione: `app.image-cleanup.enabled`, `app.image-cleanup.cron` e `app.image-cleanup.retention-days`.
 
+Da *Preferenze*, amministratori e co-amministratori possono creare, elencare, bloccare e cancellare utenti, reimpostare password, nominare co-amministratori e gestire l’abilitazione AI.
+
 Le password degli utenti sono memorizzate come hash BCrypt. Le mappe private sono accessibili solo al proprietario; i link pubblici consentono di giocare senza accedere all'editor.
 
 Usa *Esporta* nell’editor per scaricare la mappa e le immagini locali in un file ZIP. Da *Modelli pronti → Importa mappa* puoi caricare ZIP o precedenti JSON e creare una nuova mappa privata.
