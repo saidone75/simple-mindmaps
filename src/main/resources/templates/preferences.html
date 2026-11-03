@@ -91,8 +91,8 @@
                 <details>
                     <summary>Reimposta password</summary>
                     <form th:action="@{/preferences/users/{id}/password(id=${user.id})}" method="post" class="home-form">
-                        <label th:for="|reset-password-${user.id}|">Nuova password</label>
-                        <input th:id="|reset-password-${user.id}|" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
+                        <label for="reset-password" th:for="|reset-password-${user.id}|">Nuova password</label>
+                        <input id="reset-password" th:id="|reset-password-${user.id}|" name="password" type="password" autocomplete="new-password" minlength="8" maxlength="72" required>
                         <div class="form-actions"><button type="submit" class="secondary-btn small-btn">Reimposta password</button></div>
                     </form>
                 </details>
@@ -100,8 +100,8 @@
                     <summary>Cancella utente</summary>
                     <p>Verranno eliminate anche tutte le mappe dell’utente e le relative pubblicazioni. L’operazione è definitiva.</p>
                     <form th:action="@{/preferences/users/{id}/delete(id=${user.id})}" method="post" class="home-form">
-                        <label th:for="|delete-user-${user.id}|">Scrivi il nome utente per confermare</label>
-                        <input th:id="|delete-user-${user.id}|" name="confirmation" type="text" autocomplete="off" required>
+                        <label for="delete-user" th:for="|delete-user-${user.id}|">Scrivi il nome utente per confermare</label>
+                        <input id="delete-user" th:id="|delete-user-${user.id}|" name="confirmation" type="text" autocomplete="off" required>
                         <div class="form-actions"><button type="submit" class="secondary-btn small-btn">Cancella definitivamente</button></div>
                     </form>
                 </details>
