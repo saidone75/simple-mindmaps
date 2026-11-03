@@ -135,7 +135,7 @@ public class MapTransferService {
         return entries;
     }
 
-    public byte[] exportMap(Long id) throws IOException {
+    public byte[] exportMap(Long id) {
         val map = maps.findMapWithNodes(id);
         val assets = new LinkedHashMap<String, Asset>();
         val size = new long[]{0};
