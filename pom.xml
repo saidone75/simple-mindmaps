@@ -37,7 +37,7 @@
     <properties>
         <java.version>21</java.version>
         <org.mapstruct.version>1.6.3</org.mapstruct.version>
-        <djl.version>0.39.0</djl.version>
+        <djl.version>0.40.0</djl.version>
         <batik.version>1.20</batik.version>
         <commons-compress.version>1.28.0</commons-compress.version>
         <commons-io.version>2.22.0</commons-io.version>
