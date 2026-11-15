@@ -14,6 +14,10 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 - Pagina *Preferenze* accessibile dall’elenco mappe, con cambio password previa verifica di quella attuale, conferma della nuova e nuovo accesso dopo il salvataggio.
 
+### Changed
+
+- Estratti i suoni del gioco nel modulo `game-sounds.js`.
+
 ## [0.3.3] - 2026-11-02
 
 ### Added
