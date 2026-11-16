@@ -62,6 +62,36 @@ globalThis.createGameSounds = function createGameSounds({ button: soundButton, s
         voice.start(time);
         voice.stop(time + duration + .02);
     }
+    function playCompletionFanfare() {
+        // Original three-voice arcade fanfare with short, sustained pulse notes.
+        const beat = .125;
+        const frequency = midi => 440 * 2 ** ((midi - 69) / 12);
+        const melody = [
+            [72, 1], [72, 1], [79, 2], [76, 1], [79, 1], [84, 3],
+            [83, 1], [81, 1], [79, 1], [81, 2], [77, 2],
+            [79, 1], [81, 1], [83, 1], [86, 1], [84, 7]
+        ];
+        let offset = .12;
+        for (const [pitch, beats] of melody) {
+            const hz = frequency(pitch);
+            note(hz, offset, beats * beat * .8, 'square', hz, .028);
+            offset += beats * beat;
+        }
+        const cadence = offset - 7 * beat;
+        for (let step = 0; .12 + step * beat < cadence - .001; step++) {
+            let chord = [55, 67, 71];
+            if (step < 9) chord = [48, 64, 67];
+            else if (step < 15) chord = [53, 65, 69];
+            const bass = frequency(step % 2 ? chord[0] + 12 : chord[0]);
+            note(bass, .12 + step * beat, beat * .65, 'square', bass, .012);
+            const harmony = frequency(chord[1 + step % 2]);
+            note(harmony, .12 + step * beat, beat * .7, 'square', harmony, .014);
+        }
+        for (const pitch of [48, 64, 67]) {
+            const hz = frequency(pitch);
+            note(hz, cadence, 7 * beat * .8, 'square', hz, .016);
+        }
+    }
     function play(kind) {
         if (!enabled || context?.state !== 'running') return;
         try {
@@ -78,34 +108,7 @@ globalThis.createGameSounds = function createGameSounds({ button: soundButton, s
                 note(659.25, .25, .14);
                 for (const frequency of [523.25, 659.25, 783.99]) note(frequency, .39, .65);
             } else if (kind === 'complete') {
-                // Original three-voice arcade fanfare with short, sustained pulse notes.
-                const beat = .125;
-                const frequency = midi => 440 * 2 ** ((midi - 69) / 12);
-                const melody = [
-                    [72, 1], [72, 1], [79, 2], [76, 1], [79, 1], [84, 3],
-                    [83, 1], [81, 1], [79, 1], [81, 2], [77, 2],
-                    [79, 1], [81, 1], [83, 1], [86, 1], [84, 7]
-                ];
-                let offset = .12;
-                for (const [pitch, beats] of melody) {
-                    const hz = frequency(pitch);
-                    note(hz, offset, beats * beat * .8, 'square', hz, .028);
-                    offset += beats * beat;
-                }
-                const cadence = offset - 7 * beat;
-                for (let step = 0; .12 + step * beat < cadence - .001; step++) {
-                    let chord = [55, 67, 71];
-                    if (step < 9) chord = [48, 64, 67];
-                    else if (step < 15) chord = [53, 65, 69];
-                    const bass = frequency(step % 2 ? chord[0] + 12 : chord[0]);
-                    note(bass, .12 + step * beat, beat * .65, 'square', bass, .012);
-                    const harmony = frequency(chord[1 + step % 2]);
-                    note(harmony, .12 + step * beat, beat * .7, 'square', harmony, .014);
-                }
-                for (const pitch of [48, 64, 67]) {
-                    const hz = frequency(pitch);
-                    note(hz, cadence, 7 * beat * .8, 'square', hz, .016);
-                }
+                playCompletionFanfare();
             }
         } catch (error) {
             console.warn('Impossibile riprodurre il suono: il feedback visivo resta disponibile', error);
