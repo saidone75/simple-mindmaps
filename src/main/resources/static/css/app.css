@@ -408,7 +408,7 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
 
 .login-card-bunny:focus-visible { outline: 0; box-shadow: 0 0 0 4px var(--focus-ring); }
 
-.login-card-bunny.is-somersaulting { animation: bunny-somersault 0.20s linear 1; transform-origin: center center; }
+.login-card-bunny.is-somersaulting { animation: wonderland-ultra-smooth 2s cubic-bezier(0.45, 0.05, 0.55, 0.95) 1; transform-origin: center center; }
 
 .login-card .section-kicker,
 .login-card-header,
@@ -512,18 +512,6 @@ textarea { min-height: 110px; resize: vertical; line-height: 1.35; }
     34% { transform: translateY(-4px) scaleY(1.02) rotate(2deg); }
 
     44% { transform: translateY(0) scaleY(1) rotate(0deg); }
-}
-
-@keyframes bunny-somersault {
-    0% { transform: rotate(0deg); }
-
-    25% { transform: rotate(90deg); }
-
-    50% { transform: rotate(180deg); }
-
-    75% { transform: rotate(270deg); }
-
-    100% { transform: rotate(360deg); }
 }
 
 @keyframes wonderland-ultra-smooth {
