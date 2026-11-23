@@ -72,15 +72,21 @@
     const bunnyButton = document.querySelector('.login-card-bunny');
 
     if (bunnyButton) {
+        let backflipRequested = false;
+
         bunnyButton.addEventListener('click', () => {
-            const somersault = bunnyButton.getAnimations()
-                .find(animation => animation.animationName === 'bunny-somersault');
-            if (somersault) somersault.currentTime = 0;
-            else bunnyButton.classList.add('is-somersaulting');
+            if (!bunnyButton.classList.contains('is-somersaulting')) backflipRequested = true;
+        });
+
+        bunnyButton.addEventListener('animationiteration', (event) => {
+            if (event.animationName === 'bunny-hop' && backflipRequested) {
+                backflipRequested = false;
+                bunnyButton.classList.add('is-somersaulting');
+            }
         });
 
         bunnyButton.addEventListener('animationend', (event) => {
-            if (event.animationName === 'bunny-somersault') {
+            if (event.animationName === 'wonderland-ultra-smooth') {
                 bunnyButton.classList.remove('is-somersaulting');
             }
         });

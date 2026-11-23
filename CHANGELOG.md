@@ -16,6 +16,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Il coniglietto del login esegue al clic la stessa animazione di salto e backflip dello spinner di caricamento, con identici tempi e movimenti, attendendo la conclusione del saltello in corso per evitare scatti.
 - Estratti i suoni del gioco nel modulo `game-sounds.js`.
 
 ## [0.3.3] - 2026-11-02

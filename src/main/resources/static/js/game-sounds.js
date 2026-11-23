@@ -20,6 +20,24 @@
 globalThis.createGameSounds = function createGameSounds({ button: soundButton, storageKey = 'game-sound' } = {}) {
     let context, enabled = true;
     const voices = new Set();
+    const fanfares = [
+        { id: 'trionfo', name: 'Trionfo', beat: .125, melody: [
+            [72, 1], [72, 1], [79, 2], [76, 1], [79, 1], [84, 3],
+            [83, 1], [81, 1], [79, 1], [81, 2], [77, 2],
+            [79, 1], [81, 1], [83, 1], [86, 1], [84, 7]
+        ] },
+        { id: 'incanto', name: 'Incanto', beat: .115, melody: [
+            [76, 1], [79, 1], [84, 2], [79, 1], [84, 1], [88, 3],
+            [89, 1], [88, 1], [84, 1], [81, 2], [84, 2],
+            [83, 1], [86, 1], [79, 1], [83, 1], [84, 7]
+        ] },
+        { id: 'fantasia', name: 'Fantasia', beat: .115, melody: [
+            [67, 1], [72, 1], [76, 1], [79, 2], [76, 1], [72, 3],
+            [77, 2], [81, 1], [84, 1], [81, 1], [77, 2],
+            [79, 2], [83, 1], [86, 1], [79, 1], [84, 7]
+        ] }
+    ];
+    let nextFanfare = Math.floor(Math.random() * fanfares.length);
     try { if (storageKey) enabled = localStorage.getItem(storageKey) !== 'off'; } catch { /* The optional sound preference must not prevent playback. */ }
     function refreshButton() {
         if (!soundButton) return;
@@ -62,15 +80,9 @@ globalThis.createGameSounds = function createGameSounds({ button: soundButton, s
         voice.start(time);
         voice.stop(time + duration + .02);
     }
-    function playCompletionFanfare() {
-        // Original three-voice arcade fanfare with short, sustained pulse notes.
-        const beat = .125;
+    function playCompletionFanfare({ beat, melody }) {
+        // Original three-voice arcade fanfares with sustained pulse notes.
         const frequency = midi => 440 * 2 ** ((midi - 69) / 12);
-        const melody = [
-            [72, 1], [72, 1], [79, 2], [76, 1], [79, 1], [84, 3],
-            [83, 1], [81, 1], [79, 1], [81, 2], [77, 2],
-            [79, 1], [81, 1], [83, 1], [86, 1], [84, 7]
-        ];
         let offset = .12;
         for (const [pitch, beats] of melody) {
             const hz = frequency(pitch);
@@ -92,7 +104,7 @@ globalThis.createGameSounds = function createGameSounds({ button: soundButton, s
             note(hz, cadence, 7 * beat * .8, 'square', hz, .016);
         }
     }
-    function play(kind) {
+    function play(kind, fanfareId) {
         if (!enabled || context?.state !== 'running') return;
         try {
             stop();
@@ -108,7 +120,9 @@ globalThis.createGameSounds = function createGameSounds({ button: soundButton, s
                 note(659.25, .25, .14);
                 for (const frequency of [523.25, 659.25, 783.99]) note(frequency, .39, .65);
             } else if (kind === 'complete') {
-                playCompletionFanfare();
+                const selected = fanfares.find(fanfare => fanfare.id === fanfareId) || fanfares[nextFanfare];
+                playCompletionFanfare(selected);
+                nextFanfare = (fanfares.indexOf(selected) + 1) % fanfares.length;
             }
         } catch (error) {
             console.warn('Impossibile riprodurre il suono: il feedback visivo resta disponibile', error);
@@ -123,5 +137,5 @@ globalThis.createGameSounds = function createGameSounds({ button: soundButton, s
         unlock();
     });
     refreshButton();
-    return {unlock, play, stop};
+    return {unlock, play, stop, fanfares: fanfares.map(({ id, name }) => ({ id, name }))};
 };
