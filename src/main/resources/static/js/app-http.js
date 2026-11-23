@@ -54,8 +54,24 @@
             if (contentType.includes('text/html')) throw new Error('Risposta inattesa dal server. Verifica l’accesso e riprova.');
             return undefined;
         }
-        const expected = (format === 'json' || format === 'json-file') ? /application\/(?:[\w.-]+\+)?json/i : format === 'image' ? /image\//i
-            : format === 'png' ? /image\/png/i : format === 'zip' ? /application\/zip/i : /application\/pdf/i;
+        let expected;
+        switch (format) {
+            case 'json':
+            case 'json-file':
+                expected = /application\/(?:[\w.-]+\+)?json/i;
+                break;
+            case 'image':
+                expected = /image\//i;
+                break;
+            case 'png':
+                expected = /image\/png/i;
+                break;
+            case 'zip':
+                expected = /application\/zip/i;
+                break;
+            default:
+                expected = /application\/pdf/i;
+        }
         if (!expected.test(contentType)) throw new Error('Risposta inattesa dal server. Verifica l’accesso e riprova.');
         try {
             const result = format === 'json' ? await response.json() : await response.blob();
