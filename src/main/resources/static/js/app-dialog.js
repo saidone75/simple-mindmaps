@@ -26,7 +26,8 @@
 
     function openDialog({ title, message, mode = "alert", value = "" }) {
         if (!appDialog || !appDialogTitle || !appDialogMessage || !appDialogConfirm) {
-            return Promise.resolve(mode === "alert" ? true : mode === "confirm" ? false : null);
+            const dismissResult = mode === "confirm" ? false : null;
+            return Promise.resolve(mode === "alert" ? true : dismissResult);
         }
         return new Promise(resolve => {
             appDialogTitle.textContent = title || "Conferma";
