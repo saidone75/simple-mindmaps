@@ -84,8 +84,8 @@ function getNodeDisplayLines(node, maxLineLength) {
 
 function normalizeNodeText(value) {
     const normalized = sanitizePlainText((value || "")
-        .replaceAll(/\r\n/g, "\n")
-        .replaceAll(/\u00a0/g, " ")
+        .replaceAll("\r\n", "\n")
+        .replaceAll("\u00a0", " ")
         .trim());
     return normalized.length ? normalized : "Nodo";
 }
