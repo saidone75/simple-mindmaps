@@ -1,4 +1,9 @@
 spring:
+  main:
+    keep-alive: true
+  threads:
+    virtual:
+      enabled: true
   application:
     name: simple-mindmaps
     output:

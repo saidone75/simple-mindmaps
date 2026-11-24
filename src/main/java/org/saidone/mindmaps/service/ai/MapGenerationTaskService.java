@@ -100,7 +100,7 @@ public class MapGenerationTaskService {
         executor.setCorePoolSize(2);
         executor.setMaxPoolSize(2);
         executor.setQueueCapacity(8);
-        executor.setThreadNamePrefix("map-generation-");
+        executor.setThreadFactory(Thread.ofVirtual().name("map-generation-", 0).factory());
         executor.setAwaitTerminationSeconds(10);
         executor.initialize();
         return executor;

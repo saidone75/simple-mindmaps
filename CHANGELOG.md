@@ -16,6 +16,7 @@ e il progetto adotta il [versionamento semantico](https://semver.org/lang/it/).
 
 ### Changed
 
+- Passaggio a Java 25 per applicazione e workflow CI; virtual thread abilitati in Spring Boot e nell’executor di generazione mappe, mantenendo i limiti di concorrenza e coda.
 - Selettori duplicati accorpati nei CSS generali e dell’editor, mantenendo le precedenze delle regole responsive.
 - Il coniglietto del login esegue al clic la stessa animazione di salto e backflip dello spinner di caricamento, con identici tempi e movimenti, attendendo la conclusione del saltello in corso per evitare scatti.
 - Estratti i suoni del gioco nel modulo `game-sounds.js`.

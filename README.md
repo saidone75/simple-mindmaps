@@ -27,13 +27,15 @@ Versione: **0.3.3**. Le novità sono raccolte nel [changelog](CHANGELOG.md).
 
 ## Requisiti
 
-- **JDK 21**.
+- **JDK 25**.
 - **Linux x86_64** per il runtime nativo PyTorch incluso nel POM; altre piattaforme richiedono dipendenze native compatibili.
 - **Maven 3.7.0 o successivo**; consigliato Maven 3.9+.
 - Un browser moderno.
 - Connessione a Internet al primo avvio per scaricare il modello di embedding e le librerie native richieste da DJL/PyTorch. La generazione AI e la ricerca Wikimedia richiedono inoltre accesso ai rispettivi servizi.
 
 Lo stack comprende **Spring Boot 4.1.2**, Spring Security, Spring Data JPA, Thymeleaf, SQLite e JavaScript senza framework frontend.
+
+I virtual thread sono abilitati in `application.yml` tramite `spring.threads.virtual.enabled`. Anche la generazione delle mappe li utilizza, mantenendo il limite di due attività contemporanee e otto in coda.
 
 ## Avvio locale
 
